@@ -1,0 +1,55 @@
+include:
+  - local: "/.gitlab-ci/utils.gitlab-ci.yml"
+  - local: "/.gitlab-ci/test.gitlab-ci.yml"
+  - local: "/.gitlab-ci/release.gitlab-ci.yml"
+
+stages:
+  - test
+  - release
+
+variables:
+  DRY_CARGO_RELEASE: "true"
+  CI_CARGO_PACKAGE: mavio
+
+# ---------------------------------------------------------
+#                          Test
+# ---------------------------------------------------------
+
+test:validate:upstream:
+  extends: .test:validate:upstream  # from: local: "/.gitlab-ci/test.gitlab-ci.yml"
+  stage: test
+
+test:validate:tags:
+  extends: .test:validate:tags  # from: local: "/.gitlab-ci/test.gitlab-ci.yml"
+  stage: test
+
+test:build:docs:
+  extends: .test:build:docs  # from: local: "/.gitlab-ci/test.gitlab-ci.yml"
+  stage: test
+
+test:test:
+  extends: .test:test  # from: local: "/.gitlab-ci/test.gitlab-ci.yml"
+  stage: test
+
+test:publish:
+  extends: .test:publish  # from: local: "/.gitlab-ci/test.gitlab-ci.yml"
+  stage: test
+
+# ---------------------------------------------------------
+#                        Release
+# ---------------------------------------------------------
+
+release:publish:crates:
+  extends: .release:publish:crates  # from: local: "/.gitlab-ci/release.gitlab-ci.yml"
+  stage: release
+  needs:
+    - test:validate:tags
+    - test:build:docs
+    - test:test
+    - test:publish
+
+release:release:
+  extends: .release:release  # from: local: "/.gitlab-ci/release.gitlab-ci.yml"
+  stage: release
+  needs:
+    - release:publish:crates

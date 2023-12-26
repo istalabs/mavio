@@ -1,0 +1,43 @@
+# Ignore everything
+*
+# Unless
+
+# Git
+!/.gitignore
+!/.gitmodules
+
+# Sources
+!/src/
+!/src/**
+!/examples/
+!/examples/**
+
+# MAVLink
+!/mavlink
+!/message_definitions
+!/message_definitions/**
+
+# Executables & scripts
+!/bin
+!/bin/**
+
+# Cargo
+!Cargo.lock
+!Cargo.toml
+!build.rs
+
+# Docs
+!/README.md
+!/LICENSE-APACHE
+!/LICENSE-MIT
+!/avatar.png
+!/avatar.svg
+
+# CI
+!/.gitlab-ci.yml
+!/.gitlab-ci
+!/.gitlab-ci/**
+
+# Still, explicitely ignore these
+/target
+/tmp

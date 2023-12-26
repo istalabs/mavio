@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<mavlink>
+    <include>../standard/minimal.xml</include>
+    <version>0</version>
+    <dialect>0</dialect>
+    <enums>
+        <enum name="SMALL_ENUM">
+            <description>Small enum that fits into `u8`.</description>
+            <entry name="SMALL_ENUM_FIRST" value="0">
+                <description>First entry</description>
+            </entry>
+            <entry name="SMALL_ENUM_SECOND" value="1">
+                <description>Second entry</description>
+            </entry>
+            <entry name="SMALL_ENUM_THIRD" value="2">
+                <description>Third entry</description>
+            </entry>
+            <entry name="SMALL_ENUM_FOURTH" value="3">
+                <description>Fourth entry</description>
+            </entry>
+        </enum>
+        <enum name="LARGE_ENUM">
+            <description>Large enum that requires larger container type size.</description>
+            <entry name="SMALL_ENUM_FIRST" value="0">
+                <description>First entry</description>
+            </entry>
+            <entry name="SMALL_ENUM_SECOND" value="256">
+                <description>Second entry</description>
+            </entry>
+            <entry name="SMALL_ENUM_THIRD" value="65536">
+                <description>Third entry</description>
+            </entry>
+            <entry name="SMALL_ENUM_FOURTH" value="4294967295">
+                <description>Fourth entry</description>
+            </entry>
+        </enum>
+        <enum name="SMALL_BITMASK" bitmask="true">
+            <description>Small bitmask that fits into `u8`.</description>
+            <entry name="SMALL_BITMASK_FIRST" value="1">
+                <description>8th bit: 00000001.</description>
+            </entry>
+            <entry name="SMALL_BITMASK_SECOND" value="2">
+                <description>7th bit: 00000010.</description>
+            </entry>
+            <entry name="SMALL_BITMASK_THIRD" value="4">
+                <description>6th bit: 00000100.</description>
+            </entry>
+            <entry name="SMALL_BITMASK_FOURTH" value="8">
+                <description>5th bit: 00001000.</description>
+            </entry>
+        </enum>
+        <enum name="LARGE_BITMASK" bitmask="true">
+            <description>Large bitmask that requires larger container type size.</description>
+            <entry name="LARGE_BITMASK_FIRST" value="1">
+                <description>32nd bit: 00000000 00000000 00000000 00000001.</description>
+            </entry>
+            <entry name="LARGE_BITMASK_SECOND" value="256">
+                <description>24rd bit: 00000000 00000000 00000001 00000000.</description>
+            </entry>
+            <entry name="LARGE_BITMASK_THIRD" value="65536">
+                <description>16th bit: 00000000 00000001 00000000 00000000.</description>
+            </entry>
+            <entry name="LARGE_BITMASK_FOURTH" value="16777216">
+                <description>8th bit: 00000001 00000000 00000000 00000000.</description>
+            </entry>
+        </enum>
+    </enums>
+    <messages>
+        <message id="255" name="MAV_INSPECT_V1">
+            <description>MAVInspect message compatible with MAVLink 1</description>
+            <field type="uint8_t" name="plain_uint8">Plain `uint8_t` value.</field>
+            <field type="int16_t" name="plain_int16">Plain `int16_t` value.</field>
+            <field type="uint16_t[4]" name="small_array">Array of 4 `uint16_t`.</field>
+            <field type="uint16_t[40]" name="large_array">Array of 4 `uint16_t`.</field>
+            <!-- Enums -->
+            <field type="uint8_t" name="small_enum_native" enum="SMALL_ENUM">Small enum in native container type.</field>
+            <field type="int8_t" name="small_enum_signed" enum="SMALL_ENUM">Small enum in signed container of native size.</field>
+            <field type="uint32_t" name="small_enum_scaled" enum="SMALL_ENUM">Small enum in larger container type.</field>
+            <field type="int32_t" name="small_enum_scaled_signed" enum="SMALL_ENUM">Small enum in larger signed container type.</field>
+            <field type="uint8_t[2]" name="small_enum_small_array" enum="SMALL_ENUM">Small enum in small array.</field>
+            <field type="uint16_t[2]" name="small_enum_small_array_scaled" enum="SMALL_ENUM">Small enum in small array of larger container types.</field>
+            <field type="uint8_t[40]" name="small_enum_large_array" enum="SMALL_ENUM">Small enum in large array.</field>
+            <field type="uint32_t" name="large_enum" enum="LARGE_ENUM">Large enum.</field>
+            <field type="uint32_t[2]" name="large_enum_array" enum="LARGE_ENUM">Large enum array.</field>
+            <!-- Bitmasks -->
+            <field type="uint8_t" name="small_bitmask_native" enum="SMALL_BITMASK">Small bitmask in native container type.</field>
+            <field type="int8_t" name="small_bitmask_signed" enum="SMALL_BITMASK">Small bitmask in signed container of native size.</field>
+            <field type="uint32_t" name="small_bitmask_scaled" enum="SMALL_BITMASK">Small bitmask in larger container type.</field>
+            <field type="int32_t" name="small_bitmask_scaled_signed" enum="SMALL_BITMASK">Small bitmask in larger signed container type.</field>
+            <field type="uint8_t[2]" name="small_bitmask_small_array" enum="SMALL_BITMASK">Small bitmask in small array.</field>
+            <field type="uint8_t[40]" name="small_bitmask_large_array" enum="SMALL_BITMASK">Small bitmask in large array.</field>
+            <field type="uint32_t" name="large_bitmask" enum="LARGE_BITMASK">Large bitmask.</field>
+            <extensions/>
+            <field type="uint8_t" name="extension_uint8">Extension with primitive type `uint8_t`.</field>
+            <field type="uint16_t[4]" name="extension_uint16_4" enum="SMALL_ENUM">Extension with array type `uint16_t[4]`.</field>
+        </message>
+    </messages>
+</mavlink>

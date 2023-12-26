@@ -1,0 +1,3 @@
+[submodule "mavlink"]
+	path = mavlink
+	url = https://gitlab.com/mavka/spec/protocols/mavlink/message-definitions-v1.0.git

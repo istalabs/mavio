@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+#
+# CLI processing inspired by François Saint-Jacques's `semver-tool`:
+#   https://github.com/fsaintjacques/semver-tool
+#
+
+set -o errexit -o nounset -o pipefail
+
+PROG=pkg-version
+PROG_VERSION="0.1.0"
+
+USAGE="\
+Usage:
+  $PROG --package <package>
+  $PROG --all
+  $PROG --help
+  $PROG --version
+
+Arguments:
+  <package>  Cargo package name.
+
+Options:
+  -p, --package          Print version for specific package.
+  -a, --all              Print versions for all packages within a workspace.
+  -v, --version          Print the version of this tool.
+  -h, --help             Print this help message.
+"
+
+function error {
+  echo -e "$1" >&2
+  exit 1
+}
+
+function usage_help {
+  error "$USAGE"
+}
+
+function usage_version {
+  echo -e "${PROG}: $PROG_VERSION"
+  exit 0
+}
+
+function is_empty {
+  [ $# -eq 0 ]
+}
+
+function specific_package {
+  is_empty "$@" && { error "ERROR! Package name should be specified.\n\n$USAGE"; }
+  local package=$1;
+
+  cargo metadata --no-deps --format-version 1 | \
+        jq '.packages[] | select(.name == "'"$package"'") | .version' | \
+        tr -d '"'
+  exit 0
+}
+
+function all_packages {
+  cargo metadata --no-deps --format-version 1 | \
+        jq '.packages[] | [.name, .version] | join(" ")' | \
+        tr -d '"'
+  exit 0
+}
+
+case $# in
+  0) echo "Unknown command: $*"; usage_help;;
+esac
+
+case $1 in
+  --help|-h) echo -e "$USAGE"; exit 0;;
+  --version|-v) usage_version ;;
+  --package|-p) shift; specific_package "$@";;
+  --all|-a) all_packages ;;
+  *) echo "Unknown arguments: $*"; usage_help;;
+esac

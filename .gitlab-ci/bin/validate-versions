@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+#
+# CLI processing inspired by François Saint-Jacques's `semver-tool`:
+#   https://github.com/fsaintjacques/semver-tool
+#
+
+set -o errexit -o nounset -o pipefail
+
+ARGS=( "$@" )
+
+PROG=pkg-version
+PROG_VERSION="0.1.0"
+
+USAGE="\
+Usage:
+  $PROG --package <package>
+  $PROG --exact --package <package>
+  $PROG --help
+  $PROG --version
+
+Arguments:
+  <package>  Cargo package name.
+
+Options:
+  -e, --exact            Exact match.
+  -p, --package          Validate that package version is greater or equal to Git tag.
+  -v, --version          Print the version of this tool.
+  -h, --help             Print this help message.
+"
+
+function error {
+  echo -e "$1" >&2
+  exit 1
+}
+
+function usage_help {
+  error "$USAGE"
+}
+
+function usage_version {
+  echo -e "${PROG}: $PROG_VERSION"
+  exit 0
+}
+
+function is_empty {
+  [ $# -eq 0 ]
+}
+
+function script_dir {
+  echo "$( cd -- "$( dirname "$0" )" >/dev/null 2>&1 ; pwd -P )"
+}
+
+function git_tag_semver() {
+  local smallest_version="0.0.0-alpha"
+
+  git describe --tags --abbrev=0 2>/dev/null || { echo "$smallest_version"; >&2 echo "Warning! No Git tags found. Assuming $smallest_version."; }
+}
+
+function validate() {
+  local version=$1
+
+  [ "$("$( script_dir )"/semver validate "$version")" = "valid" ]
+}
+
+function greater_or_equal() {
+  local left=$1; local right=$2;
+
+  [ "$( "$( script_dir )"/semver compare "$left" "$right" )" != "-1" ]
+}
+
+function equal() {
+  local left=$1; local right=$2;
+
+  [ "$( "$( script_dir )"/semver compare "$left" "$right" )" = "0" ]
+}
+
+function exact_match() {
+  local arg; local exact=false
+
+  for arg in "${ARGS[@]}"
+  do
+    case $arg in
+    --exact|-e) exact=true;;
+    esac
+  done
+
+  [ "$exact" = "true" ]
+}
+
+function specific_package {
+  local package; local package_version; local git_tag_version
+
+  is_empty "$@" && { error "ERROR! Package name should be specified.\n\n$USAGE"; }
+
+  package=$1
+  package_version=$( "$( script_dir )"/pkg-version --package "$package")
+  git_tag_version="$( git_tag_semver )"
+
+  validate "$package_version" || { error "ERROR! Package '$package' has invalid version '$package_version'."; }
+  validate "$git_tag_version" || { error "ERROR! Package invalid latest git tag '$git_tag_version'."; }
+
+  exact_match && {
+    equal "$package_version" "$git_tag_version" || { error "ERROR! Package version should be strictly equal to Git tag. Got '$package_version' != '$git_tag_version'."; }
+    exit 0
+  }
+
+  greater_or_equal "$package_version" "$git_tag_version" || { error "ERROR! Package version should be greater or equal than latest Git tag. Got '$package_version' < '$git_tag_version'."; }
+  exit 0
+}
+
+case $# in
+  0) echo "Unknown command: $*"; usage_help;;
+esac
+
+case $1 in
+  --exact|-e) shift;;
+esac
+
+case $1 in
+  --help|-h) echo -e "$USAGE"; exit 0;;
+  --version|-v) usage_version ;;
+  --package|-p) shift; specific_package "$@";;
+  *) echo "Unknown arguments: $*"; usage_help;;
+esac

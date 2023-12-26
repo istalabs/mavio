@@ -1,0 +1,69 @@
+include:
+  - local: "/.gitlab-ci/utils.gitlab-ci.yml"
+  - local: "/.gitlab-ci/executors.gitlab-ci.yml"
+
+# ---------------------------------------------------------
+#             [TEST] Validate project rules
+# ---------------------------------------------------------
+.test:validate:upstream: # on upstream changes
+# ---------------------------------------------------------
+  extends: .executor:rust  # from local: "/.gitlab-ci/executors.gitlab-ci.yml"
+  script:
+    # Check that package version is not less than the latest tag
+    - ${CI_SCRIPTS_DIR}/validate-versions --package ${CI_CARGO_PACKAGE}
+  only:
+    - main
+  except:
+    - schedules
+# ---------------------------------------------------------
+.test:validate:tags: # on pushing new tags
+# ---------------------------------------------------------
+  extends: .executor:rust  # from local: "/.gitlab-ci/executors.gitlab-ci.yml"
+  script:
+    # Check that new tag strictly equals to package version
+    - ${CI_SCRIPTS_DIR}/validate-versions --exact --package ${CI_CARGO_PACKAGE}
+  only:
+    - tags
+  except:
+    - schedules
+
+# ---------------------------------------------------------
+#    [TEST] Ensure that docs are properly generated
+# ---------------------------------------------------------
+.test:build:docs:
+  extends: .executor:rust  # from local: "/.gitlab-ci/executors.gitlab-ci.yml"
+  script:
+    - cargo doc --no-deps
+
+# ---------------------------------------------------------
+#    [TEST] Test project for various features
+# ---------------------------------------------------------
+.test:test:
+  stage: test
+  extends: .executor:rust  # from local: "/.gitlab-ci/executors.gitlab-ci.yml"
+  # noinspection YAMLSchemaValidation
+  before_script:
+    - !reference [ .executor:rust, before_script ]  # from: local: "/.gitlab-ci/executors.gitlab-ci.yml"
+    - rustup component add clippy
+  script:
+    # Build package (to prevent Clippy errors)
+    - cargo build ${FEATURES}
+    # Run linters
+    - cargo clippy ${FEATURES}
+    # Run tests
+    - cargo test ${FEATURES} --lib --tests --bins
+  parallel:
+    matrix:
+      - FEATURES:
+          - "--no-default-features"
+          - ""
+          - "--all-features"
+
+# ---------------------------------------------------------
+#      [TEST] Dry run for publishing to Crates.io
+# ---------------------------------------------------------
+.test:publish:
+  stage: test
+  extends: .executor:rust  # from local: "/.gitlab-ci/executors.gitlab-ci.yml"
+  script:
+    - cargo publish --package ${CI_CARGO_PACKAGE} --dry-run

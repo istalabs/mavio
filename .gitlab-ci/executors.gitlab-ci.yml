@@ -1,0 +1,15 @@
+include:
+  - local: "/.gitlab-ci/utils.gitlab-ci.yml"
+
+# ---------------------------------------------------------
+#           Rust for native builds and tests
+# ---------------------------------------------------------
+.executor:rust:
+  image: rust:1
+  before_script:
+    # Create common directories
+    - !reference [ .dirs, before_script ]  # from: local: "/.gitlab-ci/utils.gitlab-ci.yml"
+    # Install system build dependencies
+    - apt-get update && apt-get install -y curl git jq bash
+    # Generate common variables
+    - !reference [ .variables:generated, before_script ]  # from: local: "/.gitlab-ci/utils.gitlab-ci.yml"

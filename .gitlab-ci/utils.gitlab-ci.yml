@@ -1,0 +1,26 @@
+# ---------------------------------------------------------
+variables:           # default variables
+  # ---------------------------------------------------------
+  # Recursively update Git submodules
+  GIT_SUBMODULE_STRATEGY: recursive
+  # Cargo package under consideration
+  CI_CARGO_PACKAGE: <UNKNOWN>
+  # CI binaries directory
+  CI_SCRIPTS_DIR: ./.gitlab-ci/bin
+
+# ---------------------------------------------------------
+#      Generate variables (requires git and cargo)
+# ---------------------------------------------------------
+.variables:generated:
+  before_script:
+    # Generate version tag
+    - export VERSION_TAG=$(echo "${CI_COMMIT_REF_NAME}" | sed 's/main/latest/g')
+    # Get package version
+    - export PACKAGE_VERSION=$(${CI_SCRIPTS_DIR}/pkg-version --package ${CI_CARGO_PACKAGE})
+
+# ---------------------------------------------------------
+#                   Create directories
+# ---------------------------------------------------------
+.dirs:
+  before_script:
+    - ls -la
