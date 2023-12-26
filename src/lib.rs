@@ -20,6 +20,9 @@
 //! [HEARTBEAT](https://mavlink.io/en/messages/common.html#HEARTBEAT) messages.
 //!
 //! ```no_run
+//! # #[cfg(not(all(feature = "minimal", feature = "std")))]
+//! # fn main() {}
+//! # #[cfg(all(feature = "minimal", feature = "std"))]
 //! # fn main() -> mavio::errors::Result<()> {
 //! use std::net::TcpStream;
 //! use mavio::{Frame, Receiver};
@@ -55,6 +58,9 @@
 //! `MAVLink 2` protocol.
 //!
 //! ```no_run
+//! # #[cfg(not(all(feature = "minimal", feature = "std")))]
+//! # fn main() {}
+//! # #[cfg(all(feature = "minimal", feature = "std"))]
 //! # fn main() -> mavio::errors::Result<()> {
 //! use std::net::TcpStream;
 //! use mavio::{Frame, Sender};

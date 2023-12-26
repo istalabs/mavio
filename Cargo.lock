@@ -239,11 +239,9 @@ dependencies = [
 name = "mavio"
 version = "0.1.0-alpha1"
 dependencies = [
- "cargo-manifest",
  "crc-any",
  "env_logger",
  "log",
- "mavinspect",
  "mavspec",
  "portpicker",
  "serde",
@@ -257,6 +255,8 @@ dependencies = [
 [[package]]
 name = "mavspec"
 version = "0.1.0-alpha4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "983cf77775f7f1c09ff1ede7d40af55b27f35c80aaab26478b456b5456028936"
 dependencies = [
  "mavspec_rust_gen",
  "mavspec_rust_spec",
@@ -265,6 +265,8 @@ dependencies = [
 [[package]]
 name = "mavspec_rust_gen"
 version = "0.1.0-alpha4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec49b042a3d7fcd7244829d64e23d71bd0f99cfce563e8a7024deb665047d3b0"
 dependencies = [
  "anyhow",
  "cargo-manifest",
@@ -280,6 +282,8 @@ dependencies = [
 [[package]]
 name = "mavspec_rust_spec"
 version = "0.1.0-alpha4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3313f77a8d8233c422df67715fca9b043a757deb651894a33f5ac02115eca40e"
 dependencies = [
  "bitflags",
  "serde",

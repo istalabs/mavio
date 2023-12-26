@@ -27,7 +27,7 @@ path = "src/lib.rs"
 ###########################################################
 [dependencies]
 crc-any = { version = "2.4.3", default-features = false }
-mavspec = { version = "0.1.0-alpha4", path = "../mavspec/mavspec", default-features = false, features = ["rust"] }
+mavspec = { version = "0.1.0-alpha4", default-features = false, features = ["rust"] }
 tbytes = { version = "0.1.0-alpha1", default-features = false }
 serde = { version = "1.0.193", default-features = false, features = ["derive"], optional = true }
 serde_arrays = { version = "0.1.0", default-features = false, optional = true }
@@ -40,10 +40,7 @@ env_logger = "0.10.1"
 portpicker = "0.1.1"
 
 [build-dependencies]
-cargo-manifest = "0.12.1"
-mavinspect = "0.1.0"
-mavspec = { version = "0.1.0-alpha4", path = "../mavspec/mavspec", default-features = false, features = ["rust", "rust_gen"] }
-serde = "1.0.193"
+mavspec = { version = "0.1.0-alpha4", default-features = false, features = ["rust", "rust_gen"] }
 toml = "0.8.8"
 
 ###########################################################

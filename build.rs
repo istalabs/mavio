@@ -29,6 +29,9 @@ fn main() {
                 included_dialects.push(dialect.to_string())
             }
         }
+        if var("CARGO_CFG_DOCTEST").is_ok() {
+            included_dialects.push("minimal".to_string())
+        }
 
         included_dialects
     };
