@@ -254,9 +254,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec"
-version = "0.1.0-alpha4"
+version = "0.1.0-alpha6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "983cf77775f7f1c09ff1ede7d40af55b27f35c80aaab26478b456b5456028936"
+checksum = "af4f88dc8b6fa8ec1d6d7c096989c81805c8f98eb32e282d5121f98bd6f83bf7"
 dependencies = [
  "mavspec_rust_gen",
  "mavspec_rust_spec",
