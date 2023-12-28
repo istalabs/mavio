@@ -10,6 +10,8 @@
 use tbytes::errors::TBytesError;
 
 #[cfg(feature = "std")]
+use std::sync::Arc;
+#[cfg(feature = "std")]
 use thiserror::Error;
 
 // Re-export `mavspec::rust::spec` errors.
@@ -23,13 +25,13 @@ pub type Result<T> = core::result::Result<T, CoreError>;
 ///
 /// [`CoreError`] is returned by most of the functions and methods across `mavio`. Other errors are either
 /// converted to [`CoreError`] or wrapped by its variants.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 #[cfg_attr(feature = "std", derive(Error))]
 pub enum CoreError {
     /// [`std::io::Error`] wrapper.
     #[cfg(feature = "std")]
-    #[cfg_attr(feature = "std", error("I/O error"))]
-    Io(#[from] std::io::Error),
+    #[cfg_attr(feature = "std", error("I/O error: {0:?}"))]
+    Io(Arc<std::io::Error>),
 
     /// `no_std` I/O error.
     ///
@@ -38,11 +40,11 @@ pub enum CoreError {
     Io(crate::io::no_std::IoError),
 
     /// Frame encoding/decoding error.
-    #[cfg_attr(feature = "std", error("frame decoding/encoding error"))]
+    #[cfg_attr(feature = "std", error("frame decoding/encoding error: {0:?}"))]
     Frame(FrameError),
 
     /// Message encoding/decoding and specification discovery error.
-    #[cfg_attr(feature = "std", error("frame decoding/encoding error"))]
+    #[cfg_attr(feature = "std", error("frame decoding/encoding error: {0:?}"))]
     Message(MessageError),
 }
 
@@ -122,15 +124,25 @@ pub enum FrameError {
     InconsistentPayloadSize,
 }
 
+#[cfg(feature = "std")]
+impl From<std::io::Error> for CoreError {
+    /// Convert [`std::io::Error`] into [`CoreError::Io`].
+    ///
+    /// Note that [`CoreError::Io`] wraps IO error with [`Arc`] to make [`CoreError`] compatible with [`Clone`] trait.
+    fn from(value: std::io::Error) -> Self {
+        CoreError::Io(Arc::new(value))
+    }
+}
+
 impl From<TBytesError> for FrameError {
-    /// Wraps [`TBytesError`] with [`FrameError`].
+    /// Converts [`TBytesError`] into [`FrameError::Buffer`].
     fn from(value: TBytesError) -> Self {
         FrameError::Buffer(value)
     }
 }
 
 impl From<TBytesError> for CoreError {
-    /// Converts [`TBytesError`] into [`CoreError`].
+    /// Converts [`TBytesError`] into [`CoreError::Frame`].
     ///
     /// [`TBytesError`] be wrapped internally with [`FrameError`] and then passed to
     /// [`CoreError::Frame`].
@@ -140,14 +152,14 @@ impl From<TBytesError> for CoreError {
 }
 
 impl From<FrameError> for CoreError {
-    /// Converts [`FrameError`] into [`CoreError`].
+    /// Converts [`FrameError`] into [`CoreError::Frame`].
     fn from(value: FrameError) -> Self {
         Self::Frame(value)
     }
 }
 
 impl From<MessageError> for CoreError {
-    /// Converts [`MessageError`] into [`CoreError`].
+    /// Converts [`MessageError`] into [`CoreError::Message`].
     fn from(value: MessageError) -> Self {
         Self::Message(value)
     }

@@ -146,7 +146,7 @@
 //!
 //! # Dialects
 //!
-//! Standard MAVLink dialect can be enabled by the corresponding cargo features.
+//! Standard MAVLink dialect can be enabled by the corresponding feature flags.
 //!
 //! * [`minimal`]((https://mavlink.io/en/messages/minimal.html)) — minimal dialect required to expose your presence to
 //!   other MAVLink devices.
@@ -187,6 +187,9 @@ pub mod errors;
 pub use errors::Result;
 
 pub mod io;
+#[cfg(feature = "tokio")]
+#[doc(inline)]
+pub use crate::io::{AsyncReceiver, AsyncSender};
 #[doc(inline)]
 pub use crate::io::{Receiver, Sender};
 

@@ -58,7 +58,19 @@ pub use no_std::{Read, Write};
 pub use std::io::{Read, Write};
 
 pub(crate) mod receiver;
+#[cfg(feature = "unstable")]
+pub use receiver::FrameIterator;
 pub use receiver::Receiver;
 
 pub(crate) mod sender;
 pub use sender::Sender;
+
+#[cfg(feature = "tokio")]
+mod async_receiver;
+#[cfg(feature = "tokio")]
+pub use async_receiver::AsyncReceiver;
+
+#[cfg(feature = "tokio")]
+mod async_sender;
+#[cfg(feature = "tokio")]
+pub use async_sender::AsyncSender;

@@ -2,6 +2,9 @@
 
 use crc_any::CRCu16;
 
+#[cfg(feature = "tokio")]
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+
 use crate::consts::{CHECKSUM_SIZE, SIGNATURE_LENGTH};
 use crate::errors::{FrameError, Result};
 use crate::io::{Read, Write};
@@ -458,39 +461,79 @@ impl Frame {
         Ok(frame)
     }
 
+    #[cfg(feature = "tokio")]
+    pub(crate) async fn recv_async<R: AsyncRead + Unpin>(reader: &mut R) -> Result<Self> {
+        // Retrieve header
+        let header = Header::recv_async(reader).await?;
+
+        let body_length = header.body_length();
+
+        // Prepare buffer that will contain the entire message body (with signature if expected)
+        #[cfg(feature = "std")]
+        let mut body_buf = vec![0u8; body_length];
+        #[cfg(not(feature = "std"))]
+        let mut body_buf = [0u8; crate::consts::PAYLOAD_MAX_SIZE + SIGNATURE_LENGTH];
+        let body_bytes = &mut body_buf[0..body_length];
+
+        // Read and decode
+        reader.read_exact(body_bytes).await?;
+        let frame = Self::try_from_raw_body(&header, body_bytes)?;
+
+        Ok(frame)
+    }
+
     pub(crate) fn send<W: Write>(&self, writer: &mut W) -> Result<usize> {
         // Validate payload length consistency
         if self.payload_length() != self.payload.length() {
             return Err(FrameError::InconsistentPayloadSize.into());
         }
-        let payload_length = self.payload_length() as usize;
 
-        // Send header
         let header_bytes_sent = self.header.send(writer)?;
 
-        // Prepare a buffer
         #[cfg(not(feature = "alloc"))]
         let mut buf = [0u8; crate::consts::PAYLOAD_MAX_SIZE + SIGNATURE_LENGTH];
         #[cfg(feature = "alloc")]
         let mut buf = vec![0u8; self.body_length()];
 
-        // Put payload into buffer
+        self.fill_body_buffer(&mut buf);
+        writer.write_all(buf.as_slice())?;
+
+        Ok(header_bytes_sent + self.body_length())
+    }
+
+    #[cfg(feature = "tokio")]
+    pub(crate) async fn send_async<W: AsyncWrite + Unpin>(&self, writer: &mut W) -> Result<usize> {
+        // Validate payload length consistency
+        if self.payload_length() != self.payload.length() {
+            return Err(FrameError::InconsistentPayloadSize.into());
+        }
+
+        let header_bytes_sent = self.header.send_async(writer).await?;
+
+        #[cfg(not(feature = "alloc"))]
+        let mut buf = [0u8; crate::consts::PAYLOAD_MAX_SIZE + SIGNATURE_LENGTH];
+        #[cfg(feature = "alloc")]
+        let mut buf = vec![0u8; self.body_length()];
+
+        self.fill_body_buffer(&mut buf);
+        writer.write_all(buf.as_slice()).await?;
+
+        Ok(header_bytes_sent + self.body_length())
+    }
+
+    fn fill_body_buffer(&self, buf: &mut [u8]) {
+        let payload_length = self.payload_length() as usize;
+
         buf[0..payload_length].copy_from_slice(self.payload.bytes());
 
-        // Put checksum into buffer
         let checksum_bytes: [u8; 2] = self.checksum.to_le_bytes();
         buf[payload_length..payload_length + 2].copy_from_slice(&checksum_bytes);
 
-        // Put signature if required
         if let Some(signature) = self.signature {
             let signature_bytes: SignatureBytes = signature.to_byte_array();
             let sig_start_idx = payload_length + 2;
             buf[sig_start_idx..self.body_length()].copy_from_slice(&signature_bytes);
         }
-
-        writer.write_all(buf.as_slice())?;
-
-        Ok(header_bytes_sent + self.body_length())
     }
 
     fn validate_can_be_signed(&self) -> Result<()> {

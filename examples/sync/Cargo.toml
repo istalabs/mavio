@@ -1,0 +1,33 @@
+[package]
+name = "mavio_examples_sync"
+description = "Mavio synchronous examples."
+version = "0.0.0"
+edition = "2021"
+authors = ["Mykhailo Ziatin <ziatin@mathwithoutend.org>"]
+repository = "https://gitlab.com/mavka/libs/mavio"
+resolver = "2"
+publish = false
+
+###########################################################
+# Dependencies
+###########################################################
+[dependencies]
+env_logger = "0.10.1"
+log = "0.4.20"
+mavio = { path = "../../mavio", features = ["std", "minimal"] }
+portpicker = "0.1.1"
+
+###########################################################
+# Examples
+###########################################################
+[[example]]
+name = "tcp_client"
+test = true
+
+[[example]]
+name = "tcp_server"
+test = true
+
+[[example]]
+name = "tcp_ping_pong"
+test = true

@@ -1,0 +1,119 @@
+[package]
+name = "mavio"
+description = "Minimalistic MAVLink client that supports `no-std` and `no-alloc` targets."
+version = "0.1.0-alpha1"
+edition = "2021"
+authors = ["Mykhailo Ziatin <ziatin@mathwithoutend.org>"]
+repository = "https://gitlab.com/mavka/libs/mavio"
+readme = "../README.md"
+license = "MIT OR Apache-2.0"
+homepage = "https://gitlab.com/mavka/libs/mavspec"
+keywords = ["MAVLink", "UAV", "drones"]
+categories = [
+    "aerospace::protocols",
+    "aerospace::drones",
+    "aerospace::unmanned-aerial-vehicles",
+    "no-std",
+    "no-std::no-alloc",
+]
+resolver = "2"
+
+[lib]
+name = "mavio"
+path = "src/lib.rs"
+
+###########################################################
+# Dependencies
+###########################################################
+[dependencies]
+crc-any = { version = "2.4.3", default-features = false }
+mavspec = { version = "0.1.0-alpha6", default-features = false, features = ["rust"] }
+serde = { version = "1.0.193", default-features = false, features = ["derive"], optional = true }
+serde_arrays = { version = "0.1.0", default-features = false, optional = true }
+sha2 = { version = "0.10.8", default-features = false, optional = true }
+tbytes = { version = "0.1.0-alpha1", default-features = false }
+thiserror = { version = "1.0.50", optional = true }
+tokio = { version = "1.35.1", features = ["io-util"], optional = true }
+
+[dev-dependencies]
+log = "0.4.20"
+env_logger = "0.10.1"
+portpicker = "0.1.1"
+
+[build-dependencies]
+mavspec = { version = "0.1.0-alpha6", default-features = false, features = ["rust", "rust_gen"] }
+
+###########################################################
+# Features
+###########################################################
+[features]
+## Default features
+default = ["std", "sha2"]
+## Enables unstable API features
+unstable = []
+## Enables memory allocation support.
+alloc = [
+    "mavspec/alloc",
+    "serde/alloc",
+    "tbytes/alloc",
+]
+sha2 = ["dep:sha2"]
+## Enables Rust std library.
+std = [
+    "alloc",
+    "mavspec/std",
+    "serde/std",
+    "sha2/std",
+    "tbytes/std",
+    "thiserror",
+]
+## Enables serde support.
+serde = [
+    "dep:serde",
+    "mavspec/serde",
+    "dep:serde_arrays",
+]
+## Enables tokio (async) support
+tokio = ["dep:tokio", "std"]
+
+###########################################################
+# Dialects
+###########################################################
+## Include `ardupilotmega` dialect
+ardupilotmega = ["common"]
+## Include `ASLUAV` dialect
+asluav = ["common"]
+## Include `AVSSUAS` dialect
+avssuas = ["common"]
+## Include `common` dialect
+common = ["minimal"]
+## Include `csAirLink` dialect
+csairlink = []
+## Include `cubepilot` dialect
+cubepilot = ["common"]
+## Include `development` dialect
+development = ["common"]
+## Include `icarous` dialect
+icarous = []
+## Include `matrixpilot` dialect
+matrixpilot = ["common"]
+## Include `minimal` dialect
+minimal = []
+## Include `paparazzi` dialect
+paparazzi = ["common"]
+## Include `standard` dialect
+standard = ["minimal"]
+## Include `ualberta` dialect
+ualberta = ["common"]
+## Include `uAvionix` dialect
+uavionix = ["common"]
+
+## Include `all` meta-dialect
+all = ["common", "ardupilotmega"]
+
+###########################################################
+# Metadata
+###########################################################
+[package.metadata.docs.rs]
+# Features to include into `docs.rs` documentation
+features = ["default", "serde", "all", "unstable"]

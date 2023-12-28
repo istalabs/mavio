@@ -6,6 +6,9 @@
 use mavspec::rust::spec::consts::{MESSAGE_ID_V1_MAX, MESSAGE_ID_V2_MAX};
 use tbytes::{TBytesReader, TBytesReaderFor};
 
+#[cfg(feature = "tokio")]
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+
 use crate::consts::{
     CHECKSUM_SIZE, HEADER_MAX_SIZE, HEADER_MIN_SIZE, HEADER_V1_SIZE, HEADER_V2_SIZE,
     MAVLINK_IFLAG_SIGNED, SIGNATURE_LENGTH,
@@ -258,41 +261,44 @@ impl Header {
             let mut buffer = [0u8; HEADER_MIN_SIZE];
             reader.read_exact(&mut buffer)?;
 
-            let mut mavlink_version: Option<MavLinkVersion> = None;
-            let mut header_start_idx = buffer.len();
-            for (i, &byte) in buffer.iter().enumerate() {
-                if MavSTX::is_magic_byte(byte) {
-                    header_start_idx = i;
-                    mavlink_version = MavLinkVersion::try_from(MavSTX::from(byte)).ok();
+            if let Some(mut header_start) = HeaderStart::from_slice(&buffer) {
+                if !header_start.is_complete() {
+                    reader.read_exact(header_start.remaining_bytes_mut())?;
                 }
+                return Self::try_from_slice(header_start.header_bytes());
+            } else {
+                continue;
             }
+        }
+    }
 
-            match mavlink_version {
-                None => continue,
-                Some(version) => {
-                    let header_size = match version {
-                        MavLinkVersion::V1 => HEADER_V1_SIZE,
-                        MavLinkVersion::V2 => HEADER_V2_SIZE,
-                    };
+    #[cfg(feature = "tokio")]
+    pub(super) async fn recv_async<R: AsyncRead + Unpin>(reader: &mut R) -> Result<Self> {
+        loop {
+            let mut buffer = [0u8; HEADER_MIN_SIZE];
+            reader.read_exact(&mut buffer).await?;
 
-                    let num_read_bytes = buffer.len() - header_start_idx;
-                    let header_start_bytes = &buffer[header_start_idx..buffer.len()];
-
-                    let mut header_bytes = [0u8; HEADER_MAX_SIZE];
-                    header_bytes[0..num_read_bytes].copy_from_slice(header_start_bytes);
-
-                    if num_read_bytes < header_size {
-                        reader.read_exact(&mut header_bytes[num_read_bytes..header_size])?;
-                    }
-
-                    return Self::try_from_slice(&header_bytes);
+            if let Some(mut header_start) = HeaderStart::from_slice(&buffer) {
+                if !header_start.is_complete() {
+                    reader
+                        .read_exact(header_start.remaining_bytes_mut())
+                        .await?;
                 }
+                return Self::try_from_slice(header_start.header_bytes());
+            } else {
+                continue;
             }
         }
     }
 
     pub(super) fn send<W: Write>(&self, writer: &mut W) -> Result<usize> {
         writer.write_all(self.decode().as_slice())?;
+        Ok(self.size())
+    }
+
+    #[cfg(feature = "tokio")]
+    pub(super) async fn send_async<W: AsyncWrite + Unpin>(&self, writer: &mut W) -> Result<usize> {
+        writer.write_all(self.decode().as_slice()).await?;
         Ok(self.size())
     }
 
@@ -555,6 +561,59 @@ impl HeaderBuilder {
     }
 }
 
+struct HeaderStart {
+    buffer: [u8; HEADER_MAX_SIZE],
+    n_bytes_read: usize,
+    n_bytes_left: usize,
+}
+
+impl HeaderStart {
+    fn from_slice(buffer: &[u8]) -> Option<Self> {
+        let mut mavlink_version: Option<MavLinkVersion> = None;
+        let mut header_start_idx = buffer.len();
+        for (i, &byte) in buffer.iter().enumerate() {
+            if MavSTX::is_magic_byte(byte) {
+                header_start_idx = i;
+                mavlink_version = MavLinkVersion::try_from(MavSTX::from(byte)).ok();
+            }
+        }
+
+        match mavlink_version {
+            None => None,
+            Some(version) => {
+                let header_size = match version {
+                    MavLinkVersion::V1 => HEADER_V1_SIZE,
+                    MavLinkVersion::V2 => HEADER_V2_SIZE,
+                };
+
+                let n_bytes_read = buffer.len() - header_start_idx;
+                let header_start_bytes = &buffer[header_start_idx..buffer.len()];
+
+                let mut header_bytes = [0u8; HEADER_MAX_SIZE];
+                header_bytes[0..n_bytes_read].copy_from_slice(header_start_bytes);
+
+                Some(Self {
+                    buffer: header_bytes,
+                    n_bytes_read,
+                    n_bytes_left: header_size - n_bytes_read,
+                })
+            }
+        }
+    }
+
+    fn header_bytes(&self) -> &[u8] {
+        &self.buffer[0..self.n_bytes_read + self.n_bytes_left]
+    }
+
+    fn is_complete(&self) -> bool {
+        self.n_bytes_left == 0
+    }
+
+    fn remaining_bytes_mut(&mut self) -> &mut [u8] {
+        &mut self.buffer[self.n_bytes_read..self.n_bytes_read + self.n_bytes_left]
+    }
+}
+
 #[cfg(test)]
 #[cfg(feature = "std")]
 mod tests {
@@ -562,6 +621,68 @@ mod tests {
     use crate::consts::{STX_V1, STX_V2};
     use crate::errors::CoreError;
     use std::io::Cursor;
+
+    #[test]
+    fn header_start_lookup() {
+        // No magic byte
+        let buffer = [0u8; HEADER_MIN_SIZE];
+        let start = HeaderStart::from_slice(&buffer);
+        assert!(start.is_none());
+
+        // V1 header starts on the 1st byte
+        let mut buffer = [0u8; HEADER_MIN_SIZE];
+        buffer[0] = STX_V1;
+        let mut start = HeaderStart::from_slice(&buffer).unwrap();
+        assert!(start.is_complete());
+        assert_eq!(start.remaining_bytes_mut().len(), 0);
+        assert_eq!(start.header_bytes()[0], STX_V1);
+
+        // V2 header starts on the 1st byte
+        let mut buffer = [0u8; HEADER_MIN_SIZE];
+        buffer[0] = STX_V2;
+        let mut start = HeaderStart::from_slice(&buffer).unwrap();
+        assert!(!start.is_complete());
+        assert_eq!(
+            start.remaining_bytes_mut().len(),
+            HEADER_V2_SIZE - HEADER_V1_SIZE
+        );
+        assert_eq!(start.header_bytes()[0], STX_V2);
+
+        // V1 header starts on the 4th byte
+        let mut buffer = [0u8; HEADER_MIN_SIZE];
+        buffer[3] = STX_V1;
+        let mut start = HeaderStart::from_slice(&buffer).unwrap();
+        assert!(!start.is_complete());
+        assert_eq!(start.remaining_bytes_mut().len(), 3);
+        assert_eq!(start.header_bytes()[0], STX_V1);
+
+        // V2 header starts on the 4th byte
+        let mut buffer = [0u8; HEADER_MIN_SIZE];
+        buffer[3] = STX_V2;
+        let mut start = HeaderStart::from_slice(&buffer).unwrap();
+        assert!(!start.is_complete());
+        assert_eq!(
+            start.remaining_bytes_mut().len(),
+            3 + HEADER_V2_SIZE - HEADER_MIN_SIZE
+        );
+        assert_eq!(start.header_bytes()[0], STX_V2);
+
+        // V1 header starts on the last byte
+        let mut buffer = [0u8; HEADER_MIN_SIZE];
+        buffer[HEADER_MIN_SIZE - 1] = STX_V1;
+        let mut start = HeaderStart::from_slice(&buffer).unwrap();
+        assert!(!start.is_complete());
+        assert_eq!(start.remaining_bytes_mut().len(), HEADER_V1_SIZE - 1);
+        assert_eq!(start.header_bytes()[0], STX_V1);
+
+        // V2 header starts on the last byte
+        let mut buffer = [0u8; HEADER_MIN_SIZE];
+        buffer[HEADER_MIN_SIZE - 1] = STX_V2;
+        let mut start = HeaderStart::from_slice(&buffer).unwrap();
+        assert!(!start.is_complete());
+        assert_eq!(start.remaining_bytes_mut().len(), HEADER_V2_SIZE - 1);
+        assert_eq!(start.header_bytes()[0], STX_V2);
+    }
 
     #[test]
     fn set_get_is_signed() {

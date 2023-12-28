@@ -9,6 +9,8 @@
 # Sources
 !/src/
 !/src/**
+!/mavio/
+!/mavio/**
 !/examples/
 !/examples/**
 

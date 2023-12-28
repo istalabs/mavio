@@ -1,18 +1,19 @@
 //! # MAVLink frame writer
 
+use tokio::io::AsyncRead;
+
 use crate::errors::Result;
-use crate::io::Read;
 use crate::protocol::frame::Frame;
 
-/// Receives MAVLink frames.
+/// Receives MAVLink frames asynchronously.
 ///
-/// Receives MAVLink frames from an instance of [`Read`].
+/// Receives MAVLink frames from an instance of [`AsyncRead`].
 #[derive(Clone, Debug)]
-pub struct Receiver<R: Read> {
+pub struct AsyncReceiver<R: AsyncRead + Unpin> {
     reader: R,
 }
 
-impl<R: Read> Receiver<R> {
+impl<R: AsyncRead + Unpin> AsyncReceiver<R> {
     /// Default constructor.
     pub fn new(reader: R) -> Self {
         Self { reader }
@@ -21,7 +22,7 @@ impl<R: Read> Receiver<R> {
     /// Receives MAVLink [`Frame`].
     ///
     /// Blocks until a valid MAVLink frame received.
-    pub fn recv(&mut self) -> Result<Frame> {
-        Frame::recv(&mut self.reader)
+    pub async fn recv(&mut self) -> Result<Frame> {
+        Frame::recv_async(&mut self.reader).await
     }
 }
