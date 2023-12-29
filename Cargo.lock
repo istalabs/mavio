@@ -288,7 +288,7 @@ dependencies = [
 
 [[package]]
 name = "mavio"
-version = "0.1.0-alpha1"
+version = "0.1.0-alpha2"
 dependencies = [
  "crc-any",
  "env_logger",
@@ -326,9 +326,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e105a1eea3f286b52a577eb4954fe6c5f32da23219e10d12ebc13507ab9e9e6"
+checksum = "0b2c81785f52e7794bdcc931b2886e86063e52955ae6dee563203073e46479b7"
 dependencies = [
  "mavspec_rust_gen",
  "mavspec_rust_spec",
@@ -336,9 +336,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_gen"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c20516caaec4108d41a3211d92a67bfd7894af40f97081a736db36ab4f1b8522"
+checksum = "861ec6624ea3b9c9db5c04f4b5b193458d4841e17388c41e879cf6e19bc396db"
 dependencies = [
  "anyhow",
  "cargo-manifest",
@@ -352,9 +352,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_spec"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8553c82d1f2a4347b4f48b81b0da7da638cee5c927a454ffae33a9b87b1c5f4"
+checksum = "d8ec0f5a277553cb79a580dd4a5f067a7cc52e67abf4278511b349cc666bc1d0"
 dependencies = [
  "bitflags",
  "serde",
