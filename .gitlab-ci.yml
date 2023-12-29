@@ -30,6 +30,8 @@ test:build:docs:
 test:test:
   extends: .test:test  # from: local: "/.gitlab-ci/test.gitlab-ci.yml"
   stage: test
+  tags:
+    - saas-linux-medium-amd64
 
 test:publish:
   extends: .test:publish  # from: local: "/.gitlab-ci/test.gitlab-ci.yml"

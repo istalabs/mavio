@@ -40,7 +40,7 @@ fn main() {
     let destination = Path::new(&var("OUT_DIR").unwrap()).join("mavlink");
     let serde_feature_enabled = var("CARGO_FEATURE_SERDE").is_ok();
 
-    BuildHelper::builder(&destination)
+    BuildHelper::builder(destination)
         .set_sources(&sources)
         .set_include_dialects(&included_dialects)
         .set_serde(serde_feature_enabled)
