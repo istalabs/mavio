@@ -78,7 +78,7 @@ fn send_heartbeats<W: Write>(
     for _ in 0..n_iter {
         // Define message
         let message = dialect::messages::Heartbeat {
-            r#type: MavType::FixedWing,
+            type_: MavType::FixedWing,
             autopilot: MavAutopilot::Generic,
             base_mode: MavModeFlag::TEST_ENABLED & MavModeFlag::CUSTOM_MODE_ENABLED,
             custom_mode: 0,

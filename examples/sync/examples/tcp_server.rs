@@ -67,7 +67,7 @@ fn send_heartbeats<W: Write>(writer: W, whoami: String) -> mavio::errors::Result
     loop {
         // Define message
         let message = dialect::messages::Heartbeat {
-            r#type: MavType::FixedWing,
+            type_: MavType::FixedWing,
             autopilot: MavAutopilot::Generic,
             base_mode: MavModeFlag::TEST_ENABLED & MavModeFlag::CUSTOM_MODE_ENABLED,
             custom_mode: 0,

@@ -27,7 +27,7 @@ path = "src/lib.rs"
 ###########################################################
 [dependencies]
 crc-any = { version = "2.4.3", default-features = false }
-mavspec = { version = "0.1.0-alpha6", default-features = false, features = ["rust"] }
+mavspec = { version = "0.1.0", default-features = false, features = ["rust"] }
 serde = { version = "1.0.193", default-features = false, features = ["derive"], optional = true }
 serde_arrays = { version = "0.1.0", default-features = false, optional = true }
 sha2 = { version = "0.10.8", default-features = false, optional = true }
@@ -41,15 +41,15 @@ env_logger = "0.10.1"
 portpicker = "0.1.1"
 
 [build-dependencies]
-mavspec = { version = "0.1.0-alpha6", default-features = false, features = ["rust", "rust_gen"] }
+mavspec = { version = "0.1.0", default-features = false, features = ["rust_gen"] }
 
 ###########################################################
 # Features
 ###########################################################
 [features]
-## Default features
+## Default features.
 default = ["std", "sha2"]
-## Enables unstable API features
+## Enables unstable API features.
 unstable = []
 ## Enables memory allocation support.
 alloc = [

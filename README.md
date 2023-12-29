@@ -4,6 +4,7 @@ Mavio
 Minimalistic library for transport-agnostic [MAVLink](https://mavlink.io/en/) communication. It supports `no-std`
 (and `no-alloc`) targets.
 
+[🇺🇦](#a-note-on-the-war-in-ukraine)
 [`repository`](https://gitlab.com/mavka/libs/mavio)
 [`crates.io`](https://crates.io/crates/mavio)
 [`API docs`](https://docs.rs/mavio/latest/mavio/)
@@ -42,12 +43,13 @@ as:
 * [MAVInspect](https://gitlab.com/mavka/libs/mavinspect) that responsible for MAVLink XML definitions parsing.
 * [MAVSpec](https://gitlab.com/mavka/libs/mavinspect) that focused on code generation. Mavio uses this library to
   generate MAVLink dialects.
-* [Maviola](https://gitlab.com/mavka/libs/maviola) (WIP), an elaborated MAVLink communication library that takes care about **stateful** features:
-  sequencing, message time-stamping, automatic heartbeats, simplifies message signing, and so on. Mavio serves as a
-  basis for Maviola.
+* [Maviola](https://gitlab.com/mavka/libs/maviola) (WIP), is a MAVLink communication library based on `Mavio` that
+  provides a high-level interface for MAVLink messaging and takes care about **stateful** features of the protocol:
+  sequencing, message time-stamping, automatic heartbeats, simplifies message signing, and so on.
 
-This project respects [`semantic versioning`](https://semver.org). All unstable features are put under the `unstable`
-feature flag.
+This project respects [`semantic versioning`](https://semver.org). As allowed by specification, breaking changes may be
+introduced in minor releases until version `1.0.0` is reached. However, we will keep unstable features under the
+`unstable` feature flag whenever possible.
 
 Install
 -------
@@ -229,6 +231,39 @@ Examples for synchronous I/O in [`./examples/sync/examples`](./examples/sync/exa
   ```shell
   cargo run --package mavio_examples_sync --example tcp_ping_pong
   ```
+
+Acknowledgements
+----------------
+
+I am deeply grateful to the people helping build the Rust ecosystem. This project started as a learning exercise, and
+even though I had a hard time debugging my understanding of the Rust compiler, I've rarely done the same for the
+libraries written by other people.
+
+I've used images from [Flaticon](https://www.flaticon.com) to create a project avatar. They allow the use of their
+content freely under the condition of mentioning them on social networks. I hope that GitLab counts since we sort of
+socialize here.
+
+A Note on the War in Ukraine
+----------------------------
+
+This project was initiated and mainly written in Kyiv under the constant threat of missile strikes. As a fair witness,
+I must admit that the intensity of such strikes and the danger they pose to my life is incomparable to what my fellow
+citizens are facing in the southern and eastern parts of Ukraine. I don't want to focus on my experience of such events.
+After all, experience is overrated. I initially thought to put a link to a charity foundation I consider efficient and
+trustworthy, but something stopped me. Instead, I am offering to think about the order of things compatible with a
+decent way of life and the threat this soon-to-be ten-year war poses to such order.
+
+I've intentionally put this note here, almost at the very bottom, not to avoid accusations of sentimental manipulation.
+Rather opposite, it belongs to the place right above the license clause where I put things in order, deciding what to
+restrain and what to set free. In normal conditions, we pay little attention to the order of things that puts such
+decisions into effect. One may ground their confidence in the law but not bother themselves with thinking about what
+makes the law possible.
+
+The exercise I am offering, to put oneself into the position of a person responsible for the state of the World (because
+human beings either belong to the entire World or belong to nothing), if performed honestly, is probably less pleasant
+than an act of charity (I am doing a lot of charity and know for sure). Yet, at the same time, it gives us a common
+ground and a basis for prudent political action. At least, as far as we agree that both of us, the one who writes and
+the one who reads, are *equally* incompatible with the war, that is clearly right here.
 
 License
 -------

@@ -6,7 +6,6 @@ use mavspec::rust::gen::BuildHelper;
 fn main() {
     let included_dialects = {
         let mut included_dialects: Vec<String> = Default::default();
-
         let dialects = vec![
             "all",
             "ardupilotmega",
@@ -36,16 +35,15 @@ fn main() {
         included_dialects
     };
 
-    let sources = ["../message_definitions/standard"];
+    let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let sources = [manifest_dir.join("message_definitions")];
     let destination = Path::new(&var("OUT_DIR").unwrap()).join("mavlink");
-    let manifest_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml");
     let serde_feature_enabled = var("CARGO_FEATURE_SERDE").is_ok();
 
     BuildHelper::builder(&destination)
         .set_sources(&sources)
-        .set_manifest_path(&manifest_path)
-        .set_serde(serde_feature_enabled)
         .set_include_dialects(&included_dialects)
+        .set_serde(serde_feature_enabled)
         .generate()
         .unwrap();
 }
