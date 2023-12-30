@@ -1,13 +1,13 @@
 [package]
 name = "mavio"
 description = "Minimalistic MAVLink client that supports `no-std` and `no-alloc` targets."
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Mykhailo Ziatin <ziatin@mathwithoutend.org>"]
 repository = "https://gitlab.com/mavka/libs/mavio"
 readme = "../README.md"
 license = "MIT OR Apache-2.0"
-homepage = "https://gitlab.com/mavka/libs/mavspec"
+homepage = "https://mavka.gitlab.io/home/projects/mavio"
 keywords = ["MAVLink", "UAV", "drones"]
 categories = [
     "aerospace::protocols",
