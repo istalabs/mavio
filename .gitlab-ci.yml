@@ -8,7 +8,7 @@ stages:
   - release
 
 variables:
-  DRY_CARGO_RELEASE: "true"
+  DRY_CARGO_RELEASE: "false"
   CI_CARGO_PACKAGE: mavio
 
 # ---------------------------------------------------------
