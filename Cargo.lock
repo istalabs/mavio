@@ -288,7 +288,7 @@ dependencies = [
 
 [[package]]
 name = "mavio"
-version = "0.1.0-alpha1"
+version = "0.1.1"
 dependencies = [
  "crc-any",
  "env_logger",
