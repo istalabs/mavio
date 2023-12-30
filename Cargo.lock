@@ -288,7 +288,7 @@ dependencies = [
 
 [[package]]
 name = "mavio"
-version = "0.1.0-alpha2"
+version = "0.1.0-alpha1"
 dependencies = [
  "crc-any",
  "env_logger",
@@ -326,9 +326,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b2c81785f52e7794bdcc931b2886e86063e52955ae6dee563203073e46479b7"
+checksum = "50d29d6bb7d7a1a6d0c352b7e76933a6cd5e38626bc7fefc1f46d30979c3e116"
 dependencies = [
  "mavspec_rust_gen",
  "mavspec_rust_spec",
