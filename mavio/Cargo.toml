@@ -27,7 +27,7 @@ path = "src/lib.rs"
 ###########################################################
 [dependencies]
 crc-any = { version = "2.4.3", default-features = false }
-mavspec = { version = "0.1.2", default-features = false, features = ["rust"] }
+mavspec = { version = "0.1.3", default-features = false, features = ["rust"] }
 serde = { version = "1.0.193", default-features = false, features = ["derive"], optional = true }
 serde_arrays = { version = "0.1.0", default-features = false, optional = true }
 sha2 = { version = "0.10.8", default-features = false, optional = true }
@@ -41,7 +41,7 @@ env_logger = "0.10.1"
 portpicker = "0.1.1"
 
 [build-dependencies]
-mavspec = { version = "0.1.2", default-features = false, features = ["rust_gen"] }
+mavspec = { version = "0.1.2", default-features = false, features = ["rust_gen", "fingerprints"] }
 
 ###########################################################
 # Features
@@ -49,16 +49,16 @@ mavspec = { version = "0.1.2", default-features = false, features = ["rust_gen"]
 [features]
 ## Default features.
 default = ["std", "sha2"]
-## Enables unstable API features.
+## Enable unstable API features.
 unstable = []
-## Enables memory allocation support.
+
+## Enable memory allocation support.
 alloc = [
     "mavspec/alloc",
     "serde/alloc",
     "tbytes/alloc",
 ]
-sha2 = ["dep:sha2"]
-## Enables Rust std library.
+## Enable Rust std library.
 std = [
     "alloc",
     "mavspec/std",
@@ -67,13 +67,17 @@ std = [
     "tbytes/std",
     "thiserror",
 ]
-## Enables serde support.
+
+## Enable sha2 backend for message signing
+sha2 = ["dep:sha2"]
+
+## Enable serde support.
 serde = [
     "dep:serde",
     "mavspec/serde",
     "dep:serde_arrays",
 ]
-## Enables tokio (async) support
+## Enable tokio (async) support
 tokio = ["dep:tokio", "std"]
 
 ###########################################################
@@ -109,7 +113,22 @@ ualberta = ["common"]
 uavionix = ["common"]
 
 ## Include `all` meta-dialect
-all = ["common", "ardupilotmega"]
+all = [
+    "ardupilotmega",
+    "common",
+    "asluav",
+    "avssuas",
+    "csairlink",
+    "cubepilot",
+    "development",
+    "icarous",
+    "matrixpilot",
+    "minimal",
+    "paparazzi",
+    "standard",
+    "ualberta",
+    "uavionix",
+]
 
 ###########################################################
 # Metadata
