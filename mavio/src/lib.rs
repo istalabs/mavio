@@ -3,6 +3,12 @@
 //! Minimalistic library for transport-agnostic [MAVLink](https://mavlink.io/en/) communication. It supports `no-std`
 //! (and `no-alloc`) targets.
 //!
+//! <span style="font-size:24px">[🇺🇦](https://mavka.gitlab.io/home/a_note_on_the_war_in_ukraine/)</span>
+//! [![`repository`](https://img.shields.io/gitlab/pipeline-status/mavka/libs/mavio.svg?branch=main&label=repository)](https://gitlab.com/mavka/libs/mavio)
+//! [![`crates.io`](https://img.shields.io/crates/v/mavio.svg)](https://crates.io/crates/mavio)
+//! [![`docs.rs`](https://img.shields.io/docsrs/mavio.svg?label=docs.rs)](https://docs.rs/mavio/latest/mavio/)
+//! [![`issues`](https://img.shields.io/gitlab/issues/open/mavka/libs/mavio.svg)](https://gitlab.com/mavka/libs/mavio/-/issues/)
+//!
 //! This library is a part of [Mavka](https://mavka.gitlab.io/home/) toolchain. It uses
 //! [MAVSpec](https://gitlab.com/mavka/libs/mavspec) to generate MAVLink dialects.
 //!

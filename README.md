@@ -4,11 +4,30 @@ Mavio
 Minimalistic library for transport-agnostic [MAVLink](https://mavlink.io/en/) communication. It supports `no-std`
 (and `no-alloc`) targets.
 
-[🇺🇦](https://mavka.gitlab.io/home/a_note_on_the_war_in_ukraine/)
-[`repository`](https://gitlab.com/mavka/libs/mavio)
-[`crates.io`](https://crates.io/crates/mavio)
-[`API docs`](https://docs.rs/mavio/latest/mavio/)
-[`issues`](https://gitlab.com/mavka/libs/mavio/-/issues)
+<span style="font-size:24px">[🇺🇦](https://mavka.gitlab.io/home/a_note_on_the_war_in_ukraine/)</span>
+[![`repository`](https://img.shields.io/gitlab/pipeline-status/mavka/libs/mavio.svg?branch=main&label=repository)](https://gitlab.com/mavka/libs/mavio)
+[![`crates.io`](https://img.shields.io/crates/v/mavio.svg)](https://crates.io/crates/mavio)
+[![`docs.rs`](https://img.shields.io/docsrs/mavio.svg?label=docs.rs)](https://docs.rs/mavio/latest/mavio/)
+[![`issues`](https://img.shields.io/gitlab/issues/open/mavka/libs/mavio.svg)](https://gitlab.com/mavka/libs/mavio/-/issues/)
+
+<details>
+<summary>
+More on MAVLink
+</summary>
+
+MAVLink is a lightweight open protocol for communicating between drones, onboard components and ground control stations.
+It is used by such autopilots like [PX4](https://px4.io) or [ArduPilot](https://ardupilot.org/#). MAVLink has simple and
+compact serialization model. The basic abstraction is `message` which can be sent through a link (UDP, TCP, UNIX
+socket, UART, whatever) and deserialized into a struct with fields of primitive types or arrays of primitive types.
+Such fields can be additionally restricted by `enum` variants, annotated with metadata like units of measurements,
+default or invalid values.
+
+There are several MAVLink dialects. Official dialect definitions are
+[XML files](https://mavlink.io/en/guide/xml_schema.html) that can be found in the MAVlink
+[repository](https://github.com/mavlink/mavlink/tree/master/message_definitions/v1.0). Based on `message` abstractions,
+MAVLink defines so-called [`microservices`](https://mavlink.io/en/services/) that specify how clients should respond on
+a particular message under certain conditions or how they should initiate a particular action.
+</details>
 
 Mavio is a building block for more sophisticated tools. It is entirely focused on one thing: to include absolute minimum
 of functionality required for correct communication with everything that speaks MAVLink protocol.
@@ -36,6 +55,7 @@ At the same time, Mavio is flexible and tries to dictate as few as possible. In 
 * Compatible with `no_std` targets. For such cases the library provides simplified versions of `Read` and `Write`
   traits.
 * Support asynchronous I/O via [Tokio](https://tokio.rs).
+* Allows filtering out unnecessary MAVLink entities (i.e. messages, enums, commands) to reduce compilation time.
 
 This library is a part of [Mavka](https://mavka.gitlab.io/home/) toolchain. It is integrated with other projects such
 as:
@@ -83,7 +103,7 @@ fn main() -> mavio::errors::Result<()> {
         let frame = receiver.recv()?;
 
         if let Err(err) = frame.validate_checksum(dialect::spec()) {
-            eprintln!("Invalid checksum: {err:?}");
+            eprintln!("Invalid checksum: {:?}", err);
             continue;
         }
 
@@ -230,6 +250,27 @@ Examples for synchronous I/O in [`./examples/sync/examples`](./examples/sync/exa
   via TCP:
   ```shell
   cargo run --package mavio_examples_sync --example tcp_ping_pong
+  ```
+
+Examples for asynchronous I/O in [`./examples/async/examples`](./examples/async/examples):
+
+* [`async_tcp_ping_pong.rs`](./examples/async/examples/async_tcp_ping_pong.rs) server and clients which communicate with
+  each other via TCP:
+  ```shell
+  cargo run --package mavio_examples_async --example async_tcp_ping_pong
+  ```
+
+Examples for custom dialect generation with filtered MAVLink entities can be found in
+[`./examples/custom/examples`](examples/custom/examples):
+
+* [`custom_dialects_usage.rs`](examples/custom/examples/custom_dialects_usage.rs) a basic usage of
+  custom-generated dialect:
+  ```shell
+  cargo run --package mavio_examples_custom --example mavio_examples_custom_usage
+  ```
+* [`custom_message.rs`](examples/custom/examples/custom_message.rs) crating and using a custom message:
+  ```shell
+  cargo run --package mavio_examples_custom --example custom_message
   ```
 
 License

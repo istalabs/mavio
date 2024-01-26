@@ -12,7 +12,7 @@ fn main() {
             "asluav",
             "avssuas",
             "common",
-            "csairlink",
+            "cs_air_link",
             "cubepilot",
             "development",
             "icarous",

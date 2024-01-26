@@ -1,0 +1,51 @@
+[package]
+name = "mavio_examples_custom"
+description = "Mavio custom dialect generation and filtering examples."
+version = "0.0.0"
+edition = "2021"
+authors = ["Mykhailo Ziatin <ziatin@mathwithoutend.org>"]
+repository = "https://gitlab.com/mavka/libs/mavio"
+resolver = "2"
+publish = false
+
+[lib]
+name = "mavio_examples_custom"
+path = "src/lib.rs"
+
+###########################################################
+# Dependencies
+###########################################################
+[dependencies]
+env_logger = "0.11.0"
+log = "0.4.20"
+mavio = { path = "../../mavio", features = ["std"] }
+mavspec = { version = "0.2.2", default-features = false, features = ["rust"] }
+
+[build-dependencies]
+mavspec = { version = "0.2.2", default-features = false, features = ["rust_gen", "fingerprints"] }
+
+###########################################################
+# Examples
+###########################################################
+[[example]]
+name = "custom_dialects_usage"
+test = true
+
+[[example]]
+name = "custom_message"
+test = true
+
+###########################################################
+# Metadata
+###########################################################
+[package.metadata.mavspec]
+# MAVLink microservices to include
+microservices = ["HEARTBEAT"]
+# Inclide only the following messages (in addition to those required by `microservices`)
+messages = ["PROTOCOL_VERSION"]
+# Inclide only the following commands (in addition to those required by `microservices`)
+commands = ["MAV_CMD_DO_CHANGE_SPEED", "MAV_CMD_DO_SET_ROI*"]
+# Inclide only the following enums (in addition to those required by `microservices` and `commands`)
+enums = ["STORAGE_STATUS", "GIMBAL_*"]
+# Generate tests
+generate_tests = true
