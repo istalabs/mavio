@@ -1,7 +1,7 @@
 [package]
 name = "mavio"
 description = "Minimalistic MAVLink client that supports `no-std` and `no-alloc` targets."
-version = "0.2.0-rc1"
+version = "0.2.0"
 edition = "2021"
 authors = ["Mykhailo Ziatin <ziatin@mathwithoutend.org>"]
 repository = "https://gitlab.com/mavka/libs/mavio"
@@ -37,7 +37,7 @@ tokio = { version = "1.35.1", features = ["io-util"], optional = true }
 
 [dev-dependencies]
 log = "0.4.20"
-env_logger = "0.10.1"
+env_logger = "0.10.2"
 portpicker = "0.1.1"
 
 [build-dependencies]
