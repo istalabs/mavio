@@ -633,7 +633,7 @@ impl FrameBuilder {
     /// # Errors
     ///
     /// In addition to errors returned by [`Self::build`] it may return [`MessageError`](crate::errors::MessageError) if
-    /// message is misconfigured or does not supports provided `mavlink_version`.
+    /// message is misconfigured or does not support provided `mavlink_version`.
     pub fn build_for(
         &mut self,
         message: &dyn MessageImpl,
@@ -668,7 +668,7 @@ impl FrameBuilder {
     ///
     /// # Errors
     ///
-    /// Does not returns error directly but if both MAVLink version is set to [`MavLinkVersion::V1`] and compatibility
+    /// Does not return error directly but if both MAVLink version is set to [`MavLinkVersion::V1`] and compatibility
     /// flags are present, then [`FrameError::InconsistentV1Header`] error will be returned by [`Self::build`].
     pub fn set_compat_flags(&mut self, compat_flags: CompatFlags) -> &mut Self {
         self.header_conf.set_compat_flags(compat_flags);
@@ -705,16 +705,6 @@ impl FrameBuilder {
         self
     }
 
-    /// Sets message `ID`.
-    ///
-    /// # Links
-    ///
-    /// * [`Frame::message_id`].
-    pub fn set_message_id(&mut self, message_id: MessageId) -> &mut Self {
-        self.header_conf.set_message_id(message_id);
-        self
-    }
-
     /// Sets `CRC_EXTRA`.
     ///
     /// # Links
@@ -727,11 +717,20 @@ impl FrameBuilder {
 
     /// Sets payload data.
     ///
+    /// Also sets [`Frame::message_id`] from [`Payload::id`].
+    ///
     /// # Links
     ///
     /// * [`Frame::payload`]
+    /// * [`Frame::message_id`]
     pub fn set_payload(&mut self, payload: Payload) -> &mut Self {
+        self.set_message_id(payload.id());
         self.payload = Some(payload);
+        self
+    }
+
+    fn set_message_id(&mut self, message_id: MessageId) -> &mut Self {
+        self.header_conf.set_message_id(message_id);
         self
     }
 }

@@ -217,9 +217,9 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.11.0"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9eeb342678d785662fd2514be38c459bb925f02b68dd2a3e0f21d7ef82d979dd"
+checksum = "05e7cf40684ae96ade6232ed84582f40ce0a66efcd43a5117aef610534f8e0b8"
 dependencies = [
  "anstream",
  "anstyle",
@@ -358,12 +358,13 @@ dependencies = [
 
 [[package]]
 name = "mavio"
-version = "0.2.0"
+version = "0.2.0-rc2"
 dependencies = [
  "crc-any",
- "env_logger 0.10.2",
+ "env_logger 0.11.1",
  "log",
  "mavspec",
+ "paste",
  "portpicker",
  "serde",
  "serde_arrays",
@@ -388,7 +389,7 @@ dependencies = [
 name = "mavio_examples_custom"
 version = "0.0.0"
 dependencies = [
- "env_logger 0.11.0",
+ "env_logger 0.11.1",
  "log",
  "mavio",
  "mavspec",
@@ -406,9 +407,7 @@ dependencies = [
 
 [[package]]
 name = "mavspec"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36de070ed4075717634384b00b5542fb4837e1067a33373e6097ff0f7efba844"
+version = "0.2.3"
 dependencies = [
  "mavspec_rust_derive",
  "mavspec_rust_gen",
@@ -417,9 +416,7 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_derive"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a1477fbf9543b1534a8045c2c1b9f743ac0d2025849e357ecb4c3ca8fd02e41"
+version = "0.2.3"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -430,9 +427,7 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_gen"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9d3b01072b5365e3d5980142f617e624398e97ff129ddf65954a365fd13b97a"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "base64",
@@ -450,9 +445,7 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_spec"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32d1fe422edd50342ff7bfb3cbe70a28e712987ff5f47d296cfb7313dd49fd65"
+version = "0.2.3"
 dependencies = [
  "bitflags",
  "serde",
@@ -493,6 +486,12 @@ checksum = "a6a622008b6e321afc04970976f62ee297fdbaa6f95318ca343e3eebb9648441"
 dependencies = [
  "memchr",
 ]
+
+[[package]]
+name = "paste"
+version = "1.0.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
 name = "pin-project-lite"

@@ -14,7 +14,8 @@ use crate::consts::{
 pub use mavspec::rust::spec::types::{CrcExtra, MessageId};
 #[doc(no_inline)]
 pub use mavspec::rust::spec::{
-    DialectSpec, IntoPayload, MavLinkVersion, MessageImpl, MessageSpec, Payload,
+    DialectImpl, DialectMessage, DialectSpec, IntoPayload, MavLinkVersion, MessageImpl,
+    MessageSpec, Payload,
 };
 
 // Signature
@@ -24,10 +25,10 @@ pub use signature::{MavTimestamp, SecretKey, Sign, Signature, SignatureConf};
 pub(crate) mod stx;
 pub use stx::MavSTX;
 // Header
-pub(crate) mod header;
-pub use header::{Header, HeaderBuilder, HeaderBytes};
+pub(super) mod header;
+pub use header::{Header, HeaderBytes};
 // MAVLink frame
-pub(crate) mod frame;
+pub(super) mod frame;
 pub use frame::{Frame, FrameBuilder};
 
 /// MAVLink packet checksum.
