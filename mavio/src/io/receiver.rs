@@ -1,8 +1,9 @@
 //! # MAVLink frame writer
 
-use crate::errors::Result;
 use crate::io::Read;
 use crate::protocol::frame::Frame;
+
+use crate::prelude::*;
 
 /// Receives MAVLink frames.
 ///
@@ -39,9 +40,10 @@ impl<R: Read> Receiver<R> {
 #[cfg(feature = "unstable")]
 mod iterator {
     use super::Receiver;
-    use crate::errors::{Error, Result};
     use crate::io::Read;
     use crate::protocol::frame::Frame;
+
+    use crate::prelude::*;
 
     /// Iterates over [`Frame`]s.
     ///

@@ -66,6 +66,6 @@ pub type SignatureTimestampBytes = [u8; SIGNATURE_TIMESTAMP_LENGTH];
 ///
 /// # Links
 ///
-///  * [`Signature`].
+///  * [`Signature`](crate::protocol::Signature).
 ///  * `signature` field in [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
 pub type SignatureValue = [u8; SIGNATURE_VALUE_LENGTH];

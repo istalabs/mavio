@@ -8,7 +8,7 @@
 //! [`std::result::Result`] and a special type of error [`Error::Io`] which will be returned by
 //! [`no_std`](self) I/O interfaces. The kinds of returned errors are defined in [`IoError`].
 
-use crate::errors::{Error, Result};
+use crate::prelude::*;
 
 /// `no_std` I/O errors.
 ///

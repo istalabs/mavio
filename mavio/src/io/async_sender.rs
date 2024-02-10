@@ -2,8 +2,9 @@
 
 use tokio::io::AsyncWrite;
 
-use crate::errors::Result;
 use crate::protocol::frame::Frame;
+
+use crate::prelude::*;
 
 /// Sends MAVLink frames asynchronously.
 ///

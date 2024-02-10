@@ -83,12 +83,12 @@ impl TryFrom<MavSTX> for MavLinkVersion {
     ///
     /// # Errors
     ///
-    /// Returns [`FrameError::InvalidMavLinkVersion`] if [`MavSTX::Unknown`] provided.
+    /// Returns [`FrameError::InvalidStx`] if [`MavSTX::Unknown`] provided.
     fn try_from(value: MavSTX) -> Result<Self> {
         Ok(match value {
             MavSTX::V1 => Self::V1,
             MavSTX::V2 => Self::V2,
-            MavSTX::Unknown(_) => return Err(FrameError::InvalidMavLinkVersion.into()),
+            MavSTX::Unknown(_) => return Err(FrameError::InvalidStx(value).into()),
         })
     }
 }

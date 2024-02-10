@@ -13,9 +13,9 @@ use crate::consts::{
     SIGNATURE_LENGTH, SIGNATURE_LINK_ID_LENGTH, SIGNATURE_SECRET_KEY_LENGTH,
     SIGNATURE_TIMESTAMP_LENGTH, SIGNATURE_TIMESTAMP_OFFSET, SIGNATURE_VALUE_LENGTH,
 };
-use crate::errors::Result;
-use crate::errors::{Error, FrameError};
 use crate::protocol::{SignatureBytes, SignatureLinkId, SignatureTimestampBytes, SignatureValue};
+
+use crate::prelude::*;
 
 /// `MAVLink 2` packet signature.
 ///

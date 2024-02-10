@@ -1,8 +1,9 @@
 //! # MAVLink frame writer
 
-use crate::errors::Result;
 use crate::io::Write;
 use crate::protocol::frame::Frame;
+
+use crate::prelude::*;
 
 /// Sends MAVLink frames.
 ///

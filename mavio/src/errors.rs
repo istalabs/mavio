@@ -14,6 +14,7 @@ use tbytes::errors::TBytesError;
 use std::sync::Arc;
 
 // Re-export `mavspec::rust::spec` errors.
+use crate::protocol::{MavLinkVersion, MavSTX};
 #[doc(no_inline)]
 pub use mavspec::rust::spec::MessageError;
 
@@ -60,9 +61,20 @@ pub enum FrameError {
     /// `MAVLink 2` header is too small.
     #[cfg_attr(feature = "std", error("MAVLink 2 header is too small"))]
     HeaderV2IsTooSmall,
+    /// Incorrect [`MavSTX`] magic byte.
+    #[cfg_attr(feature = "std", error("invalid STX magic byte: {0:?}"))]
+    InvalidStx(MavSTX),
     /// Incorrect MAVLink version.
-    #[cfg_attr(feature = "std", error("invalid MAVLink version"))]
-    InvalidMavLinkVersion,
+    #[cfg_attr(
+        feature = "std",
+        error("invalid MAVLink version, expected: {expected:?}, actual: {actual:?}")
+    )]
+    InvalidVersion {
+        /// Expected protocol version.
+        expected: MavLinkVersion,
+        /// Actual protocol version.
+        actual: MavLinkVersion,
+    },
     /// `MAVLink 1` version is out of bounds.
     #[cfg_attr(feature = "std", error("`MAVLink 1` version is out of bounds"))]
     MessageIdV1OutOfBounds,
