@@ -5,20 +5,20 @@
 //! package. They define only a handful of methods required by [`mavio`](crate).
 //!
 //! In addition to [`Read`] and [`Write`], [`mavio`](crate) defines a `no_std` version of
-//! [`std::result::Result`] and a special type of error [`CoreError::Io`] which will be returned by
+//! [`std::result::Result`] and a special type of error [`Error::Io`] which will be returned by
 //! [`no_std`](self) I/O interfaces. The kinds of returned errors are defined in [`IoError`].
 
-use crate::errors::{CoreError, Result};
+use crate::errors::{Error, Result};
 
 /// `no_std` I/O errors.
 ///
 /// Errors returned by `no_std` [`mavio`](crate) I/O.
 ///
-/// These errors will be wrapped with [`CoreError::Io`] upon
+/// These errors will be wrapped with [`Error::Io`] upon
 /// returning to client.
 ///
 /// See:
-///  * [`CoreError::Io`].
+///  * [`Error::Io`].
 ///  * [`std::result::Result`].
 #[derive(Clone, Debug)]
 pub enum IoError {
@@ -38,11 +38,11 @@ pub enum IoError {
     Other(&'static str),
 }
 
-impl From<IoError> for CoreError {
-    /// Wraps [`IoError`] with [`CoreError::Io`].
+impl From<IoError> for Error {
+    /// Wraps [`IoError`] with [`Error::Io`].
     ///
-    /// > **Note!** In case of `std` targets, [`IoError`] will be wrapped with [`CoreError::NoStdIo`]
-    /// > instead of [`CoreError::Io`].
+    /// > **Note!** In case of `std` targets, [`IoError`] will be wrapped with [`Error::NoStdIo`]
+    /// > instead of [`Error::Io`].
     fn from(value: IoError) -> Self {
         Self::Io(value)
     }
@@ -60,7 +60,7 @@ pub trait Read {
     ///
     /// # Errors
     ///
-    /// Returns [`CoreError::Io`] / [`CoreError::NoStdIo`] in case of an error.
+    /// Returns [`Error::Io`] / [`Error::NoStdIo`] in case of an error.
     fn read(&mut self, buf: &mut [u8]) -> Result<usize>;
 
     /// Read the exact number of bytes required to fill buf.
@@ -70,7 +70,7 @@ pub trait Read {
     ///
     /// # Errors
     ///
-    /// Returns [`CoreError::Io`] / [`CoreError::NoStdIo`] in case of an error.
+    /// Returns [`Error::Io`] / [`Error::NoStdIo`] in case of an error.
     fn read_exact(&mut self, buf: &mut [u8]) -> Result<()>;
 }
 
@@ -88,7 +88,7 @@ pub trait Write {
     ///
     /// # Errors
     ///
-    /// Returns [`CoreError::Io`] / [`CoreError::NoStdIo`] in case of an error.
+    /// Returns [`Error::Io`] / [`Error::NoStdIo`] in case of an error.
     fn write(&mut self, buf: &[u8]) -> Result<usize>;
 
     /// Attempts to write an entire buffer into this writer.
@@ -98,6 +98,6 @@ pub trait Write {
     ///
     /// # Errors
     ///
-    /// Returns [`CoreError::Io`] / [`CoreError::NoStdIo`] in case of an error.
+    /// Returns [`Error::Io`] / [`Error::NoStdIo`] in case of an error.
     fn write_all(&mut self, buf: &[u8]) -> Result<()>;
 }

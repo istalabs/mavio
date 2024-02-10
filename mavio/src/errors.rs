@@ -1,33 +1,32 @@
 //! # Errors
 //!
-//! This errors used in `mavio`.
+//! These errors used in `mavio`.
 //!
-//! The top-level error is [`CoreError`]. Library API returns versions of this error possibly wrapping other types of
-//! errors.
+//! The top-level error is [`Error`]. Library API returns versions of this error possibly wrapping
+//! other types of errors.
 //!
-//! We also re-export errors from [`mavspec::rust::spec`] crate to provide a full specification of MAVLink-related errors.
+//! We also re-export errors from [`mavspec::rust::spec`] crate to provide a full specification of
+//! MAVLink-related errors.
 
 use tbytes::errors::TBytesError;
 
 #[cfg(feature = "std")]
 use std::sync::Arc;
-#[cfg(feature = "std")]
-use thiserror::Error;
 
 // Re-export `mavspec::rust::spec` errors.
 #[doc(no_inline)]
 pub use mavspec::rust::spec::MessageError;
 
 /// Common result type returned by `mavio` functions and methods.
-pub type Result<T> = core::result::Result<T, CoreError>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 /// `mavio` top-level error.
 ///
-/// [`CoreError`] is returned by most of the functions and methods across `mavio`. Other errors are either
-/// converted to [`CoreError`] or wrapped by its variants.
+/// [`Error`] is returned by most of the functions and methods across `mavio`. Other errors are either
+/// converted to [`Error`] or wrapped by its variants.
 #[derive(Clone, Debug)]
-#[cfg_attr(feature = "std", derive(Error))]
-pub enum CoreError {
+#[cfg_attr(feature = "std", derive(thiserror::Error))]
+pub enum Error {
     /// [`std::io::Error`] wrapper.
     #[cfg(feature = "std")]
     #[cfg_attr(feature = "std", error("I/O error: {0:?}"))]
@@ -50,7 +49,7 @@ pub enum CoreError {
 
 /// Errors related to MAVLink frame encoding/decoding.
 #[derive(Clone, Debug)]
-#[cfg_attr(feature = "std", derive(Error))]
+#[cfg_attr(feature = "std", derive(thiserror::Error))]
 pub enum FrameError {
     /// MAVLink header is too small.
     #[cfg_attr(feature = "std", error("header is too small"))]
@@ -125,12 +124,12 @@ pub enum FrameError {
 }
 
 #[cfg(feature = "std")]
-impl From<std::io::Error> for CoreError {
-    /// Convert [`std::io::Error`] into [`CoreError::Io`].
+impl From<std::io::Error> for Error {
+    /// Convert [`std::io::Error`] into [`Error::Io`].
     ///
-    /// Note that [`CoreError::Io`] wraps IO error with [`Arc`] to make [`CoreError`] compatible with [`Clone`] trait.
+    /// Note that [`Error::Io`] wraps IO error with [`Arc`] to make [`Error`] compatible with [`Clone`] trait.
     fn from(value: std::io::Error) -> Self {
-        CoreError::Io(Arc::new(value))
+        Error::Io(Arc::new(value))
     }
 }
 
@@ -141,25 +140,25 @@ impl From<TBytesError> for FrameError {
     }
 }
 
-impl From<TBytesError> for CoreError {
-    /// Converts [`TBytesError`] into [`CoreError::Frame`].
+impl From<TBytesError> for Error {
+    /// Converts [`TBytesError`] into [`Error::Frame`].
     ///
     /// [`TBytesError`] be wrapped internally with [`FrameError`] and then passed to
-    /// [`CoreError::Frame`].
+    /// [`Error::Frame`].
     fn from(value: TBytesError) -> Self {
         Self::Frame(value.into())
     }
 }
 
-impl From<FrameError> for CoreError {
-    /// Converts [`FrameError`] into [`CoreError::Frame`].
+impl From<FrameError> for Error {
+    /// Converts [`FrameError`] into [`Error::Frame`].
     fn from(value: FrameError) -> Self {
         Self::Frame(value)
     }
 }
 
-impl From<MessageError> for CoreError {
-    /// Converts [`MessageError`] into [`CoreError::Message`].
+impl From<MessageError> for Error {
+    /// Converts [`MessageError`] into [`Error::Message`].
     fn from(value: MessageError) -> Self {
         Self::Message(value)
     }

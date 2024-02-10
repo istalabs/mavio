@@ -13,12 +13,13 @@ use crate::consts::{
     CHECKSUM_SIZE, HEADER_MAX_SIZE, HEADER_MIN_SIZE, HEADER_V1_SIZE, HEADER_V2_SIZE,
     MAVLINK_IFLAG_SIGNED, SIGNATURE_LENGTH,
 };
-use crate::errors::{FrameError, Result};
 use crate::io::{Read, Write};
 use crate::protocol::{
     CompatFlags, ComponentId, IncompatFlags, MavSTX, PayloadLength, Sequence, SystemId,
 };
 use crate::protocol::{MavLinkVersion, MessageId};
+
+use crate::prelude::*;
 
 /// MAVLink frame header.
 ///
@@ -621,7 +622,7 @@ impl HeaderStart {
 mod tests {
     use super::*;
     use crate::consts::{STX_V1, STX_V2};
-    use crate::errors::CoreError;
+    use crate::errors::Error;
     use std::io::Cursor;
 
     #[test]
@@ -821,7 +822,7 @@ mod tests {
         assert!(header.is_err());
         assert!(matches!(
             header,
-            Err(CoreError::Frame(FrameError::MissingHeaderField(_)))
+            Err(Error::Frame(FrameError::MissingHeaderField(_)))
         ));
     }
 }

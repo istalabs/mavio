@@ -12,7 +12,7 @@
 use core::convert::TryFrom;
 
 use crate::consts::{STX_V1, STX_V2};
-use crate::errors::{CoreError, FrameError, Result};
+use crate::errors::{Error, FrameError, Result};
 use crate::protocol::MavLinkVersion;
 
 /// Packet start marker.
@@ -77,7 +77,7 @@ impl From<MavLinkVersion> for MavSTX {
 }
 
 impl TryFrom<MavSTX> for MavLinkVersion {
-    type Error = CoreError;
+    type Error = Error;
 
     /// Tries to convert [`MavSTX`] into [`MavLinkVersion`].
     ///

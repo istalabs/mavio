@@ -6,7 +6,6 @@ use crc_any::CRCu16;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::consts::{CHECKSUM_SIZE, SIGNATURE_LENGTH};
-use crate::errors::{FrameError, Result};
 use crate::io::{Read, Write};
 use crate::protocol::header::{Header, HeaderBuilder};
 use crate::protocol::signature::{Sign, Signature, SignatureConf};
@@ -15,6 +14,8 @@ use crate::protocol::{
     MavTimestamp, MessageId, MessageImpl, Payload, PayloadLength, SecretKey, Sequence,
     SignatureBytes, SignatureLinkId, SignatureValue, SystemId,
 };
+
+use crate::prelude::*;
 
 /// MAVLink frame.
 ///
@@ -303,8 +304,8 @@ impl Frame {
     ///
     /// # Errors
     ///
-    /// * Returns [`CoreError::Message`](crate::errors::CoreError::Message) if message discovery failed.  
-    /// * Returns [`FrameError::InvalidChecksum`] (wrapped by [`CoreError`](crate::errors::CoreError)) if checksum
+    /// * Returns [`Error::Message`] if message discovery failed.  
+    /// * Returns [`FrameError::InvalidChecksum`] (wrapped by [`Error`]) if checksum
     ///   validation failed.
     ///
     /// # Links
@@ -586,8 +587,7 @@ impl FrameBuilder {
     ///
     /// # Errors
     ///
-    /// * Returns various variants of [`FrameError`] (wrapped by [`CoreError`](crate::errors::CoreError)) if validation
-    /// fails.
+    /// * Returns various variants of [`FrameError`] (wrapped by [`Error`]) if validation fails.
     pub fn build(&self, mavlink_version: MavLinkVersion) -> Result<Frame> {
         let payload = match &self.payload {
             Some(payload) => payload.clone(),

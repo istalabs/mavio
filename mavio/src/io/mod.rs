@@ -47,7 +47,7 @@
 //! }
 //! ```
 //!
-//! This error will be wrapped with `no_std` version of [`CoreError`](crate::errors::CoreError).
+//! This error will be wrapped with `no_std` version of [`Error`](crate::errors::Error).
 
 #[cfg(not(feature = "std"))]
 pub(crate) mod no_std;

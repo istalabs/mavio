@@ -39,7 +39,7 @@ impl<R: Read> Receiver<R> {
 #[cfg(feature = "unstable")]
 mod iterator {
     use super::Receiver;
-    use crate::errors::{CoreError, Result};
+    use crate::errors::{Error, Result};
     use crate::io::Read;
     use crate::protocol::frame::Frame;
 
@@ -51,7 +51,7 @@ mod iterator {
     #[derive(Debug)]
     pub struct FrameIterator<'a, R: Read> {
         reader: &'a mut Receiver<R>,
-        err: Option<CoreError>,
+        err: Option<Error>,
     }
 
     impl<'a, R: Read> FrameIterator<'a, R> {
@@ -62,7 +62,7 @@ mod iterator {
         /// Error that caused iteration halt.
         ///
         /// *&#9888; unstable feature*
-        pub fn err(&self) -> Option<&CoreError> {
+        pub fn err(&self) -> Option<&Error> {
             self.err.as_ref()
         }
     }
@@ -85,7 +85,7 @@ mod iterator {
                     Some(frame)
                 }
                 Err(err) => {
-                    if let CoreError::Io(_) = err {
+                    if let Error::Io(_) = err {
                         self.err = Some(err);
                         None
                     } else {

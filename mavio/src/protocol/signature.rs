@@ -14,7 +14,7 @@ use crate::consts::{
     SIGNATURE_TIMESTAMP_LENGTH, SIGNATURE_TIMESTAMP_OFFSET, SIGNATURE_VALUE_LENGTH,
 };
 use crate::errors::Result;
-use crate::errors::{CoreError, FrameError};
+use crate::errors::{Error, FrameError};
 use crate::protocol::{SignatureBytes, SignatureLinkId, SignatureTimestampBytes, SignatureValue};
 
 /// `MAVLink 2` packet signature.
@@ -184,7 +184,7 @@ impl SecretKey {
 }
 
 impl TryFrom<&[u8]> for Signature {
-    type Error = CoreError;
+    type Error = Error;
 
     /// Decodes slice of bytes into [`Signature`].
     ///

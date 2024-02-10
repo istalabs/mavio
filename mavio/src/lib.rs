@@ -183,23 +183,21 @@
 extern crate alloc;
 
 pub mod consts;
-
-pub mod protocol;
-#[doc(inline)]
-pub use protocol::Frame;
-
 pub mod errors;
-#[doc(inline)]
-pub use errors::Result;
-
 pub mod io;
+pub mod prelude;
+pub mod protocol;
+pub mod utils;
+
 #[cfg(feature = "tokio")]
 #[doc(inline)]
 pub use crate::io::{AsyncReceiver, AsyncSender};
 #[doc(inline)]
 pub use crate::io::{Receiver, Sender};
-
-pub mod utils;
+#[doc(inline)]
+pub use errors::Result;
+#[doc(inline)]
+pub use protocol::Frame;
 
 mod mavlink {
     include!(concat!(env!("OUT_DIR"), "/mavlink/mod.rs"));
