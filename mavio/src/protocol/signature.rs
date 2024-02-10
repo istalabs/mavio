@@ -6,6 +6,7 @@
 //!
 //! * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
 
+use core::cmp::min;
 use core::fmt::{Debug, Formatter};
 
 use crate::consts::{
@@ -93,12 +94,94 @@ pub struct SignatureConf {
 ///
 /// A 32-byte secret key for `MAVLink 2` message signing.
 ///
+/// Can be constructed from various inputs. If input is too small, then remaining bytes will be set
+/// to zeros. If input is larger than [`SIGNATURE_SECRET_KEY_LENGTH`], then all trailing bytes will
+/// be dropped.
+///
+/// # Usage
+///
+/// Construct a secret key from byte array.
+///
+/// ```rust
+/// use mavio::protocol::SecretKey;
+/// use mavio::consts::SIGNATURE_SECRET_KEY_LENGTH;
+///
+/// let key = SecretKey::from([0x1e; SIGNATURE_SECRET_KEY_LENGTH]);
+/// ```
+///
+/// Construct a secret key from a smaller byte slice, setting remaining bytes with zeros. For
+/// slices larger than [`SIGNATURE_SECRET_KEY_LENGTH`], all trailing bytes will be ignored.
+///
+/// ```rust
+/// use mavio::protocol::SecretKey;
+///
+/// let key = SecretKey::from([0x1eu8; 10].as_slice());
+/// ```
+///
+/// Construct a secret key from `&str` ([`String`] and `&String` are also supported).
+///
+/// ```rust
+/// use mavio::protocol::SecretKey;
+///
+/// let key = SecretKey::from("password");
+/// ```
+///
 /// # Links
 ///
 ///  * [`Signature`] is a container for storing `MAVLink 2` signature.
 ///  * [`Sign`] is a trait which `sha256_48` algorithms should implement.
 ///  * `signature` field in [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
-pub type SecretKey = [u8; SIGNATURE_SECRET_KEY_LENGTH];
+#[derive(Clone, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SecretKey([u8; SIGNATURE_SECRET_KEY_LENGTH]);
+
+impl Debug for SecretKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("SecretKey")
+            .field("0", &"[0xff; u8]")
+            .finish()
+    }
+}
+
+impl From<[u8; SIGNATURE_SECRET_KEY_LENGTH]> for SecretKey {
+    fn from(value: [u8; SIGNATURE_SECRET_KEY_LENGTH]) -> Self {
+        Self(value)
+    }
+}
+
+impl From<&[u8]> for SecretKey {
+    fn from(value: &[u8]) -> Self {
+        let len = min(value.len(), SIGNATURE_SECRET_KEY_LENGTH);
+        let mut key = [0u8; SIGNATURE_SECRET_KEY_LENGTH];
+        key[0..len].copy_from_slice(&value[0..len]);
+        Self(key)
+    }
+}
+
+impl From<&str> for SecretKey {
+    fn from(value: &str) -> Self {
+        value.as_bytes().into()
+    }
+}
+
+impl From<String> for SecretKey {
+    fn from(value: String) -> Self {
+        value.as_str().into()
+    }
+}
+
+impl From<&String> for SecretKey {
+    fn from(value: &String) -> Self {
+        value.as_str().into()
+    }
+}
+
+impl SecretKey {
+    /// Returns secret key value as slice.
+    pub fn value(&self) -> &[u8] {
+        self.0.as_slice()
+    }
+}
 
 impl TryFrom<&[u8]> for Signature {
     type Error = CoreError;
@@ -146,7 +229,7 @@ impl Default for SignatureConf {
         Self {
             link_id: 0,
             timestamp: Default::default(),
-            secret: [0xff; SIGNATURE_SECRET_KEY_LENGTH],
+            secret: [0xff; SIGNATURE_SECRET_KEY_LENGTH].into(),
         }
     }
 }
@@ -154,8 +237,9 @@ impl Default for SignatureConf {
 impl Signature {
     /// Signature `link_id` is a 8-bit identifier of a MAVLink channel.
     ///
-    /// Peers may have different semantics or rules for different links. For example, some links may have higher
-    /// priority over another during routing. Or even different secret keys for authorization.
+    /// Peers may have different semantics or rules for different links. For example, some links may
+    /// have higher priority over another during routing. Or even different secret keys for
+    /// authorization.
     #[inline(always)]
     pub fn link_id(&self) -> SignatureLinkId {
         self.link_id
@@ -384,5 +468,52 @@ impl MavTimestamp {
         let mut bytes = [0u8; SIGNATURE_TIMESTAMP_LENGTH];
         bytes.copy_from_slice(&bytes_u64[0..SIGNATURE_TIMESTAMP_LENGTH]);
         bytes
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::consts::SIGNATURE_SECRET_KEY_LENGTH;
+    use crate::protocol::SecretKey;
+
+    #[test]
+    fn key_from_array() {
+        let key = SecretKey::from([1u8; SIGNATURE_SECRET_KEY_LENGTH]);
+        assert_eq!(key.value(), [1u8; SIGNATURE_SECRET_KEY_LENGTH].as_slice());
+    }
+
+    #[test]
+    fn key_from_slice() {
+        let key = SecretKey::from([1u8; SIGNATURE_SECRET_KEY_LENGTH].as_slice());
+        assert_eq!(key.value(), [1u8; SIGNATURE_SECRET_KEY_LENGTH].as_slice());
+
+        let key = SecretKey::from([1u8; SIGNATURE_SECRET_KEY_LENGTH + 10].as_slice());
+        assert_eq!(key.value(), [1u8; SIGNATURE_SECRET_KEY_LENGTH].as_slice());
+
+        let key = SecretKey::from([1u8; SIGNATURE_SECRET_KEY_LENGTH - 10].as_slice());
+        let mut expected = [0u8; SIGNATURE_SECRET_KEY_LENGTH];
+        expected[0..SIGNATURE_SECRET_KEY_LENGTH - 10]
+            .copy_from_slice(&[1u8; SIGNATURE_SECRET_KEY_LENGTH - 10]);
+        assert_eq!(key.value(), expected);
+    }
+
+    #[test]
+    fn key_from_strings() {
+        let expected = {
+            let mut expected = [0u8; SIGNATURE_SECRET_KEY_LENGTH];
+            expected[0..6].copy_from_slice("abcdef".as_bytes());
+            expected
+        };
+
+        let key_str = "abcdef".to_string();
+
+        let key = SecretKey::from(key_str.as_str());
+        assert_eq!(key.value(), expected);
+
+        let key = SecretKey::from(&key_str);
+        assert_eq!(key.value(), expected);
+
+        let key = SecretKey::from(key_str);
+        assert_eq!(key.value(), expected);
     }
 }

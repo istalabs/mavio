@@ -11,8 +11,9 @@ use crate::io::{Read, Write};
 use crate::protocol::header::{Header, HeaderBuilder};
 use crate::protocol::signature::{Sign, Signature, SignatureConf};
 use crate::protocol::{
-    Checksum, CompatFlags, CrcExtra, DialectSpec, IncompatFlags, MavLinkVersion, MavTimestamp,
-    MessageId, MessageImpl, Payload, SecretKey, SignatureBytes, SignatureLinkId, SignatureValue,
+    Checksum, CompatFlags, ComponentId, CrcExtra, DialectSpec, IncompatFlags, MavLinkVersion,
+    MavTimestamp, MessageId, MessageImpl, Payload, PayloadLength, SecretKey, Sequence,
+    SignatureBytes, SignatureLinkId, SignatureValue, SystemId,
 };
 
 /// MAVLink frame.
@@ -87,7 +88,7 @@ impl Frame {
     ///
     /// See: [MAVLink 2 incompatibility flags](https://mavlink.io/en/guide/serialization.html#incompat_flags).
     #[inline]
-    pub fn incompat_flags(&self) -> Option<u8> {
+    pub fn incompat_flags(&self) -> Option<IncompatFlags> {
         self.header.incompat_flags()
     }
 
@@ -98,7 +99,7 @@ impl Frame {
     ///
     /// See: [MAVLink 2 compatibility flags](https://mavlink.io/en/guide/serialization.html#compat_flags).
     #[inline]
-    pub fn compat_flags(&self) -> Option<u8> {
+    pub fn compat_flags(&self) -> Option<CompatFlags> {
         self.header.compat_flags()
     }
 
@@ -110,7 +111,7 @@ impl Frame {
     ///
     /// * [Header::payload_length].
     #[inline]
-    pub fn payload_length(&self) -> u8 {
+    pub fn payload_length(&self) -> PayloadLength {
         self.header.payload_length()
     }
 
@@ -122,7 +123,7 @@ impl Frame {
     ///
     /// * [Header::sequence].
     #[inline]
-    pub fn sequence(&self) -> u8 {
+    pub fn sequence(&self) -> Sequence {
         self.header.sequence()
     }
 
@@ -137,7 +138,7 @@ impl Frame {
     ///
     /// * [Header::system_id].
     #[inline]
-    pub fn system_id(&self) -> u8 {
+    pub fn system_id(&self) -> SystemId {
         self.header.system_id()
     }
 
@@ -154,7 +155,7 @@ impl Frame {
     ///
     /// * [Header::component_id].
     #[inline]
-    pub fn component_id(&self) -> u8 {
+    pub fn component_id(&self) -> ComponentId {
         self.header.component_id()
     }
 
@@ -431,7 +432,7 @@ impl Frame {
 
         signer.reset();
 
-        signer.digest(secret_key);
+        signer.digest(secret_key.value());
         signer.digest(self.header.decode().as_slice());
         signer.digest(self.payload.bytes());
         signer.digest(&self.checksum.to_le_bytes());
@@ -652,8 +653,9 @@ impl FrameBuilder {
     ///
     /// # Errors
     ///
-    /// Does not returns error directly but if both MAVLink version is set to [`MavLinkVersion::V1`] and incompatibility
-    /// flags are present, then [`FrameError::InconsistentV1Header`] error will be returned by [`Self::build`].
+    /// Does not return error directly but if both MAVLink version is set to [`MavLinkVersion::V1`]
+    /// and incompatibility flags are present, then [`FrameError::InconsistentV1Header`] error will
+    /// be returned by [`Self::build`].
     ///
     /// Ignores `MAVLINK_IFLAG_SIGNED` incompatibility `MAVLink 2` flag since frames build by [`FrameBuilder`] are always
     /// unsigned. Use [`Frame::add_signature`] to sign an existing frame build frame.
@@ -680,7 +682,7 @@ impl FrameBuilder {
     /// # Links
     ///
     /// * [`Frame::sequence`].
-    pub fn set_sequence(&mut self, sequence: u8) -> &mut Self {
+    pub fn set_sequence(&mut self, sequence: Sequence) -> &mut Self {
         self.header_conf.set_sequence(sequence);
         self
     }
@@ -690,7 +692,7 @@ impl FrameBuilder {
     /// # Links
     ///
     /// * [`Frame::system_id`].
-    pub fn set_system_id(&mut self, system_id: u8) -> &mut Self {
+    pub fn set_system_id(&mut self, system_id: SystemId) -> &mut Self {
         self.header_conf.set_system_id(system_id);
         self
     }
@@ -700,7 +702,7 @@ impl FrameBuilder {
     /// # Links
     ///
     /// * [`Frame::component_id`].
-    pub fn set_component_id(&mut self, component_id: u8) -> &mut Self {
+    pub fn set_component_id(&mut self, component_id: ComponentId) -> &mut Self {
         self.header_conf.set_component_id(component_id);
         self
     }
@@ -804,7 +806,7 @@ mod tests {
             SignatureConf {
                 link_id: 0,
                 timestamp: Default::default(),
-                secret: [0u8; SIGNATURE_SECRET_KEY_LENGTH],
+                secret: [0u8; SIGNATURE_SECRET_KEY_LENGTH].into(),
             },
         );
 

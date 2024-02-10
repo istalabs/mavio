@@ -15,7 +15,9 @@ use crate::consts::{
 };
 use crate::errors::{FrameError, Result};
 use crate::io::{Read, Write};
-use crate::protocol::{CompatFlags, IncompatFlags, MavSTX};
+use crate::protocol::{
+    CompatFlags, ComponentId, IncompatFlags, MavSTX, PayloadLength, Sequence, SystemId,
+};
 use crate::protocol::{MavLinkVersion, MessageId};
 
 /// MAVLink frame header.
@@ -29,12 +31,12 @@ use crate::protocol::{MavLinkVersion, MessageId};
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Header {
     mavlink_version: MavLinkVersion,
-    payload_length: u8,
+    payload_length: PayloadLength,
     incompat_flags: IncompatFlags,
     compat_flags: CompatFlags,
-    sequence: u8,
-    system_id: u8,
-    component_id: u8,
+    sequence: Sequence,
+    system_id: SystemId,
+    component_id: ComponentId,
     message_id: MessageId,
 }
 
@@ -53,12 +55,12 @@ pub struct HeaderBytes {
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct HeaderBuilder {
-    payload_length: Option<u8>,
-    incompat_flags: Option<u8>,
-    compat_flags: Option<u8>,
-    sequence: Option<u8>,
-    system_id: Option<u8>,
-    component_id: Option<u8>,
+    payload_length: Option<PayloadLength>,
+    incompat_flags: Option<IncompatFlags>,
+    compat_flags: Option<CompatFlags>,
+    sequence: Option<Sequence>,
+    system_id: Option<SystemId>,
+    component_id: Option<ComponentId>,
     message_id: Option<MessageId>,
 }
 
@@ -114,7 +116,7 @@ impl Header {
     ///
     /// Indicates length of the following `payload` section. This may be affected by payload truncation.
     #[inline]
-    pub fn payload_length(&self) -> u8 {
+    pub fn payload_length(&self) -> PayloadLength {
         self.payload_length
     }
 
@@ -125,7 +127,7 @@ impl Header {
     ///
     /// See: [MAVLink 2 incompatibility flags](https://mavlink.io/en/guide/serialization.html#incompat_flags).
     #[inline]
-    pub fn incompat_flags(&self) -> Option<u8> {
+    pub fn incompat_flags(&self) -> Option<IncompatFlags> {
         match self.mavlink_version() {
             MavLinkVersion::V1 => None,
             MavLinkVersion::V2 => Some(self.incompat_flags),
@@ -139,7 +141,7 @@ impl Header {
     ///
     /// See: [MAVLink 2 compatibility flags](https://mavlink.io/en/guide/serialization.html#compat_flags).
     #[inline]
-    pub fn compat_flags(&self) -> Option<u8> {
+    pub fn compat_flags(&self) -> Option<CompatFlags> {
         match self.mavlink_version() {
             MavLinkVersion::V1 => None,
             MavLinkVersion::V2 => Some(self.compat_flags),
@@ -150,7 +152,7 @@ impl Header {
     ///
     /// Used to detect packet loss. Components increment value for each message sent.
     #[inline]
-    pub fn sequence(&self) -> u8 {
+    pub fn sequence(&self) -> Sequence {
         self.sequence
     }
 
@@ -161,7 +163,7 @@ impl Header {
     /// > Note that the broadcast address 0 may not be used in this field as it is an invalid source
     /// > address.
     #[inline]
-    pub fn system_id(&self) -> u8 {
+    pub fn system_id(&self) -> SystemId {
         self.system_id
     }
 
@@ -174,7 +176,7 @@ impl Header {
     /// > Note that the broadcast address `MAV_COMP_ID_ALL` may not be used in this field as it is
     /// > an invalid source address.
     #[inline]
-    pub fn component_id(&self) -> u8 {
+    pub fn component_id(&self) -> ComponentId {
         self.component_id
     }
 
@@ -446,7 +448,7 @@ impl HeaderBuilder {
     /// Sets payload length.
     ///
     /// See: [`Header::payload_length`].
-    pub fn set_payload_length(&mut self, payload_length: u8) -> &mut Self {
+    pub fn set_payload_length(&mut self, payload_length: PayloadLength) -> &mut Self {
         self.payload_length = Some(payload_length);
         self
     }
@@ -454,7 +456,7 @@ impl HeaderBuilder {
     /// Sets packet sequence number.
     ///
     /// See: [`Header::sequence`].
-    pub fn set_sequence(&mut self, sequence: u8) -> &mut Self {
+    pub fn set_sequence(&mut self, sequence: Sequence) -> &mut Self {
         self.sequence = Some(sequence);
         self
     }
@@ -462,7 +464,7 @@ impl HeaderBuilder {
     /// Sets system `ID`.
     ///
     /// See: [`Header::system_id`].
-    pub fn set_system_id(&mut self, system_id: u8) -> &mut Self {
+    pub fn set_system_id(&mut self, system_id: SystemId) -> &mut Self {
         self.system_id = Some(system_id);
         self
     }
@@ -470,7 +472,7 @@ impl HeaderBuilder {
     /// Sets component `ID`.
     ///
     /// See: [`Header::component_id`].
-    pub fn set_component_id(&mut self, component_id: u8) -> &mut Self {
+    pub fn set_component_id(&mut self, component_id: ComponentId) -> &mut Self {
         self.component_id = Some(component_id);
         self
     }
@@ -478,7 +480,7 @@ impl HeaderBuilder {
     /// Sets message `ID`.
     ///
     /// See: [`Header::message_id`].
-    pub fn set_message_id(&mut self, message_id: u32) -> &mut Self {
+    pub fn set_message_id(&mut self, message_id: MessageId) -> &mut Self {
         self.message_id = Some(message_id);
         self
     }
