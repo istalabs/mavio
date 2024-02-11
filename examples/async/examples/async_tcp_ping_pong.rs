@@ -6,7 +6,7 @@ use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 
 use mavio::dialects::minimal as dialect;
-use mavio::protocol::MavLinkVersion;
+use mavio::protocol::V2;
 use mavio::{AsyncReceiver, AsyncSender, Frame};
 
 use dialect::enums::{MavAutopilot, MavModeFlag, MavState, MavType};
@@ -27,7 +27,8 @@ async fn listen<R: AsyncRead + Unpin>(
     whoami: String,
     n_iter: usize,
 ) -> mavio::errors::Result<()> {
-    let mut receiver = AsyncReceiver::new(reader);
+    // Use a versioned `AsyncReceiver` that will accept only messages of a specified MAVLink version
+    let mut receiver: AsyncReceiver<_, V2> = AsyncReceiver::versioned(reader);
 
     for _ in 0..n_iter {
         // Decode the entire frame
@@ -72,13 +73,14 @@ async fn send_heartbeats<W: AsyncWrite + Unpin>(
     whoami: String,
     n_iter: usize,
 ) -> mavio::errors::Result<()> {
-    let mut sender = AsyncSender::new(writer);
-
     // MAVLink connection settings
-    let mavlink_version = MavLinkVersion::V2;
+    let mavlink_version = V2;
     let system_id = 15;
     let component_id = 42;
     let mut sequence: u8 = 0;
+
+    // Use a versioned `AsyncSender` that will accept only messages of a specified MAVLink version
+    let mut sender: AsyncSender<_, V2> = AsyncSender::versioned(writer);
 
     for _ in 0..n_iter {
         // Define message
@@ -93,10 +95,12 @@ async fn send_heartbeats<W: AsyncWrite + Unpin>(
 
         // Build frame from message
         let frame = Frame::builder()
-            .set_sequence(sequence)
-            .set_system_id(system_id)
-            .set_component_id(component_id)
-            .build_for(&message, mavlink_version)?;
+            .sequence(sequence)
+            .system_id(system_id)
+            .component_id(component_id)
+            .mavlink_version(mavlink_version)
+            .message(&message)?
+            .versioned();
 
         if let Err(err) = sender.send(&frame).await {
             log::warn!("[{whoami}] SEND ERROR #{}: {err:?}", frame.sequence());

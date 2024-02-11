@@ -1,4 +1,4 @@
-use mavio::protocol::MavLinkVersion;
+use mavio::protocol::V2;
 use mavio::Frame;
 use mavspec::rust::derive::Message;
 
@@ -39,10 +39,13 @@ fn play_with_custom_message() {
 
     // Create frame
     let frame = Frame::builder()
-        .set_sequence(0)
-        .set_system_id(10)
-        .set_component_id(10)
-        .build_for(&message, MavLinkVersion::V2);
+        .sequence(0)
+        .system_id(10)
+        .component_id(10)
+        .mavlink_version(V2)
+        .message(&message)
+        .unwrap()
+        .versioned();
     log::info!("Frame: {frame:#?}");
 }
 

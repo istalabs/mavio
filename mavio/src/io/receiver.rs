@@ -1,7 +1,9 @@
 //! # MAVLink frame writer
 
+use core::marker::PhantomData;
+
 use crate::io::Read;
-use crate::protocol::frame::Frame;
+use crate::protocol::{Frame, MaybeVersioned, Versioned, Versionless};
 
 use crate::prelude::*;
 
@@ -9,94 +11,59 @@ use crate::prelude::*;
 ///
 /// Receives MAVLink frames from an instance of [`Read`].
 #[derive(Clone, Debug)]
-pub struct Receiver<R: Read> {
+pub struct Receiver<R: Read, V: MaybeVersioned> {
     reader: R,
+    _marker_version: PhantomData<V>,
 }
 
-impl<R: Read> Receiver<R> {
+impl<R: Read> Receiver<R, Versionless> {
     /// Default constructor.
+    ///
+    /// Creates a protocol-agnostic receiver which will look up for both `MAVLink 1` and `MAVLink 2`
+    /// frames.
+    ///
+    /// If you want a receiver restricted to a specific MAVLink protocol version, use
+    /// [`Receiver::versioned`].
     pub fn new(reader: R) -> Self {
-        Self { reader }
+        Self {
+            reader,
+            _marker_version: PhantomData,
+        }
+    }
+
+    /// Create a [`Receiver`] that accepts only messages of a specified MAVLink dialect.
+    ///
+    /// Since versioned receiver will look up for MAVLink frames starting with a specific
+    /// [`MavSTX`](crate::protocol::MavSTX) magic byte, it may behave incorrectly, if the incoming
+    /// stream contains frames of a different protocol version. If this is the case, it is preferred
+    /// to construct versionless receiver by [`Receiver::new`] and then attempt to convert incoming
+    /// frames into a specific protocol version with [`Frame::try_versioned`].
+    pub fn versioned<Version: Versioned>(reader: R) -> Receiver<R, Version> {
+        Receiver {
+            reader,
+            _marker_version: PhantomData,
+        }
     }
 
     /// Receives MAVLink [`Frame`].
     ///
     /// Blocks until a valid MAVLink frame received.
-    pub fn recv(&mut self) -> Result<Frame> {
-        Frame::recv(&mut self.reader)
-    }
-
-    /// Returns [`FrameIterator`] which iterates over [`Frame`]s.
     ///
-    /// *&#9888; unstable feature*
-    ///
-    /// Note that [`FrameIterator`] accepts a mutable reference to [`Receiver`]. This
-    #[cfg(feature = "unstable")]
-    pub fn iter_mut(&mut self) -> FrameIterator<R> {
-        FrameIterator::new(self)
+    /// Returns a [`Frame<Versionless>`] which then can be cast into a protocol-specific form by
+    /// [`Frame::try_versioned`].
+    pub fn recv(&mut self) -> Result<Frame<Versionless>> {
+        Frame::<Versionless>::recv(&mut self.reader)
     }
 }
 
-#[cfg(feature = "unstable")]
-mod iterator {
-    use super::Receiver;
-    use crate::io::Read;
-    use crate::protocol::frame::Frame;
-
-    use crate::prelude::*;
-
-    /// Iterates over [`Frame`]s.
+impl<R: Read, V: Versioned> Receiver<R, V> {
+    /// Receives MAVLink [`Frame`].
     ///
-    /// *&#9888; unstable feature*
+    /// Blocks until a valid MAVLink frame received.
     ///
-    /// Use [`Receiver::iter_mut`] to construct an instance of [`FrameIterator`].
-    #[derive(Debug)]
-    pub struct FrameIterator<'a, R: Read> {
-        reader: &'a mut Receiver<R>,
-        err: Option<Error>,
-    }
-
-    impl<'a, R: Read> FrameIterator<'a, R> {
-        pub(super) fn new(reader: &'a mut Receiver<R>) -> Self {
-            Self { reader, err: None }
-        }
-
-        /// Error that caused iteration halt.
-        ///
-        /// *&#9888; unstable feature*
-        pub fn err(&self) -> Option<&Error> {
-            self.err.as_ref()
-        }
-    }
-
-    impl<'a, R: Read> Iterator for FrameIterator<'a, R> {
-        type Item = Result<Frame>;
-
-        /// Advances iterator to the next MAVLink [`Frame`].
-        ///
-        /// *&#9888; unstable feature*
-        ///
-        /// Returns [`None`] when receives an error incompatible with further iteration. In such case you can check the
-        /// cause of iteration halt through [`FrameIterator::err`].
-        fn next(&mut self) -> Option<Self::Item> {
-            let frame = self.reader.recv();
-
-            match frame {
-                Ok(_) => {
-                    self.err = None;
-                    Some(frame)
-                }
-                Err(err) => {
-                    if let Error::Io(_) = err {
-                        self.err = Some(err);
-                        None
-                    } else {
-                        Some(Err(err))
-                    }
-                }
-            }
-        }
+    /// Accepts only frames of a specific MAVLink protocol version. Otherwise, returns
+    /// [`FrameError::InvalidVersion`].
+    pub fn recv(&mut self) -> Result<Frame<V>> {
+        Frame::<V>::recv(&mut self.reader)
     }
 }
-#[cfg(feature = "unstable")]
-pub use iterator::FrameIterator;

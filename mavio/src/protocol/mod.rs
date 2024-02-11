@@ -14,15 +14,19 @@ pub use mavspec::rust::spec::{
 };
 
 pub(super) mod frame;
+pub(super) mod frame_builder;
 pub(super) mod header;
-pub(super) mod markers;
+pub(super) mod header_builder;
+pub(super) mod marker;
 pub(super) mod signature;
 pub(crate) mod stx;
 pub(super) mod types;
 
-pub use frame::{Frame, FrameBuilder};
-pub use header::{Header, HeaderBuilder, HeaderBytes};
-pub use markers::{IsVersioned, NotVersioned, Versioned, V1, V2};
+pub use frame::Frame;
+pub use frame_builder::FrameBuilder;
+pub use header::{Header, HeaderBytes};
+pub use header_builder::HeaderBuilder;
+pub use marker::{MaybeVersioned, Versioned, Versionless, V1, V2};
 pub use signature::{MavTimestamp, SecretKey, Sign, Signature, SignatureConf};
 pub use stx::MavSTX;
 pub use types::{

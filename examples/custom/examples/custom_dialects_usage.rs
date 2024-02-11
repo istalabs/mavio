@@ -1,4 +1,4 @@
-use mavio::protocol::MavLinkVersion;
+use mavio::protocol::V2;
 use mavio::utils::SliceWriter;
 use mavio::{Frame, Sender};
 
@@ -32,14 +32,16 @@ fn write_to_buffer() {
 
     // Construct a MAVLink 2 frame
     let frame = Frame::builder()
-        .set_sequence(0)
-        .set_system_id(10)
-        .set_component_id(10)
-        .build_for(&message, MavLinkVersion::V2)
-        .unwrap();
+        .sequence(0)
+        .system_id(10)
+        .component_id(10)
+        .mavlink_version(V2)
+        .message(&message)
+        .unwrap()
+        .build();
     log::info!("Frame: {message:#?}");
 
-    // Write MAVLink frame to a buffer to a buffer
+    // Write MAVLink frame to a buffer
     let mut buf = [0u8; 44];
     let mut sender = Sender::new(SliceWriter::new(&mut buf));
     sender.send(&frame).unwrap();

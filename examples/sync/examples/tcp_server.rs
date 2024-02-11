@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use mavio::dialects::minimal as dialect;
 use mavio::io::{Read, Write};
-use mavio::protocol::MavLinkVersion;
+use mavio::protocol::V2;
 use mavio::{Frame, Receiver, Sender};
 
 use dialect::enums::{MavAutopilot, MavModeFlag, MavState, MavType};
@@ -56,10 +56,11 @@ fn listen<R: Read>(reader: R, whoami: String) -> mavio::errors::Result<()> {
 
 /// Sends heartbeat messages.
 fn send_heartbeats<W: Write>(writer: W, whoami: String) -> mavio::errors::Result<()> {
+    // Use a versionless sender that accepts both `MAVLink 1` and `MAVLink 2` frames.
     let mut sender = Sender::new(writer);
 
     // MAVLink connection settings
-    let mavlink_version = MavLinkVersion::V2;
+    let mavlink_version = V2;
     let system_id = 15;
     let component_id = 42;
     let mut sequence: u8 = 0;
@@ -77,10 +78,12 @@ fn send_heartbeats<W: Write>(writer: W, whoami: String) -> mavio::errors::Result
 
         // Build frame from message
         let frame = Frame::builder()
-            .set_sequence(sequence)
-            .set_system_id(system_id)
-            .set_component_id(component_id)
-            .build_for(&message, mavlink_version)?;
+            .sequence(sequence)
+            .system_id(system_id)
+            .component_id(component_id)
+            .mavlink_version(mavlink_version)
+            .message(&message)?
+            .build();
 
         sender.send(&frame)?;
         log::info!("[{whoami}] FRAME #{} SENT", sequence);

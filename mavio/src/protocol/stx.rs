@@ -39,6 +39,7 @@ impl Default for MavSTX {
     /// Creates [`MavSTX`] with default value.
     ///
     /// We assume unknown protocol with zero marker.
+    #[inline]
     fn default() -> Self {
         Self::Unknown(0)
     }
@@ -46,6 +47,7 @@ impl Default for MavSTX {
 
 impl From<MavSTX> for u8 {
     /// Converts from `u8` into [`MavSTX`].
+    #[inline]
     fn from(value: MavSTX) -> Self {
         match value {
             MavSTX::V1 => STX_V1,
@@ -57,6 +59,7 @@ impl From<MavSTX> for u8 {
 
 impl From<u8> for MavSTX {
     /// Converts from `u8` into [`MavSTX`].
+    #[inline]
     fn from(value: u8) -> Self {
         match value {
             STX_V1 => MavSTX::V1,
@@ -68,6 +71,7 @@ impl From<u8> for MavSTX {
 
 impl From<MavLinkVersion> for MavSTX {
     /// Creates [`MavSTX`] from [`MavLinkVersion`].
+    #[inline]
     fn from(value: MavLinkVersion) -> Self {
         match value {
             MavLinkVersion::V1 => MavSTX::V1,
@@ -84,6 +88,7 @@ impl TryFrom<MavSTX> for MavLinkVersion {
     /// # Errors
     ///
     /// Returns [`FrameError::InvalidStx`] if [`MavSTX::Unknown`] provided.
+    #[inline]
     fn try_from(value: MavSTX) -> Result<Self> {
         Ok(match value {
             MavSTX::V1 => Self::V1,
@@ -95,6 +100,7 @@ impl TryFrom<MavSTX> for MavLinkVersion {
 
 impl MavSTX {
     /// Checks that `value` represents MAVLink magic (start-of-text) byte.
+    #[inline]
     pub fn is_magic_byte(value: u8) -> bool {
         value == STX_V1 || value == STX_V2
     }

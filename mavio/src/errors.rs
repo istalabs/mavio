@@ -39,11 +39,11 @@ pub enum Error {
     #[cfg(not(feature = "std"))]
     Io(crate::io::no_std::IoError),
 
-    /// Frame encoding/decoding error.
+    /// Frame encoding/decoding errors.
     #[cfg_attr(feature = "std", error("frame decoding/encoding error: {0:?}"))]
     Frame(FrameError),
 
-    /// Message encoding/decoding and specification discovery error.
+    /// Message encoding/decoding and specification discovery errors.
     #[cfg_attr(feature = "std", error("frame decoding/encoding error: {0:?}"))]
     Message(MessageError),
 }
@@ -52,15 +52,6 @@ pub enum Error {
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "std", derive(thiserror::Error))]
 pub enum FrameError {
-    /// MAVLink header is too small.
-    #[cfg_attr(feature = "std", error("header is too small"))]
-    HeaderIsTooSmall,
-    /// `MAVLink 1` header is too small.
-    #[cfg_attr(feature = "std", error("MAVLink 1 header is too small"))]
-    HeaderV1IsTooSmall,
-    /// `MAVLink 2` header is too small.
-    #[cfg_attr(feature = "std", error("MAVLink 2 header is too small"))]
-    HeaderV2IsTooSmall,
     /// Incorrect [`MavSTX`] magic byte.
     #[cfg_attr(feature = "std", error("invalid STX magic byte: {0:?}"))]
     InvalidStx(MavSTX),
@@ -75,64 +66,18 @@ pub enum FrameError {
         /// Actual protocol version.
         actual: MavLinkVersion,
     },
-    /// `MAVLink 1` version is out of bounds.
-    #[cfg_attr(feature = "std", error("`MAVLink 1` version is out of bounds"))]
-    MessageIdV1OutOfBounds,
-    /// `MAVLink 2` version is out of bounds.
-    #[cfg_attr(feature = "std", error("`MAVLink 2` message ID is out of bounds"))]
-    MessageIdV2OutOfBounds,
-    /// Inconsistent `MAVLink 1` header: `MAVLink 2` fields are defined.
-    #[cfg_attr(feature = "std", error("inconsistent MAVLink 1 header"))]
-    InconsistentV1Header,
-    /// Inconsistent `MAVLink 2` header: `MAVLink 2` fields are not defined.
-    #[cfg_attr(feature = "std", error("inconsistent MAVLink 2 header"))]
-    InconsistentV2Header,
-    /// MAVLink packet body is inconsistent with header.
-    #[cfg_attr(
-        feature = "std",
-        error("packet body length is inconsistent with header")
-    )]
-    InconsistentBodySize,
     /// `MAVLink 2` signature is too small.
     #[cfg_attr(feature = "std", error("MAVLink 2 signature is too small"))]
     SignatureIsTooSmall,
-    /// Attempt to calculate `MAVLink 2` signature while necessary fields are missing.
-    #[cfg_attr(feature = "std", error("`MAVLink 2` signature fields are missing"))]
-    SignatureFieldsAreMissing,
-    /// Attempt to calculate `MAVLink 2` signature in non-`MAVLink 2` context.
-    #[cfg_attr(
-        feature = "std",
-        error("attempt to calculate `MAVLink 2` signature in non-`MAVLink 2` context")
-    )]
-    SigningIsNotSupported,
+    /// `MAVLink 2` signature is missing.
+    #[cfg_attr(feature = "std", error("`MAVLink 2` signature is missing"))]
+    SignatureIsMissing,
     /// Buffer error.
     #[cfg_attr(feature = "std", error("MAVLink 2 signature is too small"))]
     Buffer(TBytesError),
     /// Upon calculation CRC does not match received [MavLinkFrame::checksum](crate::Frame::checksum).
     #[cfg_attr(feature = "std", error("checksum validation failed"))]
     InvalidChecksum,
-
-    /// Missing [`HeaderBuilder`](crate::protocol::header::HeaderBuilder) field when building a
-    /// [`Header`](crate::protocol::header::Header).
-    #[cfg_attr(
-        feature = "std",
-        error("can't build header since field `{0}` is missing")
-    )]
-    MissingHeaderField(&'static str),
-    /// Missing [`FrameBuilder`](crate::protocol::frame::FrameBuilder) field when building a
-    /// [`Frame`](crate::protocol::frame::Frame).
-    #[cfg_attr(
-        feature = "std",
-        error("can't build frame since field `{0}` is missing")
-    )]
-    MissingFrameField(&'static str),
-
-    /// Actual payload ahd header have inconsistent size.
-    #[cfg_attr(
-        feature = "std",
-        error("actual payload ahd header have inconsistent size")
-    )]
-    InconsistentPayloadSize,
 }
 
 #[cfg(feature = "std")]

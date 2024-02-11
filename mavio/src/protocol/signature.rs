@@ -25,9 +25,12 @@ use crate::prelude::*;
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Signature {
-    pub(super) link_id: SignatureLinkId,
-    pub(super) timestamp: MavTimestamp,
-    pub(super) value: SignatureValue,
+    /// `ID` of link on which packet is sent.
+    pub link_id: SignatureLinkId,
+    /// Timestamp in 10 microsecond units since the beginning of MAVLink epoch (1st January 2015 GMT).
+    pub timestamp: MavTimestamp,
+    /// Value of a signature.
+    pub value: SignatureValue,
 }
 
 /// A [`MavTimestamp`] is a 48-bit timestamp used for `MAVLink 2` packet signing.

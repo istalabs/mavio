@@ -7,67 +7,62 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::consts::{CHECKSUM_SIZE, SIGNATURE_LENGTH};
 use crate::io::{Read, Write};
-use crate::protocol::header::{Header, HeaderBuilder};
+use crate::protocol::header::Header;
+use crate::protocol::marker::{
+    NoCompId, NoCrcExtra, NoMsgId, NoPayload, NoPayloadLen, NoSysId, NotSequenced, NotSigned,
+};
 use crate::protocol::signature::{Sign, Signature, SignatureConf};
 use crate::protocol::{
-    Checksum, CompatFlags, ComponentId, CrcExtra, DialectSpec, IncompatFlags, MavLinkVersion,
-    MavTimestamp, MessageId, MessageImpl, Payload, PayloadLength, SecretKey, Sequence,
-    SignatureBytes, SignatureLinkId, SignatureValue, SystemId,
+    Checksum, CompatFlags, ComponentId, CrcExtra, DialectSpec, FrameBuilder, IncompatFlags,
+    MavLinkVersion, MavTimestamp, MaybeVersioned, MessageId, Payload, PayloadLength, SecretKey,
+    Sequence, SignatureBytes, SignatureLinkId, SystemId, Versioned, Versionless, V2,
 };
 
 use crate::prelude::*;
 
 /// MAVLink frame.
 ///
-/// Since MAVLink frames has a complex internal structure depending on [`MavLinkVersion`], encoded [`MessageImpl`]
-/// and presence of [`Signature`], there are no constructor for this struct. [`Frame`] can be either received as they
-/// were sent by remote or built from [`FrameBuilder`].
+/// Since MAVLink frames has a complex internal structure depending on [`MavLinkVersion`], encoded
+/// [`MessageImpl`](crate::protocol::MessageImpl) and presence of [`Signature`], there are no
+/// constructor for this struct. [`Frame`] can be either received as they were sent by remote or
+/// built from [`FrameBuilder`].
 ///
-/// Use [`Frame::builder`] to create a new unsigned message and [`Frame::add_signature`]/[`Frame::replace_signature`]
-/// to manage signature of exising frame.  
+/// Use [`Frame::builder`] to create new frames and [`Frame::add_signature`] or
+/// [`Frame::replace_signature`] to manage signature of exising frame.  
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Frame {
-    header: Header,
-    payload: Payload,
-    checksum: Checksum,
-    signature: Option<Signature>,
+pub struct Frame<V: MaybeVersioned> {
+    pub(super) header: Header<V>,
+    pub(super) payload: Payload,
+    pub(super) checksum: Checksum,
+    pub(super) signature: Option<Signature>,
 }
 
-/// Configuration from which [`Frame`] can be built.
-///
-/// Implements [builder](https://rust-unofficial.github.io/patterns/patterns/creational/builder.html)
-/// pattern for [`Frame`]. Once all configuration parameters are set, the client calls [`FrameBuilder::build`] or
-/// [`FrameBuilder::build_for`] to obtain an instance of [`Frame`].
-///
-/// > **Note!** Frames built by [`FrameBuilder`] are always unsigned and `MAVLINK_IFLAG_SIGNED` flag in
-/// > [`Frame::incompat_flags`] is always dropped. Use [`Frame::add_signature`] to sign an existing frame.
-#[derive(Clone, Debug, Default)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct FrameBuilder {
-    header_conf: HeaderBuilder,
-    payload: Option<Payload>,
-    crc_extra: Option<CrcExtra>,
-}
-
-impl Frame {
-    /// Instantiates a [builder](https://rust-unofficial.github.io/patterns/patterns/creational/builder.html) for
-    /// [`Frame`].
-    ///
-    /// An instance of [`FrameBuilder`] returned by this function is initialized with default values. Once desired frame
-    /// parameters are set, use [`FrameBuilder::build`] or [`FrameBuilder::build_for`] to obtain a valid
-    /// instance of [`Frame`].
-    pub fn builder() -> FrameBuilder {
+impl Frame<Versionless> {
+    /// Instantiates an empty builder for [`Frame`].
+    pub fn builder() -> FrameBuilder<
+        Versionless,
+        NoPayloadLen,
+        NotSequenced,
+        NoSysId,
+        NoCompId,
+        NoMsgId,
+        NoPayload,
+        NoCrcExtra,
+        NotSigned,
+    > {
         FrameBuilder::new()
     }
+}
 
+impl<V: MaybeVersioned> Frame<V> {
     /// Generic MAVLink header.
     ///
     /// # Links
     ///
     /// * [`Header`] implementation.
     #[inline]
-    pub fn header(&self) -> &Header {
+    pub fn header(&self) -> &Header<V> {
         &self.header
     }
 
@@ -80,28 +75,6 @@ impl Frame {
     #[inline]
     pub fn mavlink_version(&self) -> MavLinkVersion {
         self.header.mavlink_version()
-    }
-
-    /// Incompatibility flags for `MAVLink 2` header.
-    ///
-    /// Flags that must be understood for MAVLink compatibility (implementation discards packet if
-    /// it does not understand flag).
-    ///
-    /// See: [MAVLink 2 incompatibility flags](https://mavlink.io/en/guide/serialization.html#incompat_flags).
-    #[inline]
-    pub fn incompat_flags(&self) -> Option<IncompatFlags> {
-        self.header.incompat_flags()
-    }
-
-    /// Compatibility flags for `MAVLink 2` header.
-    ///
-    /// Flags that can be ignored if not understood (implementation can still handle packet even if
-    /// it does not understand flag).
-    ///
-    /// See: [MAVLink 2 compatibility flags](https://mavlink.io/en/guide/serialization.html#compat_flags).
-    #[inline]
-    pub fn compat_flags(&self) -> Option<CompatFlags> {
-        self.header.compat_flags()
     }
 
     /// Payload length.
@@ -203,57 +176,6 @@ impl Frame {
         self.checksum
     }
 
-    /// `MAVLink 2` signature.
-    ///
-    /// Returns signature that ensures the link is tamper-proof.
-    ///
-    /// Available only for signed `MAVLink 2` frame. For `MAVLink 1` always return `None`.
-    ///
-    /// # Links
-    ///
-    /// * [`Frame::is_signed`].
-    /// * [`Frame::link_id`] and [`Frame::timestamp`] provide direct access to signature fields.
-    /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
-    #[inline]
-    pub fn signature(&self) -> Option<&Signature> {
-        self.signature.as_ref()
-    }
-
-    /// `MAVLink 2` signature `link_id`, a 8-bit identifier of a MAVLink channel.
-    ///
-    /// Peers may have different semantics or rules for different links. For example, some links may have higher
-    /// priority over another during routing. Or even different secret keys for authorization.
-    ///
-    /// Available only for signed `MAVLink 2` frame. For `MAVLink 1` always return `None`.
-    ///
-    /// # Links
-    ///
-    /// * [`Self::signature`] from which [`Signature`] can be obtained. The former contains all signature-related fields
-    ///   (if applicable).
-    /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
-    pub fn link_id(&self) -> Option<SignatureLinkId> {
-        self.signature.map(|sig| sig.link_id)
-    }
-
-    /// `MAVLink 2` signature [`MavTimestamp`], a 48-bit value that specifies the moment when message was sent.
-    ///
-    /// The unit of measurement is the number of millisecond * 10 since MAVLink epoch (1st January 2015 GMT).
-    ///
-    /// According to MAVLink protocol, the sender must guarantee that the next timestamp is greater than the previous
-    /// one.
-    ///
-    /// Available only for signed `MAVLink 2` frame. For `MAVLink 1` always return `None`.
-    ///
-    /// # Links
-    ///
-    /// * [`Self::signature`] from which [`Signature`] can be obtained. The former contains all signature-related fields
-    ///   (if applicable).
-    /// * [`MavTimestamp`] type which has utility function for converting from and into Unix timestamp.
-    /// * [Timestamp handling](https://mavlink.io/en/guide/message_signing.html#timestamp) in MAVLink documentation.
-    pub fn timestamp(&self) -> Option<MavTimestamp> {
-        self.signature.map(|sig| sig.timestamp)
-    }
-
     /// Whether a [`Frame`] is signed.
     ///
     /// Returns `true` if [`Frame`] contains [`Signature`]. Correctness of signature is not validated.
@@ -332,120 +254,38 @@ impl Frame {
         Ok(())
     }
 
-    /// Adds signature to `MAVLink 2` frame.
-    ///
-    /// Signs `MAVLink 2` frame with provided instance of `signer` that implements [`Sign`] trait and signature
-    /// configuration specified as [`SignatureConf`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`FrameError::SigningIsNotSupported`] when caller attempts to sign `MAVLink 1` frame.
-    ///
-    /// # Links
-    ///
-    /// * [`Sign`] trait.
-    /// * [`Signature`] struct which contains frame signature.
-    /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
-    pub fn add_signature(
-        &mut self,
-        signer: &mut dyn Sign,
-        conf: SignatureConf,
-    ) -> Result<&mut Self> {
-        self.validate_can_be_signed()?;
-        self.header.set_is_signed(true);
+    /// Checks that frame has MAVLink version to the provided one.
+    pub fn matches_version<Version: Versioned>(&self, version: Version) -> bool {
+        version.matches(self.mavlink_version())
+    }
 
-        self.signature = Some(Signature {
-            link_id: conf.link_id,
-            timestamp: conf.timestamp,
-            value: Default::default(),
-        });
+    /// Attempts to transform frame into its [`Versioned`] form.
+    pub fn try_versioned<Version: Versioned>(self, version: Version) -> Result<Frame<Version>> {
+        version.expect(self.mavlink_version())?;
 
-        let signature_bytes = self.calculate_signature(signer, &conf.secret);
-        if let Some(sig) = self.signature.as_mut() {
-            sig.value = signature_bytes?
+        Ok(Frame {
+            header: self.header.try_versioned(version)?,
+            payload: self.payload,
+            checksum: self.checksum,
+            signature: self.signature,
+        })
+    }
+
+    /// Forget about frame's version transforming it into a [`Versionless`] variant.
+    pub fn versionless(self) -> Frame<Versionless> {
+        Frame {
+            header: self.header.versionless(),
+            payload: self.payload,
+            checksum: self.checksum,
+            signature: self.signature,
         }
-
-        Ok(self)
     }
+}
 
-    /// Replaces existing signature for `MAVLink 2` frame.
-    ///
-    /// Re-signs `MAVLink 2` frame with provided instance of `signer` that implements [`Sign`]. An instance of [`Frame`]
-    /// should already have a (possibly invalid) signature.
-    ///
-    /// # Errors
-    ///
-    /// * Returns [`FrameError::SigningIsNotSupported`] when caller attempts to sign `MAVLink 1` frame.
-    /// * Returns [`FrameError::SignatureFieldsAreMissing`] if frame is not already signed.
-    ///
-    /// # Links
-    ///
-    /// * [`Sign`] trait.
-    /// * [`Signature`] struct which contains frame signature.
-    /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
-    pub fn replace_signature(
-        &mut self,
-        signer: &mut dyn Sign,
-        conf: SignatureConf,
-    ) -> Result<&mut Self> {
-        self.validate_can_be_signed()?;
-
-        let signature_bytes = self.calculate_signature(signer, &conf.secret);
-
-        if let Some(sig) = self.signature.as_mut() {
-            sig.value = signature_bytes?
-        }
-
-        Ok(self)
-    }
-
-    /// Removes `MAVLink 2` signature from [`Frame`].
-    ///
-    /// Applicable only for `MAVLink 2` frames.
-    pub fn remove_signature(&mut self) -> &mut Self {
-        self.signature = None;
-        self.header.set_is_signed(false);
-        self
-    }
-
-    /// Calculates `MAVLink 2` signature.
-    ///
-    /// Calculates `MAVLink 2` frame signature with provided instance of `signer` that implements [`Sign`] trait and signature
-    /// configuration specified as [`SignatureConf`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`FrameError::SigningIsNotSupported`] when caller attempts to sign `MAVLink 1` frame.
-    ///
-    /// # Links
-    ///
-    /// * [`Sign`] trait.
-    /// * [`Signature`] struct which contains frame signature.
-    /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
-    pub fn calculate_signature(
-        &self,
-        signer: &mut dyn Sign,
-        secret_key: &SecretKey,
-    ) -> Result<SignatureValue> {
-        if self.signature.is_none() {
-            return Err(FrameError::SignatureFieldsAreMissing.into());
-        }
-
-        signer.reset();
-
-        signer.digest(secret_key.value());
-        signer.digest(self.header.decode().as_slice());
-        signer.digest(self.payload.bytes());
-        signer.digest(&self.checksum.to_le_bytes());
-        signer.digest(&[self.signature.unwrap().link_id]);
-        signer.digest(&self.signature.unwrap().timestamp.to_bytes_array());
-
-        Ok(signer.signature())
-    }
-
-    pub(crate) fn recv<R: Read>(reader: &mut R) -> Result<Self> {
+impl<V: MaybeVersioned> Frame<V> {
+    pub(crate) fn recv<R: Read>(reader: &mut R) -> Result<Frame<V>> {
         // Retrieve header
-        let header = Header::recv(reader)?;
+        let header = Header::<V>::recv(reader)?;
 
         let body_length = header.body_length();
 
@@ -458,15 +298,15 @@ impl Frame {
 
         // Read and decode
         reader.read_exact(body_bytes)?;
-        let frame = Self::try_from_raw_body(&header, body_bytes)?;
+        let frame = Self::try_from_raw_body(header, body_bytes)?;
 
         Ok(frame)
     }
 
     #[cfg(feature = "tokio")]
-    pub(crate) async fn recv_async<R: AsyncRead + Unpin>(reader: &mut R) -> Result<Self> {
+    pub(crate) async fn recv_async<R: AsyncRead + Unpin>(reader: &mut R) -> Result<Frame<V>> {
         // Retrieve header
-        let header = Header::recv_async(reader).await?;
+        let header = Header::<V>::recv_async(reader).await?;
 
         let body_length = header.body_length();
 
@@ -479,17 +319,12 @@ impl Frame {
 
         // Read and decode
         reader.read_exact(body_bytes).await?;
-        let frame = Self::try_from_raw_body(&header, body_bytes)?;
+        let frame = Self::try_from_raw_body(header, body_bytes)?;
 
         Ok(frame)
     }
 
     pub(crate) fn send<W: Write>(&self, writer: &mut W) -> Result<usize> {
-        // Validate payload length consistency
-        if self.payload_length() != self.payload.length() {
-            return Err(FrameError::InconsistentPayloadSize.into());
-        }
-
         let header_bytes_sent = self.header.send(writer)?;
 
         #[cfg(not(feature = "alloc"))]
@@ -505,11 +340,6 @@ impl Frame {
 
     #[cfg(feature = "tokio")]
     pub(crate) async fn send_async<W: AsyncWrite + Unpin>(&self, writer: &mut W) -> Result<usize> {
-        // Validate payload length consistency
-        if self.payload_length() != self.payload.length() {
-            return Err(FrameError::InconsistentPayloadSize.into());
-        }
-
         let header_bytes_sent = self.header.send_async(writer).await?;
 
         #[cfg(not(feature = "alloc"))]
@@ -538,19 +368,8 @@ impl Frame {
         }
     }
 
-    fn validate_can_be_signed(&self) -> Result<()> {
-        if let MavLinkVersion::V1 = self.mavlink_version() {
-            return Err(FrameError::SigningIsNotSupported.into());
-        }
-
-        Ok(())
-    }
-
-    fn try_from_raw_body(header: &Header, body_bytes: &[u8]) -> Result<Self> {
-        if body_bytes.len() != header.body_length() {
-            return Err(FrameError::InconsistentBodySize.into());
-        }
-
+    #[inline]
+    fn try_from_raw_body(header: Header<V>, body_bytes: &[u8]) -> Result<Frame<V>> {
         let payload_bytes = &body_bytes[0..header.payload_length() as usize];
         let payload = Payload::new(header.message_id(), payload_bytes, header.mavlink_version());
 
@@ -566,8 +385,8 @@ impl Frame {
             None
         };
 
-        Ok(Self {
-            header: *header,
+        Ok(Frame {
+            header,
             payload,
             checksum,
             signature,
@@ -575,165 +394,164 @@ impl Frame {
     }
 }
 
-impl FrameBuilder {
-    /// Default constructor.
-    pub fn new() -> Self {
-        Self::default()
+impl Frame<V2> {
+    /// Incompatibility flags for `MAVLink 2` header.
+    ///
+    /// Flags that must be understood for MAVLink compatibility (implementation discards packet if
+    /// it does not understand flag).
+    ///
+    /// See: [MAVLink 2 incompatibility flags](https://mavlink.io/en/guide/serialization.html#incompat_flags).
+    #[inline]
+    pub fn incompat_flags(&self) -> IncompatFlags {
+        self.header.incompat_flags()
     }
 
-    /// Builds [`Frame`] from configuration.
+    /// Compatibility flags for `MAVLink 2` header.
     ///
-    /// Validates frame configuration and creates an instance of [`Frame`].
+    /// Flags that can be ignored if not understood (implementation can still handle packet even if
+    /// it does not understand flag).
     ///
-    /// # Errors
-    ///
-    /// * Returns various variants of [`FrameError`] (wrapped by [`Error`]) if validation fails.
-    pub fn build(&self, mavlink_version: MavLinkVersion) -> Result<Frame> {
-        let payload = match &self.payload {
-            Some(payload) => payload.clone(),
-            None => {
-                return Err(FrameError::MissingFrameField("payload").into());
-            }
-        };
-
-        let header = self
-            .header_conf
-            .clone()
-            .set_payload_length(payload.length())
-            .build(mavlink_version)?;
-
-        let mut frame = Frame {
-            header,
-            payload,
-            checksum: 0,
-            signature: None,
-        };
-
-        frame.checksum = match self.crc_extra {
-            Some(crc_extra) => frame.calculate_crc(crc_extra),
-            None => {
-                return Err(FrameError::MissingFrameField("crc_extra").into());
-            }
-        };
-
-        Ok(frame)
+    /// See: [MAVLink 2 compatibility flags](https://mavlink.io/en/guide/serialization.html#compat_flags).
+    #[inline]
+    pub fn compat_flags(&self) -> CompatFlags {
+        self.header.compat_flags()
     }
 
-    /// Builds and instance of [`Frame`] for a message specified by [`MessageImpl`] and requested MAVLink protocol
-    /// version.
+    /// `MAVLink 2` signature.
     ///
-    /// Imports and encodes MAVLink message. Uses `crc_extra` from [`MessageImpl`] to create a checksum.
+    /// Returns signature that ensures the link is tamper-proof.
     ///
-    /// Uses [`MessageImpl`] to define:
+    /// Available only for signed `MAVLink 2` frame. For `MAVLink 1` always return `None`.
     ///
-    /// * [`Frame::message_id`]
-    /// * [`Frame::payload_length`]
-    /// * [`Frame::payload`]
-    /// * [`Frame::checksum`]
+    /// # Links
     ///
-    /// # Errors
+    /// * [`Frame::is_signed`].
+    /// * [`Frame::link_id`] and [`Frame::timestamp`] provide direct access to signature fields.
+    /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
+    #[inline]
+    pub fn signature(&self) -> Option<&Signature> {
+        self.signature.as_ref()
+    }
+
+    /// `MAVLink 2` signature `link_id`, a 8-bit identifier of a MAVLink channel.
     ///
-    /// In addition to errors returned by [`Self::build`] it may return [`MessageError`](crate::errors::MessageError) if
-    /// message is misconfigured or does not support provided `mavlink_version`.
-    pub fn build_for(
+    /// Peers may have different semantics or rules for different links. For example, some links may have higher
+    /// priority over another during routing. Or even different secret keys for authorization.
+    ///
+    /// Available only for signed `MAVLink 2` frame. For `MAVLink 1` always return `None`.
+    ///
+    /// # Links
+    ///
+    /// * [`Self::signature`] from which [`Signature`] can be obtained. The former contains all signature-related fields
+    ///   (if applicable).
+    /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
+    pub fn link_id(&self) -> Option<SignatureLinkId> {
+        self.signature.map(|sig| sig.link_id)
+    }
+
+    /// `MAVLink 2` signature [`MavTimestamp`], a 48-bit value that specifies the moment when message was sent.
+    ///
+    /// The unit of measurement is the number of millisecond * 10 since MAVLink epoch (1st January 2015 GMT).
+    ///
+    /// According to MAVLink protocol, the sender must guarantee that the next timestamp is greater than the previous
+    /// one.
+    ///
+    /// Available only for signed `MAVLink 2` frame. For `MAVLink 1` always return `None`.
+    ///
+    /// # Links
+    ///
+    /// * [`Self::signature`] from which [`Signature`] can be obtained. The former contains all signature-related fields
+    ///   (if applicable).
+    /// * [`MavTimestamp`] type which has utility function for converting from and into Unix timestamp.
+    /// * [Timestamp handling](https://mavlink.io/en/guide/message_signing.html#timestamp) in MAVLink documentation.
+    pub fn timestamp(&self) -> Option<MavTimestamp> {
+        self.signature.map(|sig| sig.timestamp)
+    }
+
+    /// Adds signature to `MAVLink 2` frame.
+    ///
+    /// Signs `MAVLink 2` frame with provided instance of `signer` that implements [`Sign`] trait and signature
+    /// configuration specified as [`SignatureConf`].
+    ///
+    /// # Links
+    ///
+    /// * [`Sign`] trait.
+    /// * [`Signature`] struct which contains frame signature.
+    /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
+    pub fn add_signature(
         &mut self,
-        message: &dyn MessageImpl,
-        mavlink_version: MavLinkVersion,
-    ) -> Result<Frame> {
-        let payload = message.encode(mavlink_version)?;
+        signer: &mut dyn Sign,
+        conf: SignatureConf,
+    ) -> Result<&mut Self> {
+        let empty_signature = Signature {
+            link_id: conf.link_id,
+            timestamp: conf.timestamp,
+            value: Default::default(),
+        };
 
-        self.set_message_id(message.id());
-        self.set_payload(payload);
-        self.set_crc_extra(message.crc_extra());
+        let signature = self.calculate_signature(empty_signature, signer, &conf.secret)?;
 
-        self.build(mavlink_version)
+        self.signature = Some(signature);
+        self.header.set_is_signed(true);
+
+        Ok(self)
     }
 
-    /// Sets incompatibility flags for `MAVLink 2` header.
+    /// Replaces existing signature for `MAVLink 2` frame.
+    ///
+    /// Re-signs `MAVLink 2` frame with provided instance of `signer` that implements [`Sign`]. An instance of [`Frame`]
+    /// should already have a (possibly invalid) signature.
     ///
     /// # Errors
     ///
-    /// Does not return error directly but if both MAVLink version is set to [`MavLinkVersion::V1`]
-    /// and incompatibility flags are present, then [`FrameError::InconsistentV1Header`] error will
-    /// be returned by [`Self::build`].
-    ///
-    /// Ignores `MAVLINK_IFLAG_SIGNED` incompatibility `MAVLink 2` flag since frames build by [`FrameBuilder`] are always
-    /// unsigned. Use [`Frame::add_signature`] to sign an existing frame build frame.
-    pub fn set_incompat_flags(&mut self, incompat_flags: IncompatFlags) -> &mut Self {
-        self.header_conf.set_incompat_flags(incompat_flags);
-        // Force `MAVLINK_IFLAG_SIGNED` to be dropped.
-        self.header_conf.set_is_signed(false);
-        self
-    }
-
-    /// Sets compatibility flags for `MAVLink 2` header.
-    ///
-    /// # Errors
-    ///
-    /// Does not return error directly but if both MAVLink version is set to [`MavLinkVersion::V1`] and compatibility
-    /// flags are present, then [`FrameError::InconsistentV1Header`] error will be returned by [`Self::build`].
-    pub fn set_compat_flags(&mut self, compat_flags: CompatFlags) -> &mut Self {
-        self.header_conf.set_compat_flags(compat_flags);
-        self
-    }
-
-    /// Sets packet sequence number.
+    /// * Returns [`FrameError::SignatureIsMissing`] if frame is not already signed.
     ///
     /// # Links
     ///
-    /// * [`Frame::sequence`].
-    pub fn set_sequence(&mut self, sequence: Sequence) -> &mut Self {
-        self.header_conf.set_sequence(sequence);
+    /// * [`Sign`] trait.
+    /// * [`Signature`] struct which contains frame signature.
+    /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
+    pub fn replace_signature(
+        &mut self,
+        signer: &mut dyn Sign,
+        conf: SignatureConf,
+    ) -> Result<&mut Self> {
+        if self.signature().is_none() {
+            return Err(FrameError::SignatureIsMissing.into());
+        }
+        self.signature =
+            Some(self.calculate_signature(self.signature.unwrap(), signer, &conf.secret)?);
+
+        Ok(self)
+    }
+
+    /// Removes `MAVLink 2` signature from [`Frame`].
+    ///
+    /// Applicable only for `MAVLink 2` frames.
+    pub fn remove_signature(&mut self) -> &mut Self {
+        self.signature = None;
+        self.header.set_is_signed(false);
         self
     }
 
-    /// Sets system `ID`.
-    ///
-    /// # Links
-    ///
-    /// * [`Frame::system_id`].
-    pub fn set_system_id(&mut self, system_id: SystemId) -> &mut Self {
-        self.header_conf.set_system_id(system_id);
-        self
-    }
+    fn calculate_signature(
+        &self,
+        mut signature: Signature,
+        signer: &mut dyn Sign,
+        secret_key: &SecretKey,
+    ) -> Result<Signature> {
+        signer.reset();
 
-    /// Sets component `ID`.
-    ///
-    /// # Links
-    ///
-    /// * [`Frame::component_id`].
-    pub fn set_component_id(&mut self, component_id: ComponentId) -> &mut Self {
-        self.header_conf.set_component_id(component_id);
-        self
-    }
+        signer.digest(secret_key.value());
+        signer.digest(self.header.decode().as_slice());
+        signer.digest(self.payload.bytes());
+        signer.digest(&self.checksum.to_le_bytes());
+        signer.digest(&[signature.link_id]);
+        signer.digest(&signature.timestamp.to_bytes_array());
 
-    /// Sets `CRC_EXTRA`.
-    ///
-    /// # Links
-    ///
-    /// * [`Frame::checksum`] is calculated using [`CrcExtra`].
-    pub fn set_crc_extra(&mut self, crc_extra: CrcExtra) -> &mut Self {
-        self.crc_extra = Some(crc_extra);
-        self
-    }
+        signature.value = signer.signature();
 
-    /// Sets payload data.
-    ///
-    /// Also sets [`Frame::message_id`] from [`Payload::id`].
-    ///
-    /// # Links
-    ///
-    /// * [`Frame::payload`]
-    /// * [`Frame::message_id`]
-    pub fn set_payload(&mut self, payload: Payload) -> &mut Self {
-        self.set_message_id(payload.id());
-        self.payload = Some(payload);
-        self
-    }
-
-    fn set_message_id(&mut self, message_id: MessageId) -> &mut Self {
-        self.header_conf.set_message_id(message_id);
-        self
+        Ok(signature)
     }
 }
 
@@ -763,43 +581,23 @@ mod tests {
 
     #[test]
     #[cfg(feature = "minimal")]
-    fn test_builder() {
-        use crate::dialects::minimal::messages::Heartbeat;
-        use crate::protocol::MavLinkVersion;
-        use crate::Frame;
-
-        let message = Heartbeat::default();
-        let frame = Frame::builder()
-            .set_sequence(17)
-            .set_system_id(22)
-            .set_component_id(17)
-            .build_for(&message, MavLinkVersion::V2)
-            .unwrap();
-
-        assert!(matches!(frame.mavlink_version(), MavLinkVersion::V2));
-        assert_eq!(frame.sequence(), 17);
-        assert_eq!(frame.system_id(), 22);
-        assert_eq!(frame.component_id(), 17);
-        assert_eq!(frame.message_id(), 0);
-    }
-
-    #[test]
-    #[cfg(feature = "minimal")]
     #[cfg(feature = "std")]
     fn test_signing() {
         use crate::consts::SIGNATURE_SECRET_KEY_LENGTH;
         use crate::dialects::minimal::messages::Heartbeat;
-        use crate::protocol::{MavLinkVersion, SignatureConf};
+        use crate::protocol::{SignatureConf, V2};
         use crate::utils::MavSha256;
         use crate::Frame;
 
         let message = Heartbeat::default();
         let mut frame = Frame::builder()
-            .set_sequence(17)
-            .set_system_id(22)
-            .set_component_id(17)
-            .build_for(&message, MavLinkVersion::V2)
-            .unwrap();
+            .sequence(17)
+            .system_id(22)
+            .component_id(17)
+            .mavlink_version(V2)
+            .message(&message)
+            .unwrap()
+            .versioned();
 
         let frame = frame.add_signature(
             &mut MavSha256::default(),

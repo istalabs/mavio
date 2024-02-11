@@ -58,8 +58,6 @@ pub use no_std::{Read, Write};
 pub use std::io::{Read, Write};
 
 pub(crate) mod receiver;
-#[cfg(feature = "unstable")]
-pub use receiver::FrameIterator;
 pub use receiver::Receiver;
 
 pub(crate) mod sender;

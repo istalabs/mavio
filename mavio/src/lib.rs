@@ -70,14 +70,14 @@
 //! # fn main() -> mavio::errors::Result<()> {
 //! use std::net::TcpStream;
 //! use mavio::{Frame, Sender};
-//! use mavio::protocol::MavLinkVersion;
+//! use mavio::protocol::V2;
 //! use mavio::dialects::minimal as dialect;
 //! use dialect::Message;
 //! use dialect::enums::{MavAutopilot, MavModeFlag, MavState, MavType};
 //!
 //! let mut sender = Sender::new(TcpStream::connect("0.0.0.0:5600")?);
 //!
-//! let mavlink_version = MavLinkVersion::V2;
+//! let mavlink_version = V2;
 //! let system_id = 15;
 //! let component_id = 42;
 //!
@@ -93,11 +93,14 @@
 //!     };
 //!     println!("MESSAGE #{}: {:#?}", sequence, message);
 //!
+//!     // Build a frame
 //!     let frame = Frame::builder()
-//!         .set_sequence(sequence)
-//!         .set_system_id(system_id)
-//!         .set_component_id(component_id)
-//!         .build_for(&message, mavlink_version)?;
+//!         .sequence(sequence)
+//!         .system_id(system_id)
+//!         .component_id(component_id)
+//!         .mavlink_version(mavlink_version)
+//!         .message(&message)?
+//!         .build();
 //!
 //!     sender.send(&frame)?;
 //!     println!("FRAME #{} sent: {:#?}", sequence, frame);
