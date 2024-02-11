@@ -11,7 +11,7 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::consts::{
     CHECKSUM_SIZE, HEADER_MAX_SIZE, HEADER_MIN_SIZE, HEADER_V1_SIZE, HEADER_V2_SIZE,
-    MAVLINK_IFLAG_SIGNED, SIGNATURE_LENGTH,
+    SIGNATURE_LENGTH,
 };
 use crate::io::{Read, Write};
 use crate::protocol::marker::{NoCompId, NoMsgId, NoPayloadLen, NoSysId, NotSequenced};
@@ -160,8 +160,7 @@ impl<V: MaybeVersioned> Header<V> {
     ///
     /// For `MAVLink 1` headers always returns `false`.
     ///
-    /// For `MAVLink 2` it checks for [`MAVLINK_IFLAG_SIGNED`] (default is `false`).
-    /// returned.
+    /// For `MAVLink 2` it checks for [`IncompatFlags::MAVLINK_IFLAG_SIGNED`] (default is `false`).
     ///
     /// # Links
     ///
@@ -169,9 +168,9 @@ impl<V: MaybeVersioned> Header<V> {
     pub fn is_signed(&self) -> bool {
         match self.mavlink_version {
             MavLinkVersion::V1 => false,
-            MavLinkVersion::V2 => {
-                self.incompat_flags & MAVLINK_IFLAG_SIGNED == MAVLINK_IFLAG_SIGNED
-            }
+            MavLinkVersion::V2 => self
+                .incompat_flags
+                .contains(IncompatFlags::MAVLINK_IFLAG_SIGNED),
         }
     }
 
@@ -180,14 +179,14 @@ impl<V: MaybeVersioned> Header<V> {
     /// Sets `MAVLINK_IFLAG_SIGNED` for [`Self::incompat_flags`].
     #[inline]
     pub(super) fn set_is_signed(&mut self, flag: bool) {
-        self.incompat_flags =
-            self.incompat_flags & !MAVLINK_IFLAG_SIGNED | (MAVLINK_IFLAG_SIGNED & flag as u8);
+        self.incompat_flags
+            .set(IncompatFlags::MAVLINK_IFLAG_SIGNED, flag);
     }
 
     /// MAVLink frame body length.
     ///
     /// Calculates expected size in bytes for frame body. Depends on MAVLink protocol version and presence of
-    /// signature (when [`MAVLINK_IFLAG_SIGNED`] incompatibility flag is set).
+    /// signature (when [`IncompatFlags::MAVLINK_IFLAG_SIGNED`] incompatibility flag is set).
     ///
     /// # Links
     /// * [`Frame::signature`](crate::protocol::Frame::signature).
@@ -280,8 +279,8 @@ impl<V: MaybeVersioned> Header<V> {
 
         header_bytes.buffer[0] = MavSTX::V2.into();
         header_bytes.buffer[1] = self.payload_length;
-        header_bytes.buffer[2] = self.incompat_flags;
-        header_bytes.buffer[3] = self.compat_flags;
+        header_bytes.buffer[2] = self.incompat_flags.bits();
+        header_bytes.buffer[3] = self.compat_flags.bits();
         header_bytes.buffer[4] = self.sequence;
         header_bytes.buffer[5] = self.system_id;
         header_bytes.buffer[6] = self.component_id;
@@ -335,9 +334,12 @@ impl<V: MaybeVersioned> Header<V> {
         let (incompat_flags, compat_flags) = if let MavLinkVersion::V2 = mavlink_version {
             let incompat_flags = reader.read()?;
             let compat_flags = reader.read()?;
-            (incompat_flags, compat_flags)
+            (
+                IncompatFlags::from_bits_truncate(incompat_flags),
+                CompatFlags::from_bits_truncate(compat_flags),
+            )
         } else {
-            (0, 0)
+            (IncompatFlags::default(), CompatFlags::default())
         };
 
         let sequence: u8 = reader.read()?;
@@ -553,8 +555,8 @@ mod header_tests {
         assert!(matches!(header.mavlink_version(), MavLinkVersion::V2));
 
         assert_eq!(header.payload_length(), 8u8);
-        assert_eq!(header.incompat_flags(), 1u8);
-        assert_eq!(header.compat_flags(), 0u8);
+        assert_eq!(header.incompat_flags(), IncompatFlags::MAVLINK_IFLAG_SIGNED);
+        assert_eq!(header.compat_flags(), CompatFlags::default());
         assert_eq!(header.sequence(), 1u8);
         assert_eq!(header.system_id(), 10u8);
         assert_eq!(header.component_id(), 255u8);
@@ -583,8 +585,8 @@ mod header_tests {
     #[test]
     fn build_v2_header() {
         let header = Header::builder()
-            .incompat_flags(MAVLINK_IFLAG_SIGNED)
-            .compat_flags(8)
+            .incompat_flags(IncompatFlags::MAVLINK_IFLAG_SIGNED)
+            .compat_flags(CompatFlags::BIT_4 | CompatFlags::BIT_7)
             .payload_length(10)
             .sequence(5)
             .system_id(10)
@@ -594,8 +596,11 @@ mod header_tests {
             .versioned();
 
         assert!(matches!(header.mavlink_version(), MavLinkVersion::V2));
-        assert_eq!(header.incompat_flags(), MAVLINK_IFLAG_SIGNED);
-        assert_eq!(header.compat_flags(), 8);
+        assert_eq!(header.incompat_flags(), IncompatFlags::MAVLINK_IFLAG_SIGNED);
+        assert_eq!(
+            header.compat_flags(),
+            CompatFlags::BIT_4 | CompatFlags::BIT_7
+        );
         assert_eq!(header.payload_length(), 10);
         assert_eq!(header.sequence(), 5);
         assert_eq!(header.system_id(), 10);

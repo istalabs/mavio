@@ -26,6 +26,7 @@ path = "src/lib.rs"
 # Dependencies
 ###########################################################
 [dependencies]
+bitflags = { version = "2.4.2", default-features = false }
 crc-any = { version = "2.4.3", default-features = false }
 mavspec = { version = "0.2.3", path = "../../mavspec/mavspec", default-features = false, features = ["rust"] }
 paste = "1.0.14"
@@ -67,6 +68,7 @@ std = [
     "sha2/std",
     "tbytes/std",
     "thiserror",
+    "bitflags/std"
 ]
 
 ## Enable sha2 backend for message signing
@@ -77,6 +79,7 @@ serde = [
     "dep:serde",
     "mavspec/serde",
     "dep:serde_arrays",
+    "bitflags/serde",
 ]
 ## Enable tokio (async) support
 tokio = ["dep:tokio", "std"]

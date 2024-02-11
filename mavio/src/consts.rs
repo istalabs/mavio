@@ -72,7 +72,7 @@ pub const CHECKSUM_SIZE: usize = 2;
 /// # Links
 ///
 /// * `MAVLINK_IFLAG_SIGNED` field in [MAVLink 2 incompatibility flags](https://mavlink.io/en/guide/serialization.html#incompat_flags)
-pub const MAVLINK_IFLAG_SIGNED: u8 = 0x01;
+pub const MAVLINK_IFLAG_SIGNED: u8 = 0x00000001;
 
 /// `MAVLink 2` signature link ID length in bytes.
 ///

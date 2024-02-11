@@ -1,6 +1,5 @@
 use core::marker::PhantomData;
 
-use crate::consts::MAVLINK_IFLAG_SIGNED;
 use crate::protocol::header::Header;
 use crate::protocol::marker::{
     HasCompId, HasMsgId, HasPayloadLen, HasSysId, IsCompId, IsMsgId, IsPayloadLen, IsSequenced,
@@ -199,8 +198,11 @@ impl<V: MaybeVersioned, L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsComp
     }
 
     fn set_is_signed_no_v2(self, flag: bool) -> HeaderBuilder<V2, L, Seq, S, C, M> {
+        let mut flags = IncompatFlags::default();
+        flags.set(IncompatFlags::MAVLINK_IFLAG_SIGNED, flag);
+
         HeaderBuilder {
-            incompat_flags: Some(MAVLINK_IFLAG_SIGNED & flag as u8),
+            incompat_flags: Some(flags),
             compat_flags: Some(CompatFlags::default()),
             ..self.mavlink_version(V2)
         }
@@ -210,9 +212,10 @@ impl<V: MaybeVersioned, L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsComp
 impl<L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsCompId, M: IsMsgId>
     HeaderBuilder<Versionless, L, Seq, S, C, M>
 {
-    /// Sets whether `MAVLink 2` frame body should contain signature.
+    /// Set whether `MAVLink 2` frame body should contain signature.
     ///
-    /// Sets [`MAVLINK_IFLAG_SIGNED`] flag for [`incompat_flags`](Header::incompat_flags).
+    /// Sets or drops [`IncompatFlags::MAVLINK_IFLAG_SIGNED`] flag for
+    /// [`incompat_flags`](Header::incompat_flags).
     ///
     /// Sets MAVLink protocol version to [`V2`].
     pub fn signed(self, flag: bool) -> HeaderBuilder<V2, L, Seq, S, C, M> {
@@ -223,9 +226,10 @@ impl<L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsCompId, M: IsMsgId>
 impl<L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsCompId, M: IsMsgId>
     HeaderBuilder<V1, L, Seq, S, C, M>
 {
-    /// Sets whether `MAVLink 2` frame body should contain signature.
+    /// Set whether `MAVLink 2` frame body should contain signature.
     ///
-    /// Sets [`MAVLINK_IFLAG_SIGNED`] flag for [`incompat_flags`](Header::incompat_flags).
+    /// Sets or drops [`IncompatFlags::MAVLINK_IFLAG_SIGNED`] flag for
+    /// [`incompat_flags`](Header::incompat_flags).
     ///
     /// Sets MAVLink protocol version to [`V2`].
     pub fn signed(self, flag: bool) -> HeaderBuilder<V2, L, Seq, S, C, M> {
@@ -238,16 +242,17 @@ impl<L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsCompId, M: IsMsgId>
 {
     /// Sets whether `MAVLink 2` frame body should contain signature.
     ///
-    /// Sets [`MAVLINK_IFLAG_SIGNED`] flag for [`incompat_flags`](Header::incompat_flags).
+    /// Sets [`IncompatFlags::MAVLINK_IFLAG_SIGNED`] flag for
+    /// [`incompat_flags`](Header::incompat_flags).
     ///
     /// Sets MAVLink protocol version to [`V2`].
     pub fn signed(self, flag: bool) -> HeaderBuilder<V2, L, Seq, S, C, M> {
         let this = self.mavlink_version(V2);
         HeaderBuilder {
-            incompat_flags: Some(
-                this.incompat_flags.unwrap() & !MAVLINK_IFLAG_SIGNED
-                    | (MAVLINK_IFLAG_SIGNED & flag as u8),
-            ),
+            incompat_flags: this.incompat_flags.map(|flags| {
+                flags.clone().set(IncompatFlags::MAVLINK_IFLAG_SIGNED, flag);
+                flags
+            }),
             ..this
         }
     }

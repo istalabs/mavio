@@ -280,9 +280,7 @@ impl<V: MaybeVersioned> Frame<V> {
             signature: self.signature,
         }
     }
-}
 
-impl<V: MaybeVersioned> Frame<V> {
     pub(crate) fn recv<R: Read>(reader: &mut R) -> Result<Frame<V>> {
         // Retrieve header
         let header = Header::<V>::recv(reader)?;

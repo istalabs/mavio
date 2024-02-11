@@ -36,11 +36,6 @@ pub type HeaderV1Bytes = [u8; HEADER_V1_SIZE];
 /// `MAVLink 2` header as array of bytes.
 pub type HeaderV2Bytes = [u8; HEADER_V2_SIZE];
 
-/// `MAVLink 2` incompatibility flags.
-pub type IncompatFlags = u8;
-/// `MAVLink 2` compatibility flags.
-pub type CompatFlags = u8;
-
 /// `MAVLink 2` signature as array of bytes.
 ///
 /// # Links

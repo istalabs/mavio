@@ -279,19 +279,19 @@ impl<
     /// So, the following is okay:
     ///
     /// ```
-    /// # use mavio::protocol::{FrameBuilder, V2};
+    /// # use mavio::protocol::{FrameBuilder, IncompatFlags, V2};
     /// FrameBuilder::new()
     ///     .mavlink_version(V2)
-    ///     .incompat_flags(0b01011100);
+    ///     .incompat_flags(IncompatFlags::MAVLINK_IFLAG_SIGNED);
     /// ```
     ///
     /// While this won't compile:
     ///
     /// ```ignore
-    /// # use mavio::protocol::{FrameBuilder, V2};
+    /// # use mavio::protocol::{FrameBuilder, IncompatFlags};
     /// FrameBuilder::new()
     ///     .system_id(10)
-    ///     .incompat_flags(0b01011100);  // Won't compile
+    ///     .incompat_flags(IncompatFlags::MAVLINK_IFLAG_SIGNED);  // Won't compile
     /// ```
     pub fn incompat_flags(
         self,
@@ -314,19 +314,19 @@ impl<
     /// So, the following is okay:
     ///
     /// ```
-    /// # use mavio::protocol::{FrameBuilder, V2};
+    /// # use mavio::protocol::{CompatFlags, FrameBuilder, V2};
     /// FrameBuilder::new()
     ///     .mavlink_version(V2)
-    ///     .compat_flags(0b01011100);
+    ///     .compat_flags(CompatFlags::BIT_1);
     /// ```
     ///
     /// While this won't compile:
     ///
     /// ```ignore
-    /// # use mavio::protocol::{FrameBuilder, V2};
+    /// # use mavio::protocol::{CompatFlags, FrameBuilder};
     /// FrameBuilder::new()
     ///     .system_id(10)
-    ///     .compat_flags(0b01011100);  // Won't compile
+    ///     .compat_flags(CompatFlags::BIT_1);  // Won't compile
     /// ```
     pub fn compat_flags(
         self,
