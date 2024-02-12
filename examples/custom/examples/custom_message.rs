@@ -42,10 +42,10 @@ fn play_with_custom_message() {
         .sequence(0)
         .system_id(10)
         .component_id(10)
-        .mavlink_version(V2)
+        .version(V2)
         .message(&message)
         .unwrap()
-        .versioned();
+        .build();
     log::info!("Frame: {frame:#?}");
 }
 

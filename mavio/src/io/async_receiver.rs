@@ -19,51 +19,59 @@ pub struct AsyncReceiver<R: AsyncRead + Unpin, V: MaybeVersioned> {
 
 impl<R: AsyncRead + Unpin> AsyncReceiver<R, Versionless> {
     /// Default constructor.
-    ///
-    /// Creates a protocol-agnostic receiver which will look up for both `MAVLink 1` and `MAVLink 2`
-    /// frames.
-    ///
-    /// If you want a receiver restricted to a specific MAVLink protocol version, use
-    /// [`AsyncReceiver::versioned`].
-    pub fn new(reader: R) -> Self {
-        Self {
-            reader,
-            _marker_version: PhantomData,
-        }
-    }
-
-    /// Create a [`AsyncReceiver`] that accepts only messages of a specified MAVLink dialect.
-    ///
-    /// Since versioned receiver will look up for MAVLink frames starting with a specific
-    /// [`MavSTX`](crate::protocol::MavSTX) magic byte, it may behave incorrectly, if the incoming
-    /// stream contains frames of a different protocol version. If this is the case, it is preferred
-    /// to construct versionless receiver by [`AsyncReceiver::new`] and then attempt to convert incoming
-    /// frames into a specific protocol version with [`Frame::try_versioned`].
-    pub fn versioned<Version: Versioned>(reader: R) -> AsyncReceiver<R, Version> {
+    pub fn new<Version: MaybeVersioned>(reader: R) -> AsyncReceiver<R, Version> {
         AsyncReceiver {
             reader,
             _marker_version: PhantomData,
         }
     }
 
-    /// Receives MAVLink [`Frame`].
+    /// Create a MAVLink version agnostic receiver.
     ///
-    /// Blocks until a valid MAVLink frame received.
+    /// Creates a protocol-agnostic receiver which will look up for both `MAVLink 1` and `MAVLink 2`
+    /// frames.
     ///
-    /// Returns a [`Frame<Versionless>`] which then can be cast into a protocol-specific form by
-    /// [`Frame::try_versioned`].
-    pub async fn recv(&mut self) -> Result<Frame<Versionless>> {
-        Frame::<Versionless>::recv_async(&mut self.reader).await
+    /// If you want a receiver restricted to a specific MAVLink protocol version, use
+    /// [`AsyncReceiver::versioned`].
+    ///
+    /// If you want to instantiate a generic receiver, use [`AsyncReceiver::new`].
+    pub fn versionless(reader: R) -> AsyncReceiver<R, Versionless> {
+        Self {
+            reader,
+            _marker_version: PhantomData,
+        }
+    }
+
+    /// Create a receiver specific to a particular MAVLink protocol version.
+    ///
+    /// Same as [`AsyncReceiver::new::<V1>`] / [`AsyncReceiver::new::<V2>`] but with an explicit
+    /// `version` marker as a parameter.
+    ///
+    /// Since versioned receiver will look up for MAVLink frames starting with a specific
+    /// [`MavSTX`](crate::protocol::MavSTX) magic byte, it may behave incorrectly, if the incoming
+    /// stream contains frames of a different protocol version. If this is the case, it is preferred
+    /// to construct versionless receiver by [`AsyncReceiver::new`] and then attempt to convert incoming
+    /// frames into a specific protocol version with [`Frame::try_versioned`].
+    pub fn versioned<Version: Versioned>(
+        reader: R,
+        #[allow(unused_variables)] version: Version,
+    ) -> AsyncReceiver<R, Version> {
+        AsyncReceiver {
+            reader,
+            _marker_version: PhantomData,
+        }
     }
 }
 
-impl<R: AsyncRead + Unpin, V: Versioned> AsyncReceiver<R, V> {
+impl<R: AsyncRead + Unpin, V: MaybeVersioned> AsyncReceiver<R, V> {
     /// Receives MAVLink [`Frame`].
     ///
     /// Blocks until a valid MAVLink frame received.
     ///
-    /// Accepts only frames of a specific MAVLink protocol version. Otherwise, returns
-    /// [`FrameError::InvalidVersion`].
+    /// [`Versioned`] receiver accepts only frames of a specific MAVLink protocol version.
+    /// Otherwise, returns [`FrameError::InvalidVersion`].
+    ///
+    /// [`Versionless`] receiver accepts both `MAVLink 1` and `MAVLink 2` frames.
     pub async fn recv(&mut self) -> Result<Frame<V>> {
         Frame::<V>::recv_async(&mut self.reader).await
     }

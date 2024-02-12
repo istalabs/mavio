@@ -2,6 +2,8 @@
 //!
 //! These markers are used to distinguish different versions of generic entities.
 
+use core::fmt::Debug;
+
 use crate::consts::{STX_V1, STX_V2};
 use crate::protocol::MavLinkVersion;
 use crate::utils::sealed::Sealed;
@@ -15,13 +17,12 @@ use crate::prelude::*;
 /// For all such structures it is possible to call [`MaybeVersioned::expect`] and
 /// [`MaybeVersioned::matches`] to compare MAVLink version. A blanket implementation of [`MaybeVersioned`]
 /// assumes that everything is compatible.
-pub trait MaybeVersioned: IsMagicByte + Clone + Sealed {
+pub trait MaybeVersioned: IsMagicByte + Clone + Debug + Sync + Send + Sealed {
     /// Validates that provided frame matches MAVLink protocol version.
     ///
     /// A blanket implementation will always return [`Ok`] meaning that everything is compatible.
     #[inline]
-    #[allow(unused_variables)]
-    fn expect(&self, version: MavLinkVersion) -> Result<()> {
+    fn expect(#[allow(unused_variables)] version: MavLinkVersion) -> Result<()> {
         Ok(())
     }
 
@@ -29,8 +30,7 @@ pub trait MaybeVersioned: IsMagicByte + Clone + Sealed {
     ///
     /// A blanket implementation will always return `true` meaning that everything is compatible.
     #[inline]
-    #[allow(unused_variables)]
-    fn matches(&self, version: MavLinkVersion) -> bool {
+    fn matches(#[allow(unused_variables)] version: MavLinkVersion) -> bool {
         true
     }
 }
@@ -48,23 +48,21 @@ pub trait MaybeVersioned: IsMagicByte + Clone + Sealed {
 pub struct Versionless;
 impl Sealed for Versionless {}
 impl IsMagicByte for Versionless {}
+
 impl MaybeVersioned for Versionless {}
 
 /// Marks entities which have a specified MAVLink protocol version.
 ///
 /// ⚠ This trait is sealed ⚠
 ///
-/// Such entities allow to discover their protocol version by [`Versioned::mavlink_version`] and
+/// Such entities allow to discover their protocol version by [`Versioned::version`] and
 /// provide a static `marker` for themselves.
 ///
 /// For example, [`Receiver::versioned`](crate::Receiver::versioned) constructs a protocol-specific
 /// receiver which looks up for frames only of a specific dialect.
 pub trait Versioned: MaybeVersioned {
     /// MAVLink protocol version of an entity.
-    fn mavlink_version(&self) -> MavLinkVersion;
-
-    /// Provides a marker for this MAVLink protocol version.
-    fn marker() -> impl Versioned;
+    fn version() -> MavLinkVersion;
 }
 
 /// Marks entities which are strictly `MAVLink 1` protocol compliant.
@@ -80,23 +78,18 @@ impl IsMagicByte for V1 {
 }
 impl MaybeVersioned for V1 {
     #[inline]
-    fn expect(&self, version: MavLinkVersion) -> Result<()> {
+    fn expect(version: MavLinkVersion) -> Result<()> {
         match_error(MavLinkVersion::V1, version)
     }
     #[inline]
-    fn matches(&self, version: MavLinkVersion) -> bool {
+    fn matches(version: MavLinkVersion) -> bool {
         version == MavLinkVersion::V1
     }
 }
 impl Versioned for V1 {
     #[inline]
-    fn mavlink_version(&self) -> MavLinkVersion {
+    fn version() -> MavLinkVersion {
         MavLinkVersion::V1
-    }
-
-    #[inline]
-    fn marker() -> impl Versioned {
-        V1
     }
 }
 
@@ -113,38 +106,19 @@ impl IsMagicByte for V2 {
 }
 impl MaybeVersioned for V2 {
     #[inline]
-    fn expect(&self, version: MavLinkVersion) -> Result<()> {
+    fn expect(version: MavLinkVersion) -> Result<()> {
         match_error(MavLinkVersion::V2, version)
     }
 
     #[inline]
-    fn matches(&self, version: MavLinkVersion) -> bool {
+    fn matches(version: MavLinkVersion) -> bool {
         version == MavLinkVersion::V2
     }
 }
 impl Versioned for V2 {
     #[inline]
-    fn mavlink_version(&self) -> MavLinkVersion {
+    fn version() -> MavLinkVersion {
         MavLinkVersion::V2
-    }
-
-    #[inline]
-    fn marker() -> impl Versioned {
-        V1
-    }
-}
-
-impl Sealed for MavLinkVersion {}
-impl IsMagicByte for MavLinkVersion {}
-impl MaybeVersioned for MavLinkVersion {
-    #[inline]
-    fn expect(&self, version: MavLinkVersion) -> Result<()> {
-        match_error(*self, version)
-    }
-
-    #[inline]
-    fn matches(&self, version: MavLinkVersion) -> bool {
-        *self == version
     }
 }
 
@@ -317,35 +291,22 @@ mod marker_tests {
     use super::*;
 
     #[test]
-    fn mavlink_version_is_versioned() {
-        MavLinkVersion::V1.expect(MavLinkVersion::V1).unwrap();
-        MavLinkVersion::V2.expect(MavLinkVersion::V2).unwrap();
-        assert!(MavLinkVersion::V1.expect(MavLinkVersion::V2).is_err());
-        assert!(MavLinkVersion::V2.expect(MavLinkVersion::V1).is_err());
-
-        assert!(MavLinkVersion::V1.matches(MavLinkVersion::V1));
-        assert!(MavLinkVersion::V2.matches(MavLinkVersion::V2));
-        assert!(!MavLinkVersion::V1.matches(MavLinkVersion::V2));
-        assert!(!MavLinkVersion::V2.matches(MavLinkVersion::V1));
-    }
-
-    #[test]
     fn version_matching() {
-        V1.expect(MavLinkVersion::V1).unwrap();
-        V2.expect(MavLinkVersion::V2).unwrap();
+        V1::expect(MavLinkVersion::V1).unwrap();
+        V2::expect(MavLinkVersion::V2).unwrap();
 
-        Versionless.expect(MavLinkVersion::V1).unwrap();
-        Versionless.expect(MavLinkVersion::V2).unwrap();
-        assert!(Versionless.matches(MavLinkVersion::V1));
-        assert!(Versionless.matches(MavLinkVersion::V2));
+        Versionless::expect(MavLinkVersion::V1).unwrap();
+        Versionless::expect(MavLinkVersion::V2).unwrap();
+        assert!(Versionless::matches(MavLinkVersion::V1));
+        assert!(Versionless::matches(MavLinkVersion::V2));
 
-        assert!(V1.matches(MavLinkVersion::V1));
-        assert!(V2.matches(MavLinkVersion::V2));
-        assert!(!V1.matches(MavLinkVersion::V2));
-        assert!(!V2.matches(MavLinkVersion::V1));
+        assert!(V1::matches(MavLinkVersion::V1));
+        assert!(V2::matches(MavLinkVersion::V2));
+        assert!(!V1::matches(MavLinkVersion::V2));
+        assert!(!V2::matches(MavLinkVersion::V1));
 
-        fn expect_versioned(versioned: impl Versioned, version: MavLinkVersion) -> Result<()> {
-            versioned.expect(version)
+        fn expect_versioned<V: Versioned>(_: V, version: MavLinkVersion) -> Result<()> {
+            V::expect(version)
         }
 
         expect_versioned(V1, MavLinkVersion::V1).unwrap();

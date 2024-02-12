@@ -42,7 +42,7 @@ use crate::prelude::*;
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Header<V: MaybeVersioned> {
-    pub(super) mavlink_version: MavLinkVersion,
+    pub(super) version: MavLinkVersion,
     pub(super) payload_length: PayloadLength,
     pub(super) incompat_flags: IncompatFlags,
     pub(super) compat_flags: CompatFlags,
@@ -94,8 +94,8 @@ impl<V: MaybeVersioned> Header<V> {
     ///
     /// See [`MavSTX`].
     #[inline]
-    pub fn mavlink_version(&self) -> MavLinkVersion {
-        self.mavlink_version
+    pub fn version(&self) -> MavLinkVersion {
+        self.version
     }
 
     /// Payload length.
@@ -150,7 +150,7 @@ impl<V: MaybeVersioned> Header<V> {
     ///
     /// Depends on the MAVLink protocol version.
     pub fn size(&self) -> usize {
-        match self.mavlink_version {
+        match self.version {
             MavLinkVersion::V1 => HEADER_V1_SIZE,
             MavLinkVersion::V2 => HEADER_V2_SIZE,
         }
@@ -166,7 +166,7 @@ impl<V: MaybeVersioned> Header<V> {
     ///
     /// * [Frame::signature](crate::protocol::Frame::signature).
     pub fn is_signed(&self) -> bool {
-        match self.mavlink_version {
+        match self.version {
             MavLinkVersion::V1 => false,
             MavLinkVersion::V2 => self
                 .incompat_flags
@@ -191,7 +191,7 @@ impl<V: MaybeVersioned> Header<V> {
     /// # Links
     /// * [`Frame::signature`](crate::protocol::Frame::signature).
     pub fn body_length(&self) -> usize {
-        match self.mavlink_version {
+        match self.version {
             MavLinkVersion::V1 => self.payload_length as usize + CHECKSUM_SIZE,
             MavLinkVersion::V2 => {
                 if self.is_signed() {
@@ -216,11 +216,14 @@ impl<V: MaybeVersioned> Header<V> {
     }
 
     /// Attempts to transform header into its [`Versioned`] version.
-    pub fn try_versioned<Version: Versioned>(self, version: Version) -> Result<Header<Version>> {
-        version.expect(self.mavlink_version)?;
+    pub fn try_versioned<Version: Versioned>(
+        self,
+        #[allow(unused_variables)] version: Version,
+    ) -> Result<Header<Version>> {
+        Version::expect(self.version)?;
 
         Ok(Header {
-            mavlink_version: version.mavlink_version(),
+            version: Version::version(),
             payload_length: self.payload_length,
             incompat_flags: self.incompat_flags,
             compat_flags: self.compat_flags,
@@ -235,7 +238,7 @@ impl<V: MaybeVersioned> Header<V> {
     /// Forget about header's version transforming it into a [`Versionless`] variant.
     pub fn versionless(self) -> Header<Versionless> {
         Header {
-            mavlink_version: self.mavlink_version,
+            version: self.version,
             payload_length: self.payload_length,
             incompat_flags: self.incompat_flags,
             compat_flags: self.compat_flags,
@@ -259,7 +262,7 @@ impl<V: MaybeVersioned> Header<V> {
     }
 
     fn dump_bytes(&self, header_bytes: &mut HeaderBytes) {
-        match self.mavlink_version {
+        match self.version {
             MavLinkVersion::V1 => self.dump_v1_bytes(header_bytes),
             MavLinkVersion::V2 => self.dump_v2_bytes(header_bytes),
         };
@@ -361,7 +364,7 @@ impl<V: MaybeVersioned> Header<V> {
         header_bytes[0..bytes.len()].copy_from_slice(bytes);
 
         Ok(Header {
-            mavlink_version,
+            version: mavlink_version,
             payload_length,
             incompat_flags,
             compat_flags,
@@ -419,7 +422,7 @@ impl Header<Versionless> {
     /// See: [MAVLink 2 incompatibility flags](https://mavlink.io/en/guide/serialization.html#incompat_flags).
     #[inline]
     pub fn incompat_flags(&self) -> Option<IncompatFlags> {
-        match self.mavlink_version() {
+        match self.version() {
             MavLinkVersion::V1 => None,
             MavLinkVersion::V2 => Some(self.incompat_flags),
         }
@@ -433,7 +436,7 @@ impl Header<Versionless> {
     /// See: [MAVLink 2 compatibility flags](https://mavlink.io/en/guide/serialization.html#compat_flags).
     #[inline]
     pub fn compat_flags(&self) -> Option<CompatFlags> {
-        match self.mavlink_version() {
+        match self.version() {
             MavLinkVersion::V1 => None,
             MavLinkVersion::V2 => Some(self.compat_flags),
         }
@@ -521,7 +524,7 @@ mod header_tests {
         let header = header.try_versioned(V1).unwrap();
 
         assert!(header.try_versioned(V2).is_err());
-        assert!(matches!(header.mavlink_version(), MavLinkVersion::V1));
+        assert!(matches!(header.version(), MavLinkVersion::V1));
 
         assert_eq!(header.payload_length(), 8u8);
         assert_eq!(header.sequence(), 1u8);
@@ -552,7 +555,7 @@ mod header_tests {
         let header = header.try_versioned(V2).unwrap();
 
         assert!(header.try_versioned(V1).is_err());
-        assert!(matches!(header.mavlink_version(), MavLinkVersion::V2));
+        assert!(matches!(header.version(), MavLinkVersion::V2));
 
         assert_eq!(header.payload_length(), 8u8);
         assert_eq!(header.incompat_flags(), IncompatFlags::MAVLINK_IFLAG_SIGNED);
@@ -571,10 +574,10 @@ mod header_tests {
             .system_id(10)
             .component_id(240)
             .message_id(42)
-            .mavlink_version(V1)
-            .versioned();
+            .version(V1)
+            .build();
 
-        assert!(matches!(header.mavlink_version(), MavLinkVersion::V1));
+        assert!(matches!(header.version(), MavLinkVersion::V1));
         assert_eq!(header.payload_length(), 10);
         assert_eq!(header.sequence(), 5);
         assert_eq!(header.system_id(), 10);
@@ -593,9 +596,9 @@ mod header_tests {
             .component_id(240)
             .message_id(42)
             .signed(true)
-            .versioned();
+            .build();
 
-        assert!(matches!(header.mavlink_version(), MavLinkVersion::V2));
+        assert!(matches!(header.version(), MavLinkVersion::V2));
         assert_eq!(header.incompat_flags(), IncompatFlags::MAVLINK_IFLAG_SIGNED);
         assert_eq!(
             header.compat_flags(),

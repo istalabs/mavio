@@ -18,47 +18,57 @@ pub struct Sender<W: Write, V: MaybeVersioned> {
 
 impl<W: Write> Sender<W, Versionless> {
     /// Default constructor.
-    ///
-    /// Creates a protocol-agnostic sender which can send both `MAVLink 1` and `MAVLink 2` frames.
-    ///
-    /// If you want a sender that sends only frames restricted to a particular MAVLink protocol
-    /// version, use [`Sender::versioned`].
-    pub fn new(writer: W) -> Self {
-        Self {
-            writer,
-            _marker_version: PhantomData,
-        }
-    }
-
-    /// Create a [`Sender`] that accepts only frames of a specified MAVLink dialect.
-    ///
-    /// If you want to send both `MAVLink 1` and `MAVLink 2` frames, use [`Sender::new`].
-    pub fn versioned<Version: Versioned>(writer: W) -> Sender<W, Version> {
+    pub fn new<Version: MaybeVersioned>(writer: W) -> Sender<W, Version> {
         Sender {
             writer,
             _marker_version: PhantomData,
         }
     }
 
-    /// Sends MAVLink [`Frame`].
+    /// Create a MAVLink version agnostic sender.
     ///
-    /// Blocks until all bytes written and returns the number of bytes sent.
+    /// Creates a protocol-agnostic sender which can send both `MAVLink 1` and `MAVLink 2` frames.
     ///
-    /// Accepts both `MAVLink 1` and `MAVLink 2` frames as [`Frame<Versionless>`].
-    pub fn send(&mut self, frame: &Frame<Versionless>) -> Result<usize> {
-        frame.send(&mut self.writer)
+    /// If you want a sender that sends only frames restricted to a particular MAVLink protocol
+    /// version, use [`Sender::versioned`].
+    ///
+    /// If you want to instantiate a generic sender, use [`Sender::new`].
+    pub fn versionless(writer: W) -> Self {
+        Self {
+            writer,
+            _marker_version: PhantomData,
+        }
+    }
+
+    /// Create a receiver specific to a particular MAVLink protocol version.
+    ///
+    /// Same as [`Sender::new::<V1>`] / [`Sender::new::<V2>`] but with an explicit `version`
+    /// marker as parameter.
+    ///
+    /// If you want to send both `MAVLink 1` and `MAVLink 2` frames, use [`Sender::versionless`].
+    pub fn versioned<Version: Versioned>(
+        writer: W,
+        #[allow(unused_variables)] version: Version,
+    ) -> Sender<W, Version> {
+        Sender {
+            writer,
+            _marker_version: PhantomData,
+        }
     }
 }
 
-impl<W: Write, V: Versioned> Sender<W, V> {
+impl<W: Write, V: MaybeVersioned> Sender<W, V> {
     /// Sends MAVLink [`Frame`].
     ///
     /// Blocks until all bytes written and returns the number of bytes sent.
     ///
-    /// Accepts only frames of a specific MAVLink protocol version. Otherwise, returns
-    /// [`FrameError::InvalidVersion`].
-    pub fn send<Version: Versioned>(&mut self, frame: &Frame<Version>) -> Result<usize> {
-        Version::marker().expect(frame.mavlink_version())?;
+    /// [`Versioned`] sender accepts only frames of a specific MAVLink protocol version. Otherwise,
+    /// returns [`FrameError::InvalidVersion`].
+    ///
+    /// [`Versionless`] sender accepts both `MAVLink 1` and `MAVLink 2` frames as
+    /// [`Frame<Versionless>`].
+    pub fn send(&mut self, frame: &Frame<V>) -> Result<usize> {
+        V::expect(frame.version())?;
         frame.send(&mut self.writer)
     }
 }

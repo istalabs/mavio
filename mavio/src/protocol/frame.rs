@@ -71,10 +71,10 @@ impl<V: MaybeVersioned> Frame<V> {
     /// # Links
     ///
     /// * [MavLinkVersion]
-    /// * [Header::mavlink_version]
+    /// * [Header::version]
     #[inline]
-    pub fn mavlink_version(&self) -> MavLinkVersion {
-        self.header.mavlink_version()
+    pub fn version(&self) -> MavLinkVersion {
+        self.header.version()
     }
 
     /// Payload length.
@@ -254,14 +254,17 @@ impl<V: MaybeVersioned> Frame<V> {
         Ok(())
     }
 
-    /// Checks that frame has MAVLink version to the provided one.
-    pub fn matches_version<Version: Versioned>(&self, version: Version) -> bool {
-        version.matches(self.mavlink_version())
+    /// Checks that frame has MAVLink version equal to the provided one.
+    pub fn matches_version<Version: Versioned>(
+        &self,
+        #[allow(unused_variables)] version: Version,
+    ) -> bool {
+        Version::matches(self.version())
     }
 
     /// Attempts to transform frame into its [`Versioned`] form.
     pub fn try_versioned<Version: Versioned>(self, version: Version) -> Result<Frame<Version>> {
-        version.expect(self.mavlink_version())?;
+        Version::expect(self.version())?;
 
         Ok(Frame {
             header: self.header.try_versioned(version)?,
@@ -375,7 +378,7 @@ impl<V: MaybeVersioned> Frame<V> {
     #[inline]
     fn try_from_raw_body(header: Header<V>, body_bytes: &[u8]) -> Result<Frame<V>> {
         let payload_bytes = &body_bytes[0..header.payload_length() as usize];
-        let payload = Payload::new(header.message_id(), payload_bytes, header.mavlink_version());
+        let payload = Payload::new(header.message_id(), payload_bytes, header.version());
 
         let checksum_start = header.payload_length() as usize;
         let checksum_bytes = [body_bytes[checksum_start], body_bytes[checksum_start + 1]];
@@ -576,10 +579,10 @@ mod tests {
                 .sequence(17)
                 .system_id(22)
                 .component_id(17)
-                .mavlink_version(V2)
+                .version(V2)
                 .message(&message)
                 .unwrap()
-                .versioned()
+                .build()
         }
     }
     #[cfg(feature = "minimal")]

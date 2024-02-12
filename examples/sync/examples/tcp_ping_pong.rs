@@ -22,7 +22,7 @@ const N_CLIENTS: usize = 5;
 
 /// Listen to `n_iter` incoming frames and decode `HEARTBEAT` message.
 fn listen<R: Read>(reader: R, whoami: String, n_iter: usize) -> mavio::errors::Result<()> {
-    let mut receiver = Receiver::new(reader);
+    let mut receiver = Receiver::versionless(reader);
 
     for _ in 0..n_iter {
         // Decode the entire frame
@@ -37,7 +37,7 @@ fn listen<R: Read>(reader: R, whoami: String, n_iter: usize) -> mavio::errors::R
         log::info!(
             "[{whoami}] FRAME #{}: mavlink_version={:?} system_id={}, component_id={}",
             frame.sequence(),
-            frame.mavlink_version(),
+            frame.version(),
             frame.system_id(),
             frame.component_id(),
         );
@@ -68,7 +68,7 @@ fn send_heartbeats<W: Write>(
     n_iter: usize,
 ) -> mavio::errors::Result<()> {
     // Use a versionless sender that accepts both `MAVLink 1` and `MAVLink 2` frames.
-    let mut sender = Sender::new(writer);
+    let mut sender = Sender::versionless(writer);
 
     // MAVLink connection settings
     let mavlink_version = V2;
@@ -92,9 +92,9 @@ fn send_heartbeats<W: Write>(
             .sequence(sequence)
             .system_id(system_id)
             .component_id(component_id)
-            .mavlink_version(mavlink_version)
+            .version(mavlink_version)
             .message(&message)?
-            .build();
+            .versionless();
 
         if let Err(err) = sender.send(&frame) {
             log::warn!("[{whoami}] SEND ERROR #{}: {err:?}", frame.sequence());

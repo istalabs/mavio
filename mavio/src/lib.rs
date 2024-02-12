@@ -35,7 +35,7 @@
 //! use mavio::dialects::minimal as dialect;
 //! use dialect::Message;
 //!
-//! let mut receiver = Receiver::new(TcpStream::connect("0.0.0.0:5600")?);
+//! let mut receiver = Receiver::versionless(TcpStream::connect("0.0.0.0:5600")?);
 //!
 //! for i in 0..10 {
 //!     let frame = receiver.recv()?;
@@ -98,7 +98,7 @@
 //!         .sequence(sequence)
 //!         .system_id(system_id)
 //!         .component_id(component_id)
-//!         .mavlink_version(mavlink_version)
+//!         .version(mavlink_version)
 //!         .message(&message)?
 //!         .build();
 //!
@@ -184,6 +184,7 @@
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
+extern crate core;
 
 pub mod consts;
 pub mod errors;

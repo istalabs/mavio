@@ -28,7 +28,7 @@ async fn listen<R: AsyncRead + Unpin>(
     n_iter: usize,
 ) -> mavio::errors::Result<()> {
     // Use a versioned `AsyncReceiver` that will accept only messages of a specified MAVLink version
-    let mut receiver: AsyncReceiver<_, V2> = AsyncReceiver::versioned(reader);
+    let mut receiver = AsyncReceiver::versioned(reader, V2);
 
     for _ in 0..n_iter {
         // Decode the entire frame
@@ -43,7 +43,7 @@ async fn listen<R: AsyncRead + Unpin>(
         log::info!(
             "[{whoami}] FRAME #{}: mavlink_version={:?} system_id={}, component_id={}",
             frame.sequence(),
-            frame.mavlink_version(),
+            frame.version(),
             frame.system_id(),
             frame.component_id(),
         );
@@ -80,7 +80,7 @@ async fn send_heartbeats<W: AsyncWrite + Unpin>(
     let mut sequence: u8 = 0;
 
     // Use a versioned `AsyncSender` that will accept only messages of a specified MAVLink version
-    let mut sender: AsyncSender<_, V2> = AsyncSender::versioned(writer);
+    let mut sender = AsyncSender::versioned(writer, V2);
 
     for _ in 0..n_iter {
         // Define message
@@ -98,9 +98,9 @@ async fn send_heartbeats<W: AsyncWrite + Unpin>(
             .sequence(sequence)
             .system_id(system_id)
             .component_id(component_id)
-            .mavlink_version(mavlink_version)
+            .version(mavlink_version)
             .message(&message)?
-            .versioned();
+            .build();
 
         if let Err(err) = sender.send(&frame).await {
             log::warn!("[{whoami}] SEND ERROR #{}: {err:?}", frame.sequence());

@@ -24,7 +24,7 @@ pub struct HeaderBuilder<
     C: IsCompId,
     M: IsMsgId,
 > {
-    pub(super) mavlink_version: V,
+    mavlink_version: PhantomData<V>,
     payload_length: L,
     incompat_flags: Option<IncompatFlags>,
     compat_flags: Option<CompatFlags>,
@@ -38,7 +38,7 @@ impl HeaderBuilder<Versionless, NoPayloadLen, NotSequenced, NoSysId, NoCompId, N
     /// Default constructor.
     pub fn new() -> Self {
         Self {
-            mavlink_version: Versionless,
+            mavlink_version: PhantomData,
             payload_length: NoPayloadLen,
             incompat_flags: None,
             compat_flags: None,
@@ -56,15 +56,15 @@ impl<V: MaybeVersioned, L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsComp
     /// Set MAVLink protocol version.
     ///
     /// See: [`Header::payload_length`].
-    pub fn mavlink_version<Version: Versioned>(
+    pub fn version<Version: Versioned>(
         self,
-        version: Version,
+        #[allow(unused_variables)] version: Version,
     ) -> HeaderBuilder<Version, L, Seq, S, C, M> {
-        let from_v1_to_v2 = self.mavlink_version.matches(MavLinkVersion::V1)
-            && version.mavlink_version() == MavLinkVersion::V2;
+        let from_v1_to_v2 =
+            Version::matches(MavLinkVersion::V1) && Version::version() == MavLinkVersion::V2;
 
         let mut header = HeaderBuilder {
-            mavlink_version: version,
+            mavlink_version: PhantomData,
             payload_length: self.payload_length,
             incompat_flags: self.incompat_flags,
             compat_flags: self.compat_flags,
@@ -74,7 +74,7 @@ impl<V: MaybeVersioned, L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsComp
             message_id: self.message_id,
         };
 
-        if header.mavlink_version.matches(MavLinkVersion::V1) {
+        if Version::matches(MavLinkVersion::V1) {
             header.incompat_flags = None;
             header.compat_flags = None;
         }
@@ -113,7 +113,7 @@ impl<V: MaybeVersioned, L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsComp
         self,
         incompat_flags: IncompatFlags,
     ) -> HeaderBuilder<V2, L, Seq, S, C, M> {
-        let this = self.mavlink_version(V2);
+        let this = self.version(V2);
 
         HeaderBuilder {
             incompat_flags: Some(incompat_flags),
@@ -125,7 +125,7 @@ impl<V: MaybeVersioned, L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsComp
     ///
     /// Calling this method will force MAVLink protocol version to [`V2`].
     pub fn compat_flags(self, compat_flags: CompatFlags) -> HeaderBuilder<V2, L, Seq, S, C, M> {
-        let this = self.mavlink_version(V2);
+        let this = self.version(V2);
 
         HeaderBuilder {
             compat_flags: Some(compat_flags),
@@ -204,7 +204,7 @@ impl<V: MaybeVersioned, L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsComp
         HeaderBuilder {
             incompat_flags: Some(flags),
             compat_flags: Some(CompatFlags::default()),
-            ..self.mavlink_version(V2)
+            ..self.version(V2)
         }
     }
 }
@@ -247,7 +247,7 @@ impl<L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsCompId, M: IsMsgId>
     ///
     /// Sets MAVLink protocol version to [`V2`].
     pub fn signed(self, flag: bool) -> HeaderBuilder<V2, L, Seq, S, C, M> {
-        let this = self.mavlink_version(V2);
+        let this = self.version(V2);
         HeaderBuilder {
             incompat_flags: this.incompat_flags.map(|flags| {
                 flags.clone().set(IncompatFlags::MAVLINK_IFLAG_SIGNED, flag);
@@ -259,15 +259,10 @@ impl<L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsCompId, M: IsMsgId>
 }
 
 impl<V: Versioned> HeaderBuilder<V, HasPayloadLen, Sequenced, HasSysId, HasCompId, HasMsgId> {
-    /// Build a versionless [`Header`].
-    pub fn build(self) -> Header<Versionless> {
-        self.versioned().versionless()
-    }
-
-    /// Build [`Header`] for specific MAVLink protocol version.
-    pub fn versioned(self) -> Header<V> {
+    /// Build [`Header`] for a specific MAVLink protocol version.
+    pub fn build(self) -> Header<V> {
         Header {
-            mavlink_version: self.mavlink_version.mavlink_version(),
+            version: V::version(),
             payload_length: self.payload_length.0,
             incompat_flags: self.incompat_flags.unwrap_or_default(),
             compat_flags: self.compat_flags.unwrap_or_default(),
@@ -277,5 +272,10 @@ impl<V: Versioned> HeaderBuilder<V, HasPayloadLen, Sequenced, HasSysId, HasCompI
             message_id: self.message_id.0,
             _marker_version: PhantomData,
         }
+    }
+
+    /// Build a versionless [`Header`].
+    pub fn versionless(self) -> Header<Versionless> {
+        self.build().versionless()
     }
 }

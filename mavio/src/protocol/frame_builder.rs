@@ -214,7 +214,7 @@ impl<
         message: &dyn MessageImpl,
     ) -> Result<FrameBuilder<V, HasPayloadLen, Seq, S, C, HasMsgId, HasPayload, HasCrcExtra, Sig>>
     {
-        let payload = message.encode(self.header_builder.mavlink_version.mavlink_version())?;
+        let payload = message.encode(V::version())?;
 
         Ok(self
             .message_id(message.id())
@@ -246,12 +246,12 @@ impl<
     ///     .mavlink_version(V1)
     ///     .mavlink_version(V2); // can't set MAVLink version twice!
     /// ```
-    pub fn mavlink_version<Version: Versioned>(
+    pub fn version<Version: Versioned>(
         self,
         version: Version,
     ) -> FrameBuilder<Version, L, Seq, S, C, M, P, E, Sig> {
         FrameBuilder {
-            header_builder: self.header_builder.mavlink_version(version),
+            header_builder: self.header_builder.version(version),
             payload: self.payload,
             crc_extra: self.crc_extra,
             signature: self.signature,
@@ -275,13 +275,13 @@ impl<
     /// Drops or sets `MAVLINK_IFLAG_SIGNED` incompatibility flag based on the presence of
     /// [`FrameBuilder::signature`].
     ///
-    /// This method becomes available only once [`FrameBuilder::mavlink_version`] is set to [`V2`].
+    /// This method becomes available only once [`FrameBuilder::version`] is set to [`V2`].
     /// So, the following is okay:
     ///
     /// ```
     /// # use mavio::protocol::{FrameBuilder, IncompatFlags, V2};
     /// FrameBuilder::new()
-    ///     .mavlink_version(V2)
+    ///     .version(V2)
     ///     .incompat_flags(IncompatFlags::MAVLINK_IFLAG_SIGNED);
     /// ```
     ///
@@ -310,13 +310,13 @@ impl<
 
     /// Set compatibility flags for `MAVLink 2` header.
     ///
-    /// This method becomes available only once [`FrameBuilder::mavlink_version`] is set to [`V2`].
+    /// This method becomes available only once [`FrameBuilder::version`] is set to [`V2`].
     /// So, the following is okay:
     ///
     /// ```
     /// # use mavio::protocol::{CompatFlags, FrameBuilder, V2};
     /// FrameBuilder::new()
-    ///     .mavlink_version(V2)
+    ///     .version(V2)
     ///     .compat_flags(CompatFlags::BIT_1);
     /// ```
     ///
@@ -342,13 +342,13 @@ impl<
 
     /// Set packet signature for `MAVLink 2` header.
     ///
-    /// This method becomes available only once [`FrameBuilder::mavlink_version`] is set to [`V2`].
+    /// This method becomes available only once [`FrameBuilder::version`] is set to [`V2`].
     /// So, the following is okay:
     ///
     /// ```
     /// # use mavio::protocol::{FrameBuilder, V2, Signature};
     /// FrameBuilder::new()
-    ///     .mavlink_version(V2)
+    ///     .version(V2)
     ///     .signature(Signature{
     ///          // ...  
     /// #        link_id: 0,
@@ -396,15 +396,10 @@ impl<V: Versioned, Sig: IsSigned>
         Sig,
     >
 {
-    /// Build a versionless [`Frame`].
-    pub fn build(self) -> Frame<Versionless> {
-        self.versioned().versionless()
-    }
-
-    /// Build [`Frame`] for specific MAVLink protocol version.
-    pub fn versioned(self) -> Frame<V> {
+    /// Build [`Frame`] for a specific MAVLink protocol version.
+    pub fn build(self) -> Frame<V> {
         let mut frame = Frame {
-            header: self.header_builder.versioned(),
+            header: self.header_builder.build(),
             payload: self.payload.0,
             checksum: 0,
             signature: None,
@@ -413,6 +408,14 @@ impl<V: Versioned, Sig: IsSigned>
         frame.checksum = frame.calculate_crc(self.crc_extra.0);
 
         frame
+    }
+
+    /// Build a versionless [`Frame`].
+    ///
+    /// Versionless frames can be exchanged between protocol-agnostic channels. Internally, frames
+    /// still possess a capability to encode and decode themselves.
+    pub fn versionless(self) -> Frame<Versionless> {
+        self.build().versionless()
     }
 }
 
@@ -430,12 +433,12 @@ mod frame_builder_tests {
             .sequence(17)
             .system_id(22)
             .component_id(17)
-            .mavlink_version(V2)
+            .version(V2)
             .message(&message)
             .unwrap()
-            .versioned();
+            .build();
 
-        assert!(matches!(frame.mavlink_version(), MavLinkVersion::V2));
+        assert!(matches!(frame.version(), MavLinkVersion::V2));
         assert_eq!(frame.sequence(), 17);
         assert_eq!(frame.system_id(), 22);
         assert_eq!(frame.component_id(), 17);

@@ -35,15 +35,15 @@ fn write_to_buffer() {
         .sequence(0)
         .system_id(10)
         .component_id(10)
-        .mavlink_version(V2)
+        .version(V2)
         .message(&message)
         .unwrap()
-        .build();
+        .versionless();
     log::info!("Frame: {message:#?}");
 
     // Write MAVLink frame to a buffer
     let mut buf = [0u8; 44];
-    let mut sender = Sender::new(SliceWriter::new(&mut buf));
+    let mut sender = Sender::versionless(SliceWriter::new(&mut buf));
     sender.send(&frame).unwrap();
     log::info!("Buffer: {buf:?}");
 }
