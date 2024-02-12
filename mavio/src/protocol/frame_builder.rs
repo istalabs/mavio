@@ -5,9 +5,10 @@ use crate::protocol::marker::{
 };
 use crate::protocol::{
     CompatFlags, ComponentId, CrcExtra, HeaderBuilder, IncompatFlags, MaybeVersioned, MessageId,
-    MessageImpl, Payload, Sequence, Signature, SystemId, Versioned, Versionless, V2,
+    MessageImpl, Payload, Sequence, Signature, SystemId, Versioned, Versionless, V1, V2,
 };
 use crate::Frame;
+use std::marker::PhantomData;
 
 use crate::prelude::*;
 
@@ -25,10 +26,10 @@ pub struct FrameBuilder<
     E: IsCrcExtra,
     Sig: IsSigned,
 > {
-    header_builder: HeaderBuilder<V, L, Seq, S, C, M>,
-    payload: P,
-    crc_extra: E,
-    signature: Sig,
+    pub(super) header_builder: HeaderBuilder<V, L, Seq, S, C, M>,
+    pub(super) payload: P,
+    pub(super) crc_extra: E,
+    pub(super) signature: Sig,
 }
 
 impl Default
@@ -379,6 +380,54 @@ impl<
             payload: self.payload,
             crc_extra: self.crc_extra,
             signature: HasSignature(signature),
+        }
+    }
+}
+
+impl
+    FrameBuilder<
+        V1,
+        HasPayloadLen,
+        Sequenced,
+        HasSysId,
+        HasCompId,
+        HasMsgId,
+        HasPayload,
+        HasCrcExtra,
+        NotSigned,
+    >
+{
+    /// Upgrades from `MAVlink 1` to `MAVLink 2` protocol version.
+    ///
+    /// Can be used in tandem with [`Frame::to_builder`] as a method to upgrade frames.
+    pub fn upgrade(
+        self,
+    ) -> FrameBuilder<
+        V2,
+        HasPayloadLen,
+        Sequenced,
+        HasSysId,
+        HasCompId,
+        HasMsgId,
+        HasPayload,
+        HasCrcExtra,
+        NotSigned,
+    > {
+        let payload = self.payload.0.upgraded();
+        FrameBuilder {
+            header_builder: HeaderBuilder {
+                mavlink_version: PhantomData,
+                payload_length: HasPayloadLen(payload.length()),
+                incompat_flags: Some(IncompatFlags::default()),
+                compat_flags: Some(CompatFlags::default()),
+                sequence: self.header_builder.sequence,
+                system_id: self.header_builder.system_id,
+                component_id: self.header_builder.component_id,
+                message_id: self.header_builder.message_id,
+            },
+            payload: HasPayload(payload),
+            crc_extra: self.crc_extra,
+            signature: NotSigned,
         }
     }
 }

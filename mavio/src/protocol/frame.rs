@@ -9,7 +9,8 @@ use crate::consts::{CHECKSUM_SIZE, SIGNATURE_LENGTH};
 use crate::io::{Read, Write};
 use crate::protocol::header::Header;
 use crate::protocol::marker::{
-    NoCompId, NoCrcExtra, NoMsgId, NoPayload, NoPayloadLen, NoSysId, NotSequenced, NotSigned,
+    HasCompId, HasMsgId, HasPayload, HasPayloadLen, HasSysId, NoCompId, NoCrcExtra, NoMsgId,
+    NoPayload, NoPayloadLen, NoSysId, NotSequenced, NotSigned, Sequenced,
 };
 use crate::protocol::signature::{Sign, Signature, SignatureConf};
 use crate::protocol::{
@@ -55,12 +56,11 @@ impl Frame<Versionless> {
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+////                                  ALL                                  ////
+///////////////////////////////////////////////////////////////////////////////
 impl<V: MaybeVersioned> Frame<V> {
-    /// Generic MAVLink header.
-    ///
-    /// # Links
-    ///
-    /// * [`Header`] implementation.
+    /// Frame [`Header`].
     #[inline]
     pub fn header(&self) -> &Header<V> {
         &self.header
@@ -291,19 +291,15 @@ impl<V: MaybeVersioned> Frame<V> {
     }
 
     pub(crate) fn recv<R: Read>(reader: &mut R) -> Result<Frame<V>> {
-        // Retrieve header
         let header = Header::<V>::recv(reader)?;
-
         let body_length = header.body_length();
 
-        // Prepare buffer that will contain the entire message body (with signature if expected)
         #[cfg(feature = "std")]
         let mut body_buf = vec![0u8; body_length];
         #[cfg(not(feature = "std"))]
         let mut body_buf = [0u8; crate::consts::PAYLOAD_MAX_SIZE + SIGNATURE_LENGTH];
         let body_bytes = &mut body_buf[0..body_length];
 
-        // Read and decode
         reader.read_exact(body_bytes)?;
         let frame = Self::try_from_raw_body(header, body_bytes)?;
 
@@ -312,19 +308,15 @@ impl<V: MaybeVersioned> Frame<V> {
 
     #[cfg(feature = "tokio")]
     pub(crate) async fn recv_async<R: AsyncRead + Unpin>(reader: &mut R) -> Result<Frame<V>> {
-        // Retrieve header
         let header = Header::<V>::recv_async(reader).await?;
-
         let body_length = header.body_length();
 
-        // Prepare buffer that will contain the entire message body (with signature if expected)
         #[cfg(feature = "std")]
         let mut body_buf = vec![0u8; body_length];
         #[cfg(not(feature = "std"))]
         let mut body_buf = [0u8; crate::consts::PAYLOAD_MAX_SIZE + SIGNATURE_LENGTH];
         let body_bytes = &mut body_buf[0..body_length];
 
-        // Read and decode
         reader.read_exact(body_bytes).await?;
         let frame = Self::try_from_raw_body(header, body_bytes)?;
 
@@ -401,6 +393,54 @@ impl<V: MaybeVersioned> Frame<V> {
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+////                                 V1/V2                                 ////
+///////////////////////////////////////////////////////////////////////////////
+impl<V: Versioned> Frame<V> {
+    /// Create [`FrameBuilder`] populated with current frame data.
+    ///
+    /// It is not possible to simply change a particular frame field since MAVLink frame data is
+    /// tightly packed together, covered by CRC, and, in the case of `MAVLink 2` protocol, is
+    /// potentially signed. Moreover, to alter a frame correctly we need a [`CrcExtra`] byte which
+    /// is a part of a dialect, not the frame itself.
+    ///
+    /// This method provides a limited capability to alter frame data by creating a [`FrameBuilder`]
+    /// populated with data of the current frame. For `MAVLink 2` frames this will drop frame's
+    /// [`signature`](Frame::signature) and [`IncompatFlags::MAVLINK_IFLAG_SIGNED`] in
+    /// [`incompat_flags`](Frame::incompat_flags) rendering frame unsigned. This process also
+    /// requires from caller to provide a [`CrcExtra`] value to encoded message since
+    /// [`checksum`](Frame::checksum) will be dropped as well and the information required to its
+    /// this recalculation is not stored within MAVLink frame itself.
+    ///
+    /// It is not possible to rebuild [`Versionless`] frames since `MAVLink 2` [`Payload`] may
+    /// contain extension fields and its trailing zero bytes are truncated which means it is not
+    /// possible to reconstruct `MAVLink 1` [`payload_length`](Frame::payload_length) when
+    /// downgrading frame protocol version.
+    pub fn to_builder(
+        &self,
+    ) -> FrameBuilder<
+        V,
+        HasPayloadLen,
+        Sequenced,
+        HasSysId,
+        HasCompId,
+        HasMsgId,
+        HasPayload,
+        NoCrcExtra,
+        NotSigned,
+    > {
+        FrameBuilder {
+            header_builder: self.header.to_builder(),
+            payload: HasPayload(self.payload.clone()),
+            crc_extra: NoCrcExtra,
+            signature: NotSigned,
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+////                                  V2                                   ////
+///////////////////////////////////////////////////////////////////////////////
 impl Frame<V2> {
     /// Incompatibility flags for `MAVLink 2` header.
     ///
@@ -440,7 +480,7 @@ impl Frame<V2> {
         self.signature.as_ref()
     }
 
-    /// `MAVLink 2` signature `link_id`, a 8-bit identifier of a MAVLink channel.
+    /// `MAVLink 2` signature `link_id`, an 8-bit identifier of a MAVLink channel.
     ///
     /// Peers may have different semantics or rules for different links. For example, some links may have higher
     /// priority over another during routing. Or even different secret keys for authorization.
@@ -562,24 +602,64 @@ impl Frame<V2> {
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+////                                TESTS                                  ////
+///////////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 mod tests {
     use crc_any::CRCu16;
 
     #[cfg(feature = "minimal")]
     mod dialect_utils {
+        pub(super) use crate::consts::SIGNATURE_SECRET_KEY_LENGTH;
         pub(super) use crate::dialects::minimal as dialect;
+        use crate::dialects::minimal::enums::{MavAutopilot, MavModeFlag, MavState, MavType};
+        pub(super) use crate::protocol::V1;
+        pub(super) use crate::utils::MavSha256;
         pub(super) use dialect::messages::Heartbeat;
 
         pub(super) use super::super::*;
 
-        pub(super) fn default_v2_heartbeat_frame() -> Frame<V2> {
-            let message = Heartbeat::default();
+        pub(super) fn default_incompat_flags() -> IncompatFlags {
+            IncompatFlags::BIT_3 | IncompatFlags::BIT_4
+        }
+
+        pub(super) fn default_compat_flags() -> CompatFlags {
+            CompatFlags::BIT_5 | CompatFlags::BIT_6
+        }
+
+        pub(super) fn default_heartbeat_message() -> Heartbeat {
+            Heartbeat {
+                type_: MavType::FixedWing,
+                autopilot: MavAutopilot::Generic,
+                base_mode: MavModeFlag::TEST_ENABLED & MavModeFlag::CUSTOM_MODE_ENABLED,
+                custom_mode: 0,
+                system_status: MavState::Active,
+                mavlink_version: dialect::spec().version().unwrap_or(0),
+            }
+        }
+
+        pub(super) fn default_v1_heartbeat_frame() -> Frame<V1> {
+            let message = default_heartbeat_message();
             Frame::builder()
-                .sequence(17)
+                .sequence(7)
+                .system_id(22)
+                .component_id(17)
+                .version(V1)
+                .message(&message)
+                .unwrap()
+                .build()
+        }
+
+        pub(super) fn default_v2_heartbeat_frame() -> Frame<V2> {
+            let message = default_heartbeat_message();
+            Frame::builder()
+                .sequence(7)
                 .system_id(22)
                 .component_id(17)
                 .version(V2)
+                .incompat_flags(default_incompat_flags())
+                .compat_flags(default_compat_flags())
                 .message(&message)
                 .unwrap()
                 .build()
@@ -612,11 +692,7 @@ mod tests {
     #[cfg(feature = "minimal")]
     #[cfg(feature = "std")]
     fn test_signing() {
-        use crate::consts::SIGNATURE_SECRET_KEY_LENGTH;
-        use crate::utils::MavSha256;
-
         let mut frame = default_v2_heartbeat_frame();
-
         let frame = frame.add_signature(
             &mut MavSha256::default(),
             SignatureConf {
@@ -634,5 +710,58 @@ mod tests {
     #[cfg(feature = "minimal")]
     fn test_decoding_to_message() {
         let _: dialect::Message = default_v2_heartbeat_frame().decode().unwrap();
+    }
+
+    #[test]
+    #[cfg(feature = "minimal")]
+    fn test_rebuild_frame() {
+        let mut frame = default_v2_heartbeat_frame();
+        frame
+            .add_signature(
+                &mut MavSha256::default(),
+                SignatureConf {
+                    link_id: 0,
+                    timestamp: Default::default(),
+                    secret: [0u8; SIGNATURE_SECRET_KEY_LENGTH].into(),
+                },
+            )
+            .unwrap();
+
+        let updated = frame
+            .to_builder()
+            .crc_extra(dialect::messages::heartbeat::spec().crc_extra())
+            .build();
+
+        assert_eq!(updated.sequence(), frame.sequence());
+        assert_eq!(updated.system_id(), frame.system_id());
+        assert_eq!(updated.component_id(), frame.component_id());
+        assert_eq!(updated.payload_length(), frame.payload_length());
+        assert_eq!(updated.payload().bytes(), frame.payload().bytes());
+        assert_eq!(updated.checksum(), frame.checksum());
+
+        assert_eq!(
+            updated.incompat_flags().bits(),
+            default_incompat_flags().bits()
+        );
+        assert_eq!(updated.compat_flags().bits(), default_compat_flags().bits());
+        assert!(!updated.is_signed());
+    }
+
+    #[test]
+    #[cfg(feature = "minimal")]
+    fn test_upgrade_frame() {
+        let expected = default_v2_heartbeat_frame();
+
+        let upgraded = default_v1_heartbeat_frame()
+            .to_builder()
+            .crc_extra(dialect::messages::heartbeat::spec().crc_extra())
+            .upgrade()
+            .incompat_flags(default_incompat_flags())
+            .compat_flags(default_compat_flags())
+            .build();
+
+        assert_eq!(upgraded.payload_length(), expected.payload_length());
+        assert_eq!(upgraded.payload().bytes(), expected.payload().bytes());
+        assert_eq!(upgraded.checksum(), expected.checksum());
     }
 }

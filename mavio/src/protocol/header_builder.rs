@@ -24,14 +24,14 @@ pub struct HeaderBuilder<
     C: IsCompId,
     M: IsMsgId,
 > {
-    mavlink_version: PhantomData<V>,
-    payload_length: L,
-    incompat_flags: Option<IncompatFlags>,
-    compat_flags: Option<CompatFlags>,
-    sequence: Seq,
-    system_id: S,
-    component_id: C,
-    message_id: M,
+    pub(super) mavlink_version: PhantomData<V>,
+    pub(super) payload_length: L,
+    pub(super) incompat_flags: Option<IncompatFlags>,
+    pub(super) compat_flags: Option<CompatFlags>,
+    pub(super) sequence: Seq,
+    pub(super) system_id: S,
+    pub(super) component_id: C,
+    pub(super) message_id: M,
 }
 
 impl HeaderBuilder<Versionless, NoPayloadLen, NotSequenced, NoSysId, NoCompId, NoMsgId> {
@@ -80,8 +80,8 @@ impl<V: MaybeVersioned, L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsComp
         }
 
         if from_v1_to_v2 {
-            header.incompat_flags = Some(Default::default());
-            header.compat_flags = Some(Default::default());
+            header.incompat_flags = Some(header.incompat_flags.unwrap_or_default());
+            header.compat_flags = Some(header.compat_flags.unwrap_or_default());
         }
 
         header

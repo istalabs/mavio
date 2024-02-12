@@ -15,6 +15,9 @@ mod incompat_flags {
     bitflags! {
         impl IncompatFlags: u8 {
             /// Signed message flag.
+            ///
+            /// Controls [message signing](https://mavlink.io/en/guide/message_signing.html) for
+            /// `MAVLink 2` protocol.
             const MAVLINK_IFLAG_SIGNED = MAVLINK_IFLAG_SIGNED;
             /// Second bit.
             const BIT_2 = 1 << 1;

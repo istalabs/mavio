@@ -14,7 +14,10 @@ use crate::consts::{
     SIGNATURE_LENGTH,
 };
 use crate::io::{Read, Write};
-use crate::protocol::marker::{NoCompId, NoMsgId, NoPayloadLen, NoSysId, NotSequenced};
+use crate::protocol::marker::{
+    HasCompId, HasMsgId, HasPayloadLen, HasSysId, NoCompId, NoMsgId, NoPayloadLen, NoSysId,
+    NotSequenced, Sequenced,
+};
 use crate::protocol::{
     CompatFlags, ComponentId, HeaderBuilder, IncompatFlags, MavSTX, MaybeVersioned, PayloadLength,
     Sequence, SystemId, Versioned, Versionless, V2,
@@ -374,6 +377,26 @@ impl<V: MaybeVersioned> Header<V> {
             message_id,
             _marker_version: PhantomData,
         })
+    }
+}
+
+impl<V: Versioned> Header<V> {
+    pub(super) fn to_builder(
+        &self,
+    ) -> HeaderBuilder<V, HasPayloadLen, Sequenced, HasSysId, HasCompId, HasMsgId> {
+        let mut incompat_flags = self.incompat_flags;
+        incompat_flags.set(IncompatFlags::MAVLINK_IFLAG_SIGNED, false);
+
+        HeaderBuilder {
+            mavlink_version: PhantomData,
+            payload_length: HasPayloadLen(self.payload_length),
+            incompat_flags: Some(incompat_flags),
+            compat_flags: Some(self.compat_flags),
+            sequence: Sequenced(self.sequence),
+            system_id: HasSysId(self.system_id),
+            component_id: HasCompId(self.component_id),
+            message_id: HasMsgId(self.message_id),
+        }
     }
 }
 
