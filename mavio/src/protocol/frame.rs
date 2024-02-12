@@ -13,9 +13,9 @@ use crate::protocol::marker::{
 };
 use crate::protocol::signature::{Sign, Signature, SignatureConf};
 use crate::protocol::{
-    Checksum, CompatFlags, ComponentId, CrcExtra, DialectSpec, FrameBuilder, IncompatFlags,
-    MavLinkVersion, MavTimestamp, MaybeVersioned, MessageId, Payload, PayloadLength, SecretKey,
-    Sequence, SignatureBytes, SignatureLinkId, SystemId, Versioned, Versionless, V2,
+    Checksum, CompatFlags, ComponentId, CrcExtra, DialectMessage, DialectSpec, FrameBuilder,
+    IncompatFlags, MavLinkVersion, MavTimestamp, MaybeVersioned, MessageId, Payload, PayloadLength,
+    SecretKey, Sequence, SignatureBytes, SignatureLinkId, SystemId, Versioned, Versionless, V2,
 };
 
 use crate::prelude::*;
@@ -279,6 +279,12 @@ impl<V: MaybeVersioned> Frame<V> {
             checksum: self.checksum,
             signature: self.signature,
         }
+    }
+
+    /// Decodes frame into a message of particular MAVLink dialect.
+    #[inline]
+    pub fn decode<M: DialectMessage>(&self) -> Result<M> {
+        M::decode(self.payload()).map_err(Error::from)
     }
 
     pub(crate) fn recv<R: Read>(reader: &mut R) -> Result<Frame<V>> {
@@ -557,6 +563,28 @@ impl Frame<V2> {
 mod tests {
     use crc_any::CRCu16;
 
+    #[cfg(feature = "minimal")]
+    mod dialect_utils {
+        pub(super) use crate::dialects::minimal as dialect;
+        pub(super) use dialect::messages::Heartbeat;
+
+        pub(super) use super::super::*;
+
+        pub(super) fn default_v2_heartbeat_frame() -> Frame<V2> {
+            let message = Heartbeat::default();
+            Frame::builder()
+                .sequence(17)
+                .system_id(22)
+                .component_id(17)
+                .mavlink_version(V2)
+                .message(&message)
+                .unwrap()
+                .versioned()
+        }
+    }
+    #[cfg(feature = "minimal")]
+    use dialect_utils::*;
+
     #[test]
     fn crc_calculation_algorithm_accepts_sequential_digests() {
         // We just want to test that CRC algorithm is invariant in respect to the way we feed it
@@ -582,20 +610,9 @@ mod tests {
     #[cfg(feature = "std")]
     fn test_signing() {
         use crate::consts::SIGNATURE_SECRET_KEY_LENGTH;
-        use crate::dialects::minimal::messages::Heartbeat;
-        use crate::protocol::{SignatureConf, V2};
         use crate::utils::MavSha256;
-        use crate::Frame;
 
-        let message = Heartbeat::default();
-        let mut frame = Frame::builder()
-            .sequence(17)
-            .system_id(22)
-            .component_id(17)
-            .mavlink_version(V2)
-            .message(&message)
-            .unwrap()
-            .versioned();
+        let mut frame = default_v2_heartbeat_frame();
 
         let frame = frame.add_signature(
             &mut MavSha256::default(),
@@ -608,5 +625,11 @@ mod tests {
 
         let frame = frame.unwrap();
         assert!(frame.is_signed());
+    }
+
+    #[test]
+    #[cfg(feature = "minimal")]
+    fn test_decoding_to_message() {
+        let _: dialect::Message = default_v2_heartbeat_frame().decode().unwrap();
     }
 }

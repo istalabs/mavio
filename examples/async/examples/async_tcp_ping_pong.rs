@@ -49,13 +49,13 @@ async fn listen<R: AsyncRead + Unpin>(
         );
 
         // Decode message
-        match dialect::decode(frame.payload()) {
+        match frame.decode() {
             Ok(msg) => {
                 if let Message::Heartbeat(msg) = msg {
                     log::info!("[{whoami}] HEARTBEAT #{}: {msg:?}", frame.sequence());
                 } else {
-                    log::info!("[{whoami}] MESSAGE #{}: {msg:?}", frame.sequence());
                     // Some other message
+                    log::info!("[{whoami}] MESSAGE #{}: {msg:?}", frame.sequence());
                 }
             }
             Err(err) => {

@@ -28,7 +28,7 @@ path = "src/lib.rs"
 [dependencies]
 bitflags = { version = "2.4.2", default-features = false }
 crc-any = { version = "2.4.3", default-features = false }
-mavspec = { version = "0.2.3", path = "../../mavspec/mavspec", default-features = false, features = ["rust"] }
+mavspec = { version = "0.3.0-rc1", path = "../../mavspec/mavspec", default-features = false, features = ["rust"] }
 paste = "1.0.14"
 serde = { version = "1.0.193", default-features = false, features = ["derive"], optional = true }
 serde_arrays = { version = "0.1.0", default-features = false, optional = true }
@@ -43,7 +43,7 @@ env_logger = "0.11.1"
 portpicker = "0.1.1"
 
 [build-dependencies]
-mavspec = { version = "0.2.3", path = "../../mavspec/mavspec", default-features = false, features = ["rust_gen", "fingerprints"] }
+mavspec = { version = "0.3.0-rc1", path = "../../mavspec/mavspec", default-features = false, features = ["rust_gen", "fingerprints"] }
 
 ###########################################################
 # Features

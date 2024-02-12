@@ -408,7 +408,7 @@ dependencies = [
 
 [[package]]
 name = "mavspec"
-version = "0.2.3"
+version = "0.3.0-rc1"
 dependencies = [
  "mavspec_rust_derive",
  "mavspec_rust_gen",
@@ -417,7 +417,7 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_derive"
-version = "0.2.3"
+version = "0.3.0-rc1"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -428,7 +428,7 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_gen"
-version = "0.2.3"
+version = "0.3.0-rc1"
 dependencies = [
  "anyhow",
  "base64",
@@ -446,7 +446,7 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_spec"
-version = "0.2.3"
+version = "0.3.0-rc1"
 dependencies = [
  "bitflags",
  "serde",
