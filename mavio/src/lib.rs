@@ -33,7 +33,7 @@
 //! use std::net::TcpStream;
 //! use mavio::{Frame, Receiver};
 //! use mavio::dialects::minimal as dialect;
-//! use dialect::Message;
+//! use dialect::Minimal;
 //!
 //! let mut receiver = Receiver::versionless(TcpStream::connect("0.0.0.0:5600")?);
 //!
@@ -45,7 +45,7 @@
 //!         continue;
 //!     }
 //!
-//!     if let Ok(Message::Heartbeat(msg)) = frame.decode() {
+//!     if let Ok(Minimal::Heartbeat(msg)) = frame.decode() {
 //!         println!(
 //!             "HEARTBEAT #{}: mavlink_version={:#?}",
 //!             frame.sequence(),
@@ -72,7 +72,6 @@
 //! use mavio::{Frame, Sender};
 //! use mavio::protocol::V2;
 //! use mavio::dialects::minimal as dialect;
-//! use dialect::Message;
 //! use dialect::enums::{MavAutopilot, MavModeFlag, MavState, MavType};
 //!
 //! let mut sender = Sender::new(TcpStream::connect("0.0.0.0:5600")?);

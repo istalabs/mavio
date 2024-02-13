@@ -1,12 +1,9 @@
 //! # MAVLink frame writer
 
 use core::marker::PhantomData;
-use mavspec::rust::spec::DialectMessage;
 
 use crate::io::Read;
-use crate::protocol::{
-    Dialectless, Frame, HasDialect, MaybeDialect, MaybeVersioned, Versioned, Versionless,
-};
+use crate::protocol::{Dialectless, Frame, MaybeDialect, MaybeVersioned, Versioned, Versionless};
 
 use crate::prelude::*;
 

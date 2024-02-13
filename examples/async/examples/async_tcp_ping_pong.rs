@@ -10,7 +10,7 @@ use mavio::protocol::V2;
 use mavio::{AsyncReceiver, AsyncSender, Frame};
 
 use dialect::enums::{MavAutopilot, MavModeFlag, MavState, MavType};
-use dialect::Message;
+use dialect::Minimal;
 
 /// TCP address for server and clients.
 const ADDRESS: &str = ":::56001";
@@ -51,7 +51,7 @@ async fn listen<R: AsyncRead + Unpin>(
         // Decode message
         match frame.decode() {
             Ok(msg) => {
-                if let Message::Heartbeat(msg) = msg {
+                if let Minimal::Heartbeat(msg) = msg {
                     log::info!("[{whoami}] HEARTBEAT #{}: {msg:?}", frame.sequence());
                 } else {
                     // Some other message

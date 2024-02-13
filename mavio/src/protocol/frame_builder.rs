@@ -515,8 +515,6 @@ impl<V: Versioned, D: MaybeDialect, Sig: IsSigned>
 
 #[cfg(test)]
 mod frame_builder_tests {
-    use crate::dialects::minimal;
-
     #[test]
     #[cfg(feature = "minimal")]
     fn build_frame_v2() {
@@ -544,10 +542,11 @@ mod frame_builder_tests {
     #[test]
     #[cfg(feature = "minimal")]
     fn build_frame_v2_with_dialect() {
-        use crate::dialects::minimal;
+        use crate::dialects::minimal as dialect;
         use crate::protocol::V2;
         use crate::Frame;
-        use minimal::messages::Heartbeat;
+        use dialect::messages::Heartbeat;
+        use dialect::Minimal;
 
         let message = Heartbeat::default();
         let frame = Frame::builder()
@@ -557,10 +556,10 @@ mod frame_builder_tests {
             .version(V2)
             .message(&message)
             .unwrap()
-            .dialect(minimal::dialect())
+            .dialect(dialect::dialect())
             .build();
 
         let message = frame.to_message().unwrap();
-        assert!(matches!(message, minimal::Message::Heartbeat(_)));
+        assert!(matches!(message, Minimal::Heartbeat(_)));
     }
 }

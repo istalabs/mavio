@@ -35,7 +35,7 @@ mod needs_dialect {
         assert_eq!(frame.component_id(), 42);
         assert!(V::matches(frame.version()));
 
-        if let dialect::Message::Heartbeat(message) = frame.decode().unwrap() {
+        if let dialect::Minimal::Heartbeat(message) = frame.decode().unwrap() {
             let expected_message = default_heartbeat_message();
             assert_eq!(message.mavlink_version, expected_message.mavlink_version);
             assert_eq!(message.autopilot as u8, expected_message.autopilot as u8);

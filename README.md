@@ -92,9 +92,10 @@ Connect as TCP client, receive 10 frames, and decode any received
 
 ```rust
 use std::net::TcpStream;
+
 use mavio::{Frame, Receiver};
 use mavio::dialects::minimal as dialect;
-use dialect::Message;
+use dialect::Minimal;
 
 fn main() -> mavio::errors::Result<()> {
     let mut receiver = Receiver::new(TcpStream::connect("0.0.0.0:5600")?);
@@ -107,7 +108,7 @@ fn main() -> mavio::errors::Result<()> {
             continue;
         }
 
-        if let Ok(Message::Heartbeat(msg)) = dialect::decode(frame.payload()) {
+        if let Ok(Minimal::Heartbeat(msg)) = dialect::decode(frame.payload()) {
             println!(
                 "HEARTBEAT #{}: mavlink_version={:#?}",
                 frame.sequence(),
@@ -127,10 +128,10 @@ to any connected client using MAVLink 2 protocol, then disconnect a client.
 
 ```rust
 use std::net::TcpStream;
+
 use mavio::{Frame, Sender};
 use mavio::protocol::V2;
 use mavio::dialects::minimal as dialect;
-use dialect::Message;
 use dialect::enums::{MavAutopilot, MavModeFlag, MavState, MavType};
 
 fn main() -> mavio::errors::Result<()> {

@@ -304,7 +304,7 @@ impl<V: MaybeVersioned, D: MaybeDialect> Frame<V, D> {
     /// # fn main() -> mavio::errors::Result<()> {
     /// # use minimal::messages::Heartbeat;
     /// use mavio::dialects::minimal;
-    /// use mavio::dialects::minimal::Message;
+    /// use mavio::dialects::minimal::Minimal;
     /// use mavio::Frame;
     /// use mavio::protocol::{Dialectless, V2};
     ///
@@ -322,8 +322,8 @@ impl<V: MaybeVersioned, D: MaybeDialect> Frame<V, D> {
     ///
     /// // Decode the frame and match result over available dialect messages
     /// match frame.to_message().unwrap() {
-    ///     Message::ProtocolVersion(_) => {}
-    ///     Message::Heartbeat(_) => {}
+    ///     Minimal::ProtocolVersion(_) => {}
+    ///     Minimal::Heartbeat(_) => {}
     /// }
     /// # Ok(())
     /// # }
@@ -353,7 +353,7 @@ impl<V: MaybeVersioned, D: MaybeDialect> Frame<V, D> {
     /// # use minimal::messages::Heartbeat;
     /// # use mavio::protocol::{Dialectless, V2};
     /// use mavio::dialects::minimal;
-    /// use mavio::dialects::minimal::Message;
+    /// use mavio::dialects::minimal::Minimal;
     /// use mavio::Frame;
     ///
     /// let frame = // ... obtain a frame
@@ -367,8 +367,8 @@ impl<V: MaybeVersioned, D: MaybeDialect> Frame<V, D> {
     ///
     /// // Decode the frame within `minimal` dialect and match result over available dialect messages
     /// match frame.decode().unwrap() {
-    ///     Message::ProtocolVersion(_) => {}
-    ///     Message::Heartbeat(_) => {}
+    ///     Minimal::ProtocolVersion(_) => {}
+    ///     Minimal::Heartbeat(_) => {}
     /// }
     /// # Ok(())
     /// # }
@@ -719,7 +719,7 @@ impl<V: MaybeVersioned, M: DialectMessage + 'static> Frame<V, HasDialect<M>> {
     /// # use minimal::messages::Heartbeat;
     /// # use mavio::protocol::{Dialectless, V2};
     /// use mavio::dialects::minimal;
-    /// use mavio::dialects::minimal::Message;
+    /// use mavio::dialects::minimal::Minimal;
     /// use mavio::Frame;
     ///
     /// let frame = // ... obtain a frame
@@ -736,8 +736,8 @@ impl<V: MaybeVersioned, M: DialectMessage + 'static> Frame<V, HasDialect<M>> {
     ///
     /// // Decode the frame and match result over available dialect messages
     /// match frame.to_message().unwrap() {
-    ///     Message::ProtocolVersion(_) => {}
-    ///     Message::Heartbeat(_) => {}
+    ///     Minimal::ProtocolVersion(_) => {}
+    ///     Minimal::Heartbeat(_) => {}
     /// }
     /// # Ok(())
     /// # }
@@ -859,7 +859,7 @@ mod tests {
     #[test]
     #[cfg(feature = "minimal")]
     fn test_decoding_to_message() {
-        let _: dialect::Message = default_v2_heartbeat_frame().decode().unwrap();
+        let _: dialect::Minimal = default_v2_heartbeat_frame().decode().unwrap();
     }
 
     #[test]
