@@ -23,6 +23,8 @@ use crate::prelude::*;
 
 /// MAVLink frame.
 ///
+/// # Construction
+///
 /// Since MAVLink frames has a complex internal structure depending on [`MavLinkVersion`], encoded
 /// [`MessageImpl`](crate::protocol::MessageImpl) and presence of [`Signature`], there are no
 /// constructor for this struct. [`Frame`] can be either received as they were sent by remote or
@@ -57,7 +59,7 @@ impl Frame<Versionless> {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-////                                  ALL                                  ////
+//                                    ALL                                    //
 ///////////////////////////////////////////////////////////////////////////////
 impl<V: MaybeVersioned> Frame<V> {
     /// Frame [`Header`].
@@ -394,7 +396,7 @@ impl<V: MaybeVersioned> Frame<V> {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-////                                 V1/V2                                 ////
+//                                   V1/V2                                   //
 ///////////////////////////////////////////////////////////////////////////////
 impl<V: Versioned> Frame<V> {
     /// Create [`FrameBuilder`] populated with current frame data.
@@ -439,7 +441,7 @@ impl<V: Versioned> Frame<V> {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-////                                  V2                                   ////
+//                                    V2                                     //
 ///////////////////////////////////////////////////////////////////////////////
 impl Frame<V2> {
     /// Incompatibility flags for `MAVLink 2` header.
@@ -603,7 +605,7 @@ impl Frame<V2> {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-////                                TESTS                                  ////
+//                                  TESTS                                    //
 ///////////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 mod tests {

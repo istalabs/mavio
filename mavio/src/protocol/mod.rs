@@ -28,6 +28,7 @@ pub use frame::Frame;
 pub use frame_builder::FrameBuilder;
 pub use header::{Header, HeaderBytes};
 pub use header_builder::HeaderBuilder;
+pub use marker::{Dialectless, HasDialect, MaybeDialect};
 pub use marker::{MaybeVersioned, Versioned, Versionless, V1, V2};
 pub use signature::{MavTimestamp, SecretKey, Sign, Signature, SignatureConf};
 pub use stx::MavSTX;
