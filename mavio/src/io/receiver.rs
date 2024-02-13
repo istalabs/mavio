@@ -1,9 +1,12 @@
 //! # MAVLink frame writer
 
 use core::marker::PhantomData;
+use mavspec::rust::spec::DialectMessage;
 
 use crate::io::Read;
-use crate::protocol::{Frame, MaybeVersioned, Versioned, Versionless};
+use crate::protocol::{
+    Dialectless, Frame, HasDialect, MaybeDialect, MaybeVersioned, Versioned, Versionless,
+};
 
 use crate::prelude::*;
 
@@ -11,17 +14,19 @@ use crate::prelude::*;
 ///
 /// Receives MAVLink frames from an instance of [`Read`].
 #[derive(Clone, Debug)]
-pub struct Receiver<R: Read, V: MaybeVersioned> {
+pub struct Receiver<R: Read, V: MaybeVersioned, D: MaybeDialect> {
     reader: R,
     _marker_version: PhantomData<V>,
+    _marker_dialect: D,
 }
 
-impl<R: Read> Receiver<R, Versionless> {
+impl<R: Read> Receiver<R, Versionless, Dialectless> {
     /// Default constructor.
-    pub fn new<Version: MaybeVersioned>(reader: R) -> Receiver<R, Version> {
+    pub fn new<Version: MaybeVersioned>(reader: R) -> Receiver<R, Version, Dialectless> {
         Receiver {
             reader,
             _marker_version: PhantomData,
+            _marker_dialect: Dialectless,
         }
     }
 
@@ -34,7 +39,7 @@ impl<R: Read> Receiver<R, Versionless> {
     /// [`Receiver::versioned`].
     ///
     /// If you want to instantiate a generic receiver, use [`Receiver::new`].
-    pub fn versionless(reader: R) -> Receiver<R, Versionless> {
+    pub fn versionless(reader: R) -> Receiver<R, Versionless, Dialectless> {
         Receiver::new(reader)
     }
 
@@ -51,12 +56,12 @@ impl<R: Read> Receiver<R, Versionless> {
     pub fn versioned<Version: Versioned>(
         reader: R,
         #[allow(unused_variables)] version: Version,
-    ) -> Receiver<R, Version> {
+    ) -> Receiver<R, Version, Dialectless> {
         Receiver::new(reader)
     }
 }
 
-impl<R: Read, V: MaybeVersioned> Receiver<R, V> {
+impl<R: Read, V: MaybeVersioned> Receiver<R, V, Dialectless> {
     /// Receives MAVLink [`Frame`].
     ///
     /// Blocks until a valid MAVLink frame received.
@@ -65,7 +70,7 @@ impl<R: Read, V: MaybeVersioned> Receiver<R, V> {
     /// Otherwise, returns [`FrameError::InvalidVersion`].
     ///
     /// [`Versionless`] receiver accepts both `MAVLink 1` and `MAVLink 2` frames.
-    pub fn recv(&mut self) -> Result<Frame<V>> {
-        Frame::<V>::recv(&mut self.reader)
+    pub fn recv_frame(&mut self) -> Result<Frame<V, Dialectless>> {
+        Frame::<V, Dialectless>::recv(&mut self.reader)
     }
 }

@@ -38,14 +38,14 @@
 //! let mut receiver = Receiver::versionless(TcpStream::connect("0.0.0.0:5600")?);
 //!
 //! for i in 0..10 {
-//!     let frame = receiver.recv()?;
+//!     let frame = receiver.recv_frame()?;
 //!     
 //!     if let Err(err) = frame.validate_checksum(dialect::spec()) {
 //!         eprintln!("Invalid checksum: {err:?}");
 //!         continue;
 //!     }
 //!
-//!     if let Ok(Message::Heartbeat(msg)) = dialect::decode(frame.payload()) {
+//!     if let Ok(Message::Heartbeat(msg)) = frame.decode() {
 //!         println!(
 //!             "HEARTBEAT #{}: mavlink_version={:#?}",
 //!             frame.sequence(),
@@ -102,7 +102,7 @@
 //!         .message(&message)?
 //!         .build();
 //!
-//!     sender.send(&frame)?;
+//!     sender.send_frame(&frame)?;
 //!     println!("FRAME #{} sent: {:#?}", sequence, frame);
 //! }
 //!

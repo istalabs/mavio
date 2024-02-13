@@ -44,7 +44,7 @@ fn write_to_buffer() {
     // Write MAVLink frame to a buffer
     let mut buf = [0u8; 44];
     let mut sender = Sender::versionless(SliceWriter::new(&mut buf));
-    sender.send(&frame).unwrap();
+    sender.send_frame(&frame).unwrap();
     log::info!("Buffer: {buf:?}");
 }
 

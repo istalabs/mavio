@@ -4,7 +4,7 @@ use core::marker::PhantomData;
 
 use tokio::io::AsyncWrite;
 
-use crate::protocol::{Frame, MaybeVersioned, Versioned, Versionless};
+use crate::protocol::{Dialectless, Frame, MaybeDialect, MaybeVersioned, Versioned, Versionless};
 
 use crate::prelude::*;
 
@@ -12,17 +12,19 @@ use crate::prelude::*;
 ///
 /// Sends MAVLink frames to an instance of [`AsyncWrite`].  
 #[derive(Clone, Debug)]
-pub struct AsyncSender<W: AsyncWrite + Unpin, V: MaybeVersioned> {
+pub struct AsyncSender<W: AsyncWrite + Unpin, V: MaybeVersioned, D: MaybeDialect> {
     writer: W,
     _marker_version: PhantomData<V>,
+    _marker_dialect: D,
 }
 
-impl<W: AsyncWrite + Unpin> AsyncSender<W, Versionless> {
+impl<W: AsyncWrite + Unpin> AsyncSender<W, Versionless, Dialectless> {
     /// Default constructor.
-    pub fn new<Version: MaybeVersioned>(writer: W) -> AsyncSender<W, Version> {
+    pub fn new<Version: MaybeVersioned>(writer: W) -> AsyncSender<W, Version, Dialectless> {
         AsyncSender {
             writer,
             _marker_version: PhantomData,
+            _marker_dialect: Dialectless,
         }
     }
 
@@ -35,10 +37,7 @@ impl<W: AsyncWrite + Unpin> AsyncSender<W, Versionless> {
     ///
     /// If you want to instantiate a generic sender, use [`AsyncSender::new`].
     pub fn versionless(writer: W) -> Self {
-        Self {
-            writer,
-            _marker_version: PhantomData,
-        }
+        AsyncSender::new(writer)
     }
 
     /// Create a receiver specific to a particular MAVLink protocol version.
@@ -50,25 +49,22 @@ impl<W: AsyncWrite + Unpin> AsyncSender<W, Versionless> {
     pub fn versioned<Version: Versioned>(
         writer: W,
         #[allow(unused_variables)] version: Version,
-    ) -> AsyncSender<W, Version> {
-        AsyncSender {
-            writer,
-            _marker_version: PhantomData,
-        }
+    ) -> AsyncSender<W, Version, Dialectless> {
+        AsyncSender::new(writer)
     }
 }
 
-impl<W: AsyncWrite + Unpin, V: MaybeVersioned> AsyncSender<W, V> {
+impl<W: AsyncWrite + Unpin, V: MaybeVersioned> AsyncSender<W, V, Dialectless> {
     /// Send MAVLink [`Frame`] asynchronously.
     ///
     /// [`Versioned`] sender accepts only frames of a specific MAVLink protocol version. Otherwise,
     /// returns [`FrameError::InvalidVersion`].
     ///
     /// [`Versionless`] sender accepts both `MAVLink 1` and `MAVLink 2` frames as
-    /// [`Frame<Versionless>`].
+    /// [`Frame<Versionless, _>`].
     ///
     /// Returns the number of bytes sent.
-    pub async fn send(&mut self, frame: &Frame<V>) -> Result<usize> {
+    pub async fn send_frame(&mut self, frame: &Frame<V, Dialectless>) -> Result<usize> {
         V::expect(frame.version())?;
         frame.send_async(&mut self.writer).await
     }

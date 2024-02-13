@@ -100,7 +100,7 @@ fn main() -> mavio::errors::Result<()> {
     let mut receiver = Receiver::new(TcpStream::connect("0.0.0.0:5600")?);
 
     for i in 0..10 {
-        let frame = receiver.recv()?;
+        let frame = receiver.recv_frame()?;
 
         if let Err(err) = frame.validate_checksum(dialect::spec()) {
             eprintln!("Invalid checksum: {:?}", err);
@@ -160,7 +160,7 @@ fn main() -> mavio::errors::Result<()> {
             .mavlink_version(mavlink_version)
             .build();
 
-        sender.send(&frame)?;
+        sender.send_frame(&frame)?;
         println!("FRAME #{} sent: {:#?}", sequence, frame);
     }
 }

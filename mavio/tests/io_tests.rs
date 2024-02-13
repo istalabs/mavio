@@ -3,7 +3,7 @@ mod needs_dialect {
     use dialect::messages::Heartbeat;
     use mavio::dialects::minimal as dialect;
     use mavio::dialects::minimal::enums::{MavAutopilot, MavModeFlag, MavState, MavType};
-    use mavio::protocol::{Versioned, V1, V2};
+    use mavio::protocol::{Dialectless, Versioned, V1, V2};
     use mavio::utils::{SliceReader, SliceWriter};
     use mavio::{Frame, Receiver, Sender};
 
@@ -18,7 +18,7 @@ mod needs_dialect {
         }
     }
 
-    fn default_heartbeat_frame<V: Versioned>(version: V) -> Frame<V> {
+    fn default_heartbeat_frame<V: Versioned>(version: V) -> Frame<V, Dialectless> {
         Frame::builder()
             .version(version)
             .sequence(0)
@@ -29,7 +29,7 @@ mod needs_dialect {
             .build()
     }
 
-    fn assert_default_frame<V: Versioned>(frame: Frame<V>) {
+    fn assert_default_frame<V: Versioned>(frame: Frame<V, Dialectless>) {
         assert_eq!(frame.sequence(), 0);
         assert_eq!(frame.system_id(), 1);
         assert_eq!(frame.component_id(), 42);
@@ -58,12 +58,12 @@ mod needs_dialect {
         let mut buffer = [0u8; 255];
 
         let mut sender_v1 = Sender::new(SliceWriter::new(buffer.as_mut_slice()));
-        let frame_v2_offset = sender_v1.send(&frame_v1).unwrap();
+        let frame_v2_offset = sender_v1.send_frame(&frame_v1).unwrap();
 
         let mut sender_v2 = Sender::new(SliceWriter::new(
             &mut buffer.as_mut_slice()[frame_v2_offset..],
         ));
-        sender_v2.send(&frame_v2).unwrap();
+        sender_v2.send_frame(&frame_v2).unwrap();
 
         (buffer, frame_v2_offset)
     }
@@ -75,16 +75,16 @@ mod needs_dialect {
         let mut sender = Sender::versionless(SliceWriter::new(buffer.as_mut_slice()));
 
         sender
-            .send(&default_heartbeat_frame(V1).versionless())
+            .send_frame(&default_heartbeat_frame(V1).versionless())
             .unwrap();
         sender
-            .send(&default_heartbeat_frame(V2).versionless())
+            .send_frame(&default_heartbeat_frame(V2).versionless())
             .unwrap();
 
         let mut receiver = Receiver::versionless(SliceReader::new(buffer.as_slice()));
 
-        let frame_v1 = receiver.recv().unwrap().try_versioned(V1).unwrap();
-        let frame_v2 = receiver.recv().unwrap().try_versioned(V2).unwrap();
+        let frame_v1 = receiver.recv_frame().unwrap().try_versioned(V1).unwrap();
+        let frame_v2 = receiver.recv_frame().unwrap().try_versioned(V2).unwrap();
 
         assert_default_frame(frame_v1);
         assert_default_frame(frame_v2);
@@ -96,8 +96,8 @@ mod needs_dialect {
 
         let mut receiver = Receiver::versionless(SliceReader::new(buffer.as_slice()));
 
-        let frame_v1 = receiver.recv().unwrap().try_versioned(V1).unwrap();
-        let frame_v2 = receiver.recv().unwrap().try_versioned(V2).unwrap();
+        let frame_v1 = receiver.recv_frame().unwrap().try_versioned(V1).unwrap();
+        let frame_v2 = receiver.recv_frame().unwrap().try_versioned(V2).unwrap();
 
         assert_default_frame(frame_v1);
         assert_default_frame(frame_v2);
@@ -108,18 +108,18 @@ mod needs_dialect {
         let (buffer, frame_v2_offset) = v1_v2_frames_buffer();
 
         let mut receiver_v1 = Receiver::new::<V1>(SliceReader::new(buffer.as_slice()));
-        let frame = receiver_v1.recv().unwrap();
+        let frame = receiver_v1.recv_frame().unwrap();
         assert_default_frame(frame);
-        assert!(receiver_v1.recv().is_err());
+        assert!(receiver_v1.recv_frame().is_err());
 
         let mut receiver_v2 =
             Receiver::new::<V2>(SliceReader::new(&buffer.as_slice()[frame_v2_offset..]));
-        let frame = receiver_v2.recv().unwrap();
+        let frame = receiver_v2.recv_frame().unwrap();
         assert_default_frame(frame);
-        assert!(receiver_v2.recv().is_err());
+        assert!(receiver_v2.recv_frame().is_err());
 
         let mut receiver_v2_first_frame =
             Receiver::new::<V2>(SliceReader::new(&buffer.as_slice()[0..frame_v2_offset]));
-        assert!(receiver_v2_first_frame.recv().is_err());
+        assert!(receiver_v2_first_frame.recv_frame().is_err());
     }
 }
