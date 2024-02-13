@@ -32,7 +32,7 @@ async fn listen<R: AsyncRead + Unpin>(
 
     for _ in 0..n_iter {
         // Decode the entire frame
-        let frame = receiver.recv_frame().await?;
+        let frame = receiver.recv().await?;
 
         // Validate frame in the context of dialect specification (including checksum)
         if let Err(err) = frame.validate_checksum(dialect::spec()) {
@@ -102,7 +102,7 @@ async fn send_heartbeats<W: AsyncWrite + Unpin>(
             .message(&message)?
             .build();
 
-        if let Err(err) = sender.send_frame(&frame).await {
+        if let Err(err) = sender.send(&frame).await {
             log::warn!("[{whoami}] SEND ERROR #{}: {err:?}", frame.sequence());
             continue;
         }

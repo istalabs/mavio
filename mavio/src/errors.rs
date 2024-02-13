@@ -13,8 +13,9 @@ use tbytes::errors::TBytesError;
 #[cfg(feature = "std")]
 use std::sync::Arc;
 
+use crate::protocol::{MavLinkVersion, MavSTX};
+
 // Re-export `mavspec::rust::spec` errors.
-use crate::protocol::{MavLinkVersion, MavSTX, MessageId};
 #[doc(no_inline)]
 pub use mavspec::rust::spec::MessageError;
 
@@ -66,12 +67,6 @@ pub enum FrameError {
         /// Actual protocol version.
         actual: MavLinkVersion,
     },
-    /// Attempt to use a frame with message ID that can't be recognised by a dialect.
-    #[cfg_attr(
-        feature = "std",
-        error("provided frame with ID = {0} can't be decoded in current dialect {1}")
-    )]
-    NotInDialect(MessageId, &'static str),
     /// `MAVLink 2` signature is too small.
     #[cfg_attr(feature = "std", error("MAVLink 2 signature is too small"))]
     SignatureIsTooSmall,

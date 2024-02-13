@@ -14,10 +14,9 @@ use crate::protocol::marker::{
 };
 use crate::protocol::signature::{Sign, Signature, SignatureConf};
 use crate::protocol::{
-    Checksum, CompatFlags, ComponentId, CrcExtra, DialectImpl, DialectMessage, DialectSpec,
-    Dialectless, FrameBuilder, HasDialect, IncompatFlags, MavLinkVersion, MavTimestamp,
-    MaybeDialect, MaybeVersioned, MessageId, Payload, PayloadLength, SecretKey, Sequence,
-    SignatureBytes, SignatureLinkId, SystemId, Versioned, Versionless, V2,
+    Checksum, CompatFlags, ComponentId, CrcExtra, DialectMessage, DialectSpec, FrameBuilder,
+    IncompatFlags, MavLinkVersion, MavTimestamp, MaybeVersioned, MessageId, Payload, PayloadLength,
+    SecretKey, Sequence, SignatureBytes, SignatureLinkId, SystemId, Versioned, Versionless, V2,
 };
 
 use crate::prelude::*;
@@ -35,19 +34,17 @@ use crate::prelude::*;
 /// [`Frame::replace_signature`] to manage signature of exising frame.  
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Frame<V: MaybeVersioned, M: MaybeDialect> {
+pub struct Frame<V: MaybeVersioned> {
     pub(super) header: Header<V>,
     pub(super) payload: Payload,
     pub(super) checksum: Checksum,
     pub(super) signature: Option<Signature>,
-    pub(super) dialect: M,
 }
 
-impl Frame<Versionless, Dialectless> {
+impl Frame<Versionless> {
     /// Instantiates an empty builder for [`Frame`].
     pub fn builder() -> FrameBuilder<
         Versionless,
-        Dialectless,
         NoPayloadLen,
         NotSequenced,
         NoSysId,
@@ -64,7 +61,7 @@ impl Frame<Versionless, Dialectless> {
 ///////////////////////////////////////////////////////////////////////////////
 //                                    ALL                                    //
 ///////////////////////////////////////////////////////////////////////////////
-impl<V: MaybeVersioned, D: MaybeDialect> Frame<V, D> {
+impl<V: MaybeVersioned> Frame<V> {
     /// Frame [`Header`].
     #[inline]
     pub fn header(&self) -> &Header<V> {
@@ -268,7 +265,7 @@ impl<V: MaybeVersioned, D: MaybeDialect> Frame<V, D> {
     }
 
     /// Attempts to transform frame into its [`Versioned`] form.
-    pub fn try_versioned<Version: Versioned>(self, version: Version) -> Result<Frame<Version, D>> {
+    pub fn try_versioned<Version: Versioned>(self, version: Version) -> Result<Frame<Version>> {
         Version::expect(self.version())?;
 
         Ok(Frame {
@@ -276,68 +273,16 @@ impl<V: MaybeVersioned, D: MaybeDialect> Frame<V, D> {
             payload: self.payload,
             checksum: self.checksum,
             signature: self.signature,
-            dialect: self.dialect,
         })
     }
 
     /// Forget about frame's version transforming it into a [`Versionless`] variant.
-    pub fn versionless(self) -> Frame<Versionless, D> {
+    pub fn versionless(self) -> Frame<Versionless> {
         Frame {
             header: self.header.versionless(),
             payload: self.payload,
             checksum: self.checksum,
             signature: self.signature,
-            dialect: self.dialect,
-        }
-    }
-
-    /// Attaches MAVLink dialect to a frame.
-    ///
-    /// # Example
-    ///
-    /// Attaches dialect to a frame and then convert it to a message using [`Frame::to_message`]:
-    ///
-    /// ```rust
-    /// # #[cfg(not(all(feature = "minimal", feature = "std")))]
-    /// # fn main() {}
-    /// # #[cfg(all(feature = "minimal", feature = "std"))]
-    /// # fn main() -> mavio::errors::Result<()> {
-    /// # use minimal::messages::Heartbeat;
-    /// use mavio::dialects::minimal;
-    /// use mavio::dialects::minimal::Minimal;
-    /// use mavio::Frame;
-    /// use mavio::protocol::{Dialectless, V2};
-    ///
-    /// let frame: Frame<_, Dialectless> = // ... obtain a dialectless frame
-    /// #     Frame::builder()
-    /// #         .sequence(0)
-    /// #         .system_id(1)
-    /// #         .component_id(1)
-    /// #         .version(V2)
-    /// #         .message(&Heartbeat::default())?
-    /// #         .build();
-    ///
-    /// // Assign `minimal` dialect to the frame
-    /// let frame = frame.with_dialect(minimal::dialect());
-    ///
-    /// // Decode the frame and match result over available dialect messages
-    /// match frame.to_message().unwrap() {
-    ///     Minimal::ProtocolVersion(_) => {}
-    ///     Minimal::Heartbeat(_) => {}
-    /// }
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub fn with_dialect<M: DialectMessage + 'static>(
-        self,
-        dialect: &'static dyn DialectImpl<Message = M>,
-    ) -> Frame<V, HasDialect<M>> {
-        Frame {
-            header: self.header,
-            payload: self.payload,
-            checksum: self.checksum,
-            signature: self.signature,
-            dialect: HasDialect(dialect),
         }
     }
 
@@ -351,7 +296,7 @@ impl<V: MaybeVersioned, D: MaybeDialect> Frame<V, D> {
     /// # #[cfg(all(feature = "minimal", feature = "std"))]
     /// # fn main() -> mavio::errors::Result<()> {
     /// # use minimal::messages::Heartbeat;
-    /// # use mavio::protocol::{Dialectless, V2};
+    /// # use mavio::protocol::{V2};
     /// use mavio::dialects::minimal;
     /// use mavio::dialects::minimal::Minimal;
     /// use mavio::Frame;
@@ -373,17 +318,12 @@ impl<V: MaybeVersioned, D: MaybeDialect> Frame<V, D> {
     /// # Ok(())
     /// # }
     /// ```
-    ///
-    /// # Notes
-    ///
-    /// It is also possible to attach dialect to a frame directly by [`Frame::with_dialect`] and
-    /// then use [`Frame::to_message`].
     #[inline]
     pub fn decode<M: DialectMessage>(&self) -> Result<M> {
         M::decode(self.payload()).map_err(Error::from)
     }
 
-    pub(crate) fn recv<R: Read>(reader: &mut R) -> Result<Frame<V, Dialectless>> {
+    pub(crate) fn recv<R: Read>(reader: &mut R) -> Result<Frame<V>> {
         let header = Header::<V>::recv(reader)?;
         let body_length = header.body_length();
 
@@ -400,9 +340,7 @@ impl<V: MaybeVersioned, D: MaybeDialect> Frame<V, D> {
     }
 
     #[cfg(feature = "tokio")]
-    pub(crate) async fn recv_async<R: AsyncRead + Unpin>(
-        reader: &mut R,
-    ) -> Result<Frame<V, Dialectless>> {
+    pub(crate) async fn recv_async<R: AsyncRead + Unpin>(reader: &mut R) -> Result<Frame<V>> {
         let header = Header::<V>::recv_async(reader).await?;
         let body_length = header.body_length();
 
@@ -463,7 +401,7 @@ impl<V: MaybeVersioned, D: MaybeDialect> Frame<V, D> {
     }
 
     #[inline]
-    fn try_from_raw_body(header: Header<V>, body_bytes: &[u8]) -> Result<Frame<V, Dialectless>> {
+    fn try_from_raw_body(header: Header<V>, body_bytes: &[u8]) -> Result<Frame<V>> {
         let payload_bytes = &body_bytes[0..header.payload_length() as usize];
         let payload = Payload::new(header.message_id(), payload_bytes, header.version());
 
@@ -484,7 +422,6 @@ impl<V: MaybeVersioned, D: MaybeDialect> Frame<V, D> {
             payload,
             checksum,
             signature,
-            dialect: Dialectless,
         })
     }
 }
@@ -492,7 +429,7 @@ impl<V: MaybeVersioned, D: MaybeDialect> Frame<V, D> {
 ///////////////////////////////////////////////////////////////////////////////
 //                                   V1/V2                                   //
 ///////////////////////////////////////////////////////////////////////////////
-impl<V: Versioned, D: MaybeDialect> Frame<V, D> {
+impl<V: Versioned> Frame<V> {
     /// Create [`FrameBuilder`] populated with current frame data.
     ///
     /// It is not possible to simply change a particular frame field since MAVLink frame data is
@@ -516,7 +453,6 @@ impl<V: Versioned, D: MaybeDialect> Frame<V, D> {
         &self,
     ) -> FrameBuilder<
         V,
-        D,
         HasPayloadLen,
         Sequenced,
         HasSysId,
@@ -531,7 +467,6 @@ impl<V: Versioned, D: MaybeDialect> Frame<V, D> {
             payload: HasPayload(self.payload.clone()),
             crc_extra: NoCrcExtra,
             signature: NotSigned,
-            dialect: self.dialect.clone(),
         }
     }
 }
@@ -539,7 +474,7 @@ impl<V: Versioned, D: MaybeDialect> Frame<V, D> {
 ///////////////////////////////////////////////////////////////////////////////
 //                                    V2                                     //
 ///////////////////////////////////////////////////////////////////////////////
-impl<D: MaybeDialect> Frame<V2, D> {
+impl Frame<V2> {
     /// Incompatibility flags for `MAVLink 2` header.
     ///
     /// Flags that must be understood for MAVLink compatibility (implementation discards packet if
@@ -701,58 +636,6 @@ impl<D: MaybeDialect> Frame<V2, D> {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-//                               WITH DIALECT                                //
-///////////////////////////////////////////////////////////////////////////////
-impl<V: MaybeVersioned, M: DialectMessage + 'static> Frame<V, HasDialect<M>> {
-    /// Decodes MAVLink message from the current frame.
-    ///
-    /// Uses MAVLink dialect associated with a frame. Dialects can be attached by
-    /// [`Frame::with_dialect`].
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// # #[cfg(not(all(feature = "minimal", feature = "std")))]
-    /// # fn main() {}
-    /// # #[cfg(all(feature = "minimal", feature = "std"))]
-    /// # fn main() -> mavio::errors::Result<()> {
-    /// # use minimal::messages::Heartbeat;
-    /// # use mavio::protocol::{Dialectless, V2};
-    /// use mavio::dialects::minimal;
-    /// use mavio::dialects::minimal::Minimal;
-    /// use mavio::Frame;
-    ///
-    /// let frame = // ... obtain a frame
-    /// #     Frame::builder()
-    /// #         .sequence(0)
-    /// #         .system_id(1)
-    /// #         .component_id(1)
-    /// #         .version(V2)
-    /// #         .message(&Heartbeat::default())?
-    /// #         .build();
-    ///
-    /// // Assign `minimal` dialect to the frame
-    /// let frame = frame.with_dialect(minimal::dialect());
-    ///
-    /// // Decode the frame and match result over available dialect messages
-    /// match frame.to_message().unwrap() {
-    ///     Minimal::ProtocolVersion(_) => {}
-    ///     Minimal::Heartbeat(_) => {}
-    /// }
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// # Notes
-    ///
-    /// This method always uses dialect associated to the frame. Alternatively, you can attempt to
-    /// decode a frame using generic [`Frame::decode`].
-    pub fn to_message(&self) -> Result<M> {
-        self.decode::<M>()
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
 //                                  TESTS                                    //
 ///////////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
@@ -789,7 +672,7 @@ mod tests {
             }
         }
 
-        pub(super) fn default_v1_heartbeat_frame() -> Frame<V1, Dialectless> {
+        pub(super) fn default_v1_heartbeat_frame() -> Frame<V1> {
             let message = default_heartbeat_message();
             Frame::builder()
                 .sequence(7)
@@ -801,7 +684,7 @@ mod tests {
                 .build()
         }
 
-        pub(super) fn default_v2_heartbeat_frame() -> Frame<V2, Dialectless> {
+        pub(super) fn default_v2_heartbeat_frame() -> Frame<V2> {
             let message = default_heartbeat_message();
             Frame::builder()
                 .sequence(7)

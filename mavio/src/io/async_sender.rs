@@ -4,7 +4,7 @@ use core::marker::PhantomData;
 
 use tokio::io::AsyncWrite;
 
-use crate::protocol::{Dialectless, Frame, MaybeDialect, MaybeVersioned, Versioned, Versionless};
+use crate::protocol::{Frame, MaybeVersioned, Versioned, Versionless};
 
 use crate::prelude::*;
 
@@ -12,19 +12,17 @@ use crate::prelude::*;
 ///
 /// Sends MAVLink frames to an instance of [`AsyncWrite`].  
 #[derive(Clone, Debug)]
-pub struct AsyncSender<W: AsyncWrite + Unpin, V: MaybeVersioned, D: MaybeDialect> {
+pub struct AsyncSender<W: AsyncWrite + Unpin, V: MaybeVersioned> {
     writer: W,
     _marker_version: PhantomData<V>,
-    _marker_dialect: D,
 }
 
-impl<W: AsyncWrite + Unpin> AsyncSender<W, Versionless, Dialectless> {
+impl<W: AsyncWrite + Unpin> AsyncSender<W, Versionless> {
     /// Default constructor.
-    pub fn new<Version: MaybeVersioned>(writer: W) -> AsyncSender<W, Version, Dialectless> {
+    pub fn new<V: MaybeVersioned>(writer: W) -> AsyncSender<W, V> {
         AsyncSender {
             writer,
             _marker_version: PhantomData,
-            _marker_dialect: Dialectless,
         }
     }
 
@@ -49,22 +47,22 @@ impl<W: AsyncWrite + Unpin> AsyncSender<W, Versionless, Dialectless> {
     pub fn versioned<Version: Versioned>(
         writer: W,
         #[allow(unused_variables)] version: Version,
-    ) -> AsyncSender<W, Version, Dialectless> {
+    ) -> AsyncSender<W, Version> {
         AsyncSender::new(writer)
     }
 }
 
-impl<W: AsyncWrite + Unpin, V: MaybeVersioned> AsyncSender<W, V, Dialectless> {
+impl<W: AsyncWrite + Unpin, V: MaybeVersioned> AsyncSender<W, V> {
     /// Send MAVLink [`Frame`] asynchronously.
     ///
     /// [`Versioned`] sender accepts only frames of a specific MAVLink protocol version. Otherwise,
     /// returns [`FrameError::InvalidVersion`].
     ///
     /// [`Versionless`] sender accepts both `MAVLink 1` and `MAVLink 2` frames as
-    /// [`Frame<Versionless, _>`].
+    /// [`Frame<Versionless>`].
     ///
     /// Returns the number of bytes sent.
-    pub async fn send_frame(&mut self, frame: &Frame<V, Dialectless>) -> Result<usize> {
+    pub async fn send(&mut self, frame: &Frame<V>) -> Result<usize> {
         V::expect(frame.version())?;
         frame.send_async(&mut self.writer).await
     }

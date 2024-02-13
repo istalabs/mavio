@@ -38,7 +38,7 @@
 //! let mut receiver = Receiver::versionless(TcpStream::connect("0.0.0.0:5600")?);
 //!
 //! for i in 0..10 {
-//!     let frame = receiver.recv_frame()?;
+//!     let frame = receiver.recv()?;
 //!     
 //!     if let Err(err) = frame.validate_checksum(dialect::spec()) {
 //!         eprintln!("Invalid checksum: {err:?}");
@@ -101,7 +101,7 @@
 //!         .message(&message)?
 //!         .build();
 //!
-//!     sender.send_frame(&frame)?;
+//!     sender.send(&frame)?;
 //!     println!("FRAME #{} sent: {:#?}", sequence, frame);
 //! }
 //!

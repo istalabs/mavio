@@ -3,7 +3,7 @@
 use core::marker::PhantomData;
 
 use crate::io::Write;
-use crate::protocol::{Dialectless, Frame, MaybeDialect, MaybeVersioned, Versioned, Versionless};
+use crate::protocol::{Frame, MaybeVersioned, Versioned, Versionless};
 
 use crate::prelude::*;
 
@@ -11,19 +11,17 @@ use crate::prelude::*;
 ///
 /// Sends MAVLink frames to an instance of [`Write`].  
 #[derive(Clone, Debug)]
-pub struct Sender<W: Write, V: MaybeVersioned, D: MaybeDialect> {
+pub struct Sender<W: Write, V: MaybeVersioned> {
     writer: W,
     _marker_version: PhantomData<V>,
-    _marker_dialect: D,
 }
 
-impl<W: Write> Sender<W, Versionless, Dialectless> {
+impl<W: Write> Sender<W, Versionless> {
     /// Default constructor.
-    pub fn new<Version: MaybeVersioned>(writer: W) -> Sender<W, Version, Dialectless> {
+    pub fn new<V: MaybeVersioned>(writer: W) -> Sender<W, V> {
         Sender {
             writer,
             _marker_version: PhantomData,
-            _marker_dialect: Dialectless,
         }
     }
 
@@ -48,12 +46,12 @@ impl<W: Write> Sender<W, Versionless, Dialectless> {
     pub fn versioned<Version: Versioned>(
         writer: W,
         #[allow(unused_variables)] version: Version,
-    ) -> Sender<W, Version, Dialectless> {
+    ) -> Sender<W, Version> {
         Sender::new(writer)
     }
 }
 
-impl<W: Write, V: MaybeVersioned> Sender<W, V, Dialectless> {
+impl<W: Write, V: MaybeVersioned> Sender<W, V> {
     /// Sends MAVLink [`Frame`].
     ///
     /// Blocks until all bytes written and returns the number of bytes sent.
@@ -62,8 +60,8 @@ impl<W: Write, V: MaybeVersioned> Sender<W, V, Dialectless> {
     /// returns [`FrameError::InvalidVersion`].
     ///
     /// [`Versionless`] sender accepts both `MAVLink 1` and `MAVLink 2` frames as
-    /// [`Frame<Versionless, _>`].
-    pub fn send_frame(&mut self, frame: &Frame<V, Dialectless>) -> Result<usize> {
+    /// [`Frame<Versionless>`].
+    pub fn send(&mut self, frame: &Frame<V>) -> Result<usize> {
         V::expect(frame.version())?;
         frame.send(&mut self.writer)
     }

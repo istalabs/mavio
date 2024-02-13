@@ -26,7 +26,7 @@ fn listen<R: Read>(reader: R, whoami: String, n_iter: usize) -> mavio::errors::R
 
     for _ in 0..n_iter {
         // Decode the entire frame
-        let frame = receiver.recv_frame()?;
+        let frame = receiver.recv()?;
 
         // Validate frame in the context of dialect specification (including checksum)
         if let Err(err) = frame.validate_checksum(dialect::spec()) {
@@ -96,7 +96,7 @@ fn send_heartbeats<W: Write>(
             .message(&message)?
             .versionless();
 
-        if let Err(err) = sender.send_frame(&frame) {
+        if let Err(err) = sender.send(&frame) {
             log::warn!("[{whoami}] SEND ERROR #{}: {err:?}", frame.sequence());
             continue;
         }

@@ -6,9 +6,8 @@ use crate::protocol::marker::{
     NoCrcExtra, NoMsgId, NoPayload, NoPayloadLen, NoSysId, NotSequenced, NotSigned, Sequenced,
 };
 use crate::protocol::{
-    CompatFlags, ComponentId, CrcExtra, DialectImpl, DialectMessage, Dialectless, HasDialect,
-    HeaderBuilder, IncompatFlags, MaybeDialect, MaybeVersioned, MessageId, MessageImpl, Payload,
-    Sequence, Signature, SystemId, Versioned, Versionless, V1, V2,
+    CompatFlags, ComponentId, CrcExtra, HeaderBuilder, IncompatFlags, MaybeVersioned, MessageId,
+    MessageImpl, Payload, Sequence, Signature, SystemId, Versioned, Versionless, V1, V2,
 };
 use crate::Frame;
 
@@ -19,7 +18,6 @@ use crate::prelude::*;
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FrameBuilder<
     V: MaybeVersioned,
-    D: MaybeDialect,
     L: IsPayloadLen,
     Seq: IsSequenced,
     S: IsSysId,
@@ -33,13 +31,11 @@ pub struct FrameBuilder<
     pub(super) payload: P,
     pub(super) crc_extra: E,
     pub(super) signature: Sig,
-    pub(super) dialect: D,
 }
 
 impl Default
     for FrameBuilder<
         Versionless,
-        Dialectless,
         NoPayloadLen,
         NotSequenced,
         NoSysId,
@@ -58,7 +54,6 @@ impl Default
 impl
     FrameBuilder<
         Versionless,
-        Dialectless,
         NoPayloadLen,
         NotSequenced,
         NoSysId,
@@ -76,14 +71,12 @@ impl
             payload: NoPayload,
             crc_extra: NoCrcExtra,
             signature: NotSigned,
-            dialect: Dialectless,
         }
     }
 }
 
 impl<
         V: MaybeVersioned,
-        D: MaybeDialect,
         L: IsPayloadLen,
         Seq: IsSequenced,
         S: IsSysId,
@@ -92,21 +85,17 @@ impl<
         P: IsPayload,
         E: IsCrcExtra,
         Sig: IsSigned,
-    > FrameBuilder<V, D, L, Seq, S, C, M, P, E, Sig>
+    > FrameBuilder<V, L, Seq, S, C, M, P, E, Sig>
 {
     /// Set packet sequence number.
     ///
     /// See: [`Frame::sequence`].
-    pub fn sequence(
-        self,
-        sequence: Sequence,
-    ) -> FrameBuilder<V, D, L, Sequenced, S, C, M, P, E, Sig> {
+    pub fn sequence(self, sequence: Sequence) -> FrameBuilder<V, L, Sequenced, S, C, M, P, E, Sig> {
         FrameBuilder {
             header_builder: self.header_builder.sequence(sequence),
             payload: self.payload,
             crc_extra: self.crc_extra,
             signature: self.signature,
-            dialect: self.dialect,
         }
     }
 
@@ -116,13 +105,12 @@ impl<
     pub fn system_id(
         self,
         system_id: SystemId,
-    ) -> FrameBuilder<V, D, L, Seq, HasSysId, C, M, P, E, Sig> {
+    ) -> FrameBuilder<V, L, Seq, HasSysId, C, M, P, E, Sig> {
         FrameBuilder {
             header_builder: self.header_builder.system_id(system_id),
             payload: self.payload,
             crc_extra: self.crc_extra,
             signature: self.signature,
-            dialect: self.dialect,
         }
     }
 
@@ -132,13 +120,12 @@ impl<
     pub fn component_id(
         self,
         component_id: ComponentId,
-    ) -> FrameBuilder<V, D, L, Seq, S, HasCompId, M, P, E, Sig> {
+    ) -> FrameBuilder<V, L, Seq, S, HasCompId, M, P, E, Sig> {
         FrameBuilder {
             header_builder: self.header_builder.component_id(component_id),
             payload: self.payload,
             crc_extra: self.crc_extra,
             signature: self.signature,
-            dialect: self.dialect,
         }
     }
 
@@ -153,7 +140,7 @@ impl<
     pub fn payload(
         self,
         payload: Payload,
-    ) -> FrameBuilder<V, D, HasPayloadLen, Seq, S, C, HasMsgId, HasPayload, E, Sig> {
+    ) -> FrameBuilder<V, HasPayloadLen, Seq, S, C, HasMsgId, HasPayload, E, Sig> {
         FrameBuilder {
             header_builder: self
                 .header_builder
@@ -162,7 +149,6 @@ impl<
             payload: HasPayload(payload),
             crc_extra: self.crc_extra,
             signature: self.signature,
-            dialect: self.dialect,
         }
     }
 
@@ -174,49 +160,30 @@ impl<
     pub fn crc_extra(
         self,
         crc_extra: CrcExtra,
-    ) -> FrameBuilder<V, D, L, Seq, S, C, M, P, HasCrcExtra, Sig> {
+    ) -> FrameBuilder<V, L, Seq, S, C, M, P, HasCrcExtra, Sig> {
         FrameBuilder {
             header_builder: self.header_builder,
             payload: self.payload,
             crc_extra: HasCrcExtra(crc_extra),
             signature: self.signature,
-            dialect: self.dialect,
-        }
-    }
-
-    /// Set dialect.
-    ///
-    /// This dialect can be used with [`Frame::decode`].
-    pub fn dialect<Message: DialectMessage + 'static>(
-        self,
-        dialect: &'static dyn DialectImpl<Message = Message>,
-    ) -> FrameBuilder<V, HasDialect<Message>, L, Seq, S, C, M, P, E, Sig> {
-        FrameBuilder {
-            header_builder: self.header_builder,
-            payload: self.payload,
-            crc_extra: self.crc_extra,
-            signature: self.signature,
-            dialect: HasDialect(dialect),
         }
     }
 
     fn message_id(
         self,
         message_id: MessageId,
-    ) -> FrameBuilder<V, D, L, Seq, S, C, HasMsgId, P, E, Sig> {
+    ) -> FrameBuilder<V, L, Seq, S, C, HasMsgId, P, E, Sig> {
         FrameBuilder {
             header_builder: self.header_builder.message_id(message_id),
             payload: self.payload,
             crc_extra: self.crc_extra,
             signature: self.signature,
-            dialect: self.dialect,
         }
     }
 }
 
 impl<
         V: Versioned,
-        D: MaybeDialect,
         L: IsPayloadLen,
         Seq: IsSequenced,
         S: IsSysId,
@@ -225,7 +192,7 @@ impl<
         P: IsPayload,
         E: IsCrcExtra,
         Sig: IsSigned,
-    > FrameBuilder<V, D, L, Seq, S, C, M, P, E, Sig>
+    > FrameBuilder<V, L, Seq, S, C, M, P, E, Sig>
 {
     /// Set MAVLink message.
     ///
@@ -247,7 +214,7 @@ impl<
     pub fn message(
         self,
         message: &dyn MessageImpl,
-    ) -> Result<FrameBuilder<V, D, HasPayloadLen, Seq, S, C, HasMsgId, HasPayload, HasCrcExtra, Sig>>
+    ) -> Result<FrameBuilder<V, HasPayloadLen, Seq, S, C, HasMsgId, HasPayload, HasCrcExtra, Sig>>
     {
         let payload = message.encode(V::version())?;
 
@@ -259,7 +226,6 @@ impl<
 }
 
 impl<
-        D: MaybeDialect,
         L: IsPayloadLen,
         Seq: IsSequenced,
         S: IsSysId,
@@ -268,7 +234,7 @@ impl<
         P: IsPayload,
         E: IsCrcExtra,
         Sig: IsSigned,
-    > FrameBuilder<Versionless, D, L, Seq, S, C, M, P, E, Sig>
+    > FrameBuilder<Versionless, L, Seq, S, C, M, P, E, Sig>
 {
     /// Set MAVLink protocol version.
     ///
@@ -285,19 +251,17 @@ impl<
     pub fn version<Version: Versioned>(
         self,
         version: Version,
-    ) -> FrameBuilder<Version, D, L, Seq, S, C, M, P, E, Sig> {
+    ) -> FrameBuilder<Version, L, Seq, S, C, M, P, E, Sig> {
         FrameBuilder {
             header_builder: self.header_builder.version(version),
             payload: self.payload,
             crc_extra: self.crc_extra,
             signature: self.signature,
-            dialect: self.dialect,
         }
     }
 }
 
 impl<
-        D: MaybeDialect,
         L: IsPayloadLen,
         Seq: IsSequenced,
         S: IsSysId,
@@ -306,7 +270,7 @@ impl<
         P: IsPayload,
         E: IsCrcExtra,
         Sig: IsSigned,
-    > FrameBuilder<V2, D, L, Seq, S, C, M, P, E, Sig>
+    > FrameBuilder<V2, L, Seq, S, C, M, P, E, Sig>
 {
     /// Sets incompatibility flags for `MAVLink 2` header.
     ///
@@ -334,7 +298,7 @@ impl<
     pub fn incompat_flags(
         self,
         incompat_flags: IncompatFlags,
-    ) -> FrameBuilder<V2, D, L, Seq, S, C, M, P, E, Sig> {
+    ) -> FrameBuilder<V2, L, Seq, S, C, M, P, E, Sig> {
         FrameBuilder {
             header_builder: self
                 .header_builder
@@ -343,7 +307,6 @@ impl<
             payload: self.payload,
             crc_extra: self.crc_extra,
             signature: self.signature,
-            dialect: self.dialect,
         }
     }
 
@@ -370,13 +333,12 @@ impl<
     pub fn compat_flags(
         self,
         compat_flags: CompatFlags,
-    ) -> FrameBuilder<V2, D, L, Seq, S, C, M, P, E, Sig> {
+    ) -> FrameBuilder<V2, L, Seq, S, C, M, P, E, Sig> {
         FrameBuilder {
             header_builder: self.header_builder.compat_flags(compat_flags),
             payload: self.payload,
             crc_extra: self.crc_extra,
             signature: self.signature,
-            dialect: self.dialect,
         }
     }
 
@@ -413,21 +375,19 @@ impl<
     pub fn signature(
         self,
         signature: Signature,
-    ) -> FrameBuilder<V2, D, L, Seq, S, C, M, P, E, HasSignature> {
+    ) -> FrameBuilder<V2, L, Seq, S, C, M, P, E, HasSignature> {
         FrameBuilder {
             header_builder: self.header_builder.signed(true),
             payload: self.payload,
             crc_extra: self.crc_extra,
             signature: HasSignature(signature),
-            dialect: self.dialect,
         }
     }
 }
 
-impl<D: MaybeDialect>
+impl
     FrameBuilder<
         V1,
-        D,
         HasPayloadLen,
         Sequenced,
         HasSysId,
@@ -445,7 +405,6 @@ impl<D: MaybeDialect>
         self,
     ) -> FrameBuilder<
         V2,
-        D,
         HasPayloadLen,
         Sequenced,
         HasSysId,
@@ -470,15 +429,13 @@ impl<D: MaybeDialect>
             payload: HasPayload(payload),
             crc_extra: self.crc_extra,
             signature: NotSigned,
-            dialect: self.dialect,
         }
     }
 }
 
-impl<V: Versioned, D: MaybeDialect, Sig: IsSigned>
+impl<V: Versioned, Sig: IsSigned>
     FrameBuilder<
         V,
-        D,
         HasPayloadLen,
         Sequenced,
         HasSysId,
@@ -490,13 +447,12 @@ impl<V: Versioned, D: MaybeDialect, Sig: IsSigned>
     >
 {
     /// Build [`Frame`] for a specific MAVLink protocol version.
-    pub fn build(self) -> Frame<V, D> {
+    pub fn build(self) -> Frame<V> {
         let mut frame = Frame {
             header: self.header_builder.build(),
             payload: self.payload.0,
             checksum: 0,
             signature: None,
-            dialect: self.dialect,
         };
 
         frame.checksum = frame.calculate_crc(self.crc_extra.0);
@@ -508,7 +464,7 @@ impl<V: Versioned, D: MaybeDialect, Sig: IsSigned>
     ///
     /// Versionless frames can be exchanged between protocol-agnostic channels. Internally, frames
     /// still possess a capability to encode and decode themselves.
-    pub fn versionless(self) -> Frame<Versionless, D> {
+    pub fn versionless(self) -> Frame<Versionless> {
         self.build().versionless()
     }
 }
@@ -537,29 +493,5 @@ mod frame_builder_tests {
         assert_eq!(frame.system_id(), 22);
         assert_eq!(frame.component_id(), 17);
         assert_eq!(frame.message_id(), 0);
-    }
-
-    #[test]
-    #[cfg(feature = "minimal")]
-    fn build_frame_v2_with_dialect() {
-        use crate::dialects::minimal as dialect;
-        use crate::protocol::V2;
-        use crate::Frame;
-        use dialect::messages::Heartbeat;
-        use dialect::Minimal;
-
-        let message = Heartbeat::default();
-        let frame = Frame::builder()
-            .sequence(17)
-            .system_id(22)
-            .component_id(17)
-            .version(V2)
-            .message(&message)
-            .unwrap()
-            .dialect(dialect::dialect())
-            .build();
-
-        let message = frame.to_message().unwrap();
-        assert!(matches!(message, Minimal::Heartbeat(_)));
     }
 }
