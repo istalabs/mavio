@@ -5,9 +5,11 @@
 //! We also re-export from [`mavspec::rust::spec`] crate to provide a full specification of
 //! MAVLink-related types.
 
-#[doc(no_inline)]
+/// <sup>From [`mavspec`](https://docs.rs/mavspec/latest/mavspec/rust/spec/types)</sup>
+#[doc(inline)]
 pub use mavspec::rust::spec::types::{CrcExtra, MessageId};
-#[doc(no_inline)]
+/// <sup>From [`mavspec`](https://docs.rs/mavspec/latest/mavspec/rust/spec)</sup>
+#[doc(inline)]
 pub use mavspec::rust::spec::{
     DialectImpl, DialectMessage, DialectSpec, IntoPayload, MavLinkVersion, MessageImpl,
     MessageSpec, Payload,

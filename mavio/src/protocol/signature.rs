@@ -15,8 +15,6 @@ use crate::consts::{
 };
 use crate::protocol::{SignatureBytes, SignatureLinkId, SignatureTimestampBytes, SignatureValue};
 
-use crate::prelude::*;
-
 /// `MAVLink 2` packet signature.
 ///
 /// # Links
@@ -33,10 +31,10 @@ pub struct Signature {
     pub value: SignatureValue,
 }
 
-/// A [`MavTimestamp`] is a 48-bit timestamp used for `MAVLink 2` packet signing.
+/// A 48-bit timestamp used for `MAVLink 2` packet signing.
 ///
-/// Contains `MAVLink 2` timestamp, a 48-bit value that equals to the number of milliseconds * 10 since the start of the
-/// MAVLink epoch (1st January 2015 GMT).
+/// MAVLink signature timestamp is a 48-bit value that equals to the number of milliseconds * 10
+/// since the start of the MAVLink epoch (1st January 2015 GMT).
 ///
 /// # Links
 ///
@@ -48,7 +46,7 @@ pub struct MavTimestamp {
     raw: u64,
 }
 
-/// The [`Sign`] trait allows signing `MAVLink 2` frames.
+/// Interface for `MAVLink 2` frames signing.
 ///
 /// Implements `sha256_48`, a `MAVLink 2` specific hashing algorithm similar to regular `sha256` except that only first
 /// 48 bits are considered.
@@ -186,15 +184,10 @@ impl SecretKey {
     }
 }
 
-impl TryFrom<&[u8]> for Signature {
-    type Error = Error;
-
-    /// Decodes slice of bytes into [`Signature`].
-    ///
-    /// See [`Signature::try_from_slice`].
+impl From<SignatureBytes> for Signature {
     #[inline]
-    fn try_from(value: &[u8]) -> Result<Self> {
-        Self::try_from_slice(value)
+    fn from(value: SignatureBytes) -> Self {
+        Self::from_byte_array(value)
     }
 }
 
@@ -204,6 +197,7 @@ impl From<Signature> for SignatureBytes {
     /// #Links
     ///
     /// * [`Signature::to_byte_array`].
+    #[inline]
     fn from(value: Signature) -> Self {
         value.to_byte_array()
     }
@@ -238,7 +232,7 @@ impl Default for SignatureConf {
 }
 
 impl Signature {
-    /// Signature `link_id` is a 8-bit identifier of a MAVLink channel.
+    /// Signature `link_id` is an 8-bit identifier of a MAVLink channel.
     ///
     /// Peers may have different semantics or rules for different links. For example, some links may
     /// have higher priority over another during routing. Or even different secret keys for
@@ -274,37 +268,10 @@ impl Signature {
         self.value
     }
 
-    /// Decodes slice of bytes into [`Signature`].
-    ///
-    /// Used in [`TryFrom<&[u8]>`](TryFrom) trait implementation for [`Signature`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`FrameError::SignatureIsTooSmall`] if slice is too small to
-    /// contain a valid signature.
-    pub fn try_from_slice(bytes: &[u8]) -> Result<Self> {
-        if bytes.len() < SIGNATURE_LENGTH {
-            return Err(FrameError::SignatureIsTooSmall.into());
-        }
-
-        let link_id = bytes[0];
-        let mut timestamp_bytes: SignatureTimestampBytes = Default::default();
-        let mut signature: SignatureValue = Default::default();
-
-        let timestamp_start = SIGNATURE_LINK_ID_LENGTH;
-        let timestamp_end = timestamp_start + SIGNATURE_TIMESTAMP_LENGTH;
-        timestamp_bytes.copy_from_slice(&bytes[timestamp_start..timestamp_end]);
-        let timestamp: MavTimestamp = timestamp_bytes.into();
-
-        let value_start = timestamp_end;
-        let value_end = value_start + SIGNATURE_VALUE_LENGTH;
-        signature.copy_from_slice(&bytes[timestamp_end..value_end]);
-
-        Ok(Self {
-            link_id,
-            timestamp,
-            value: signature,
-        })
+    /// Decodes an array of bytes into [`Signature`].
+    #[inline(always)]
+    pub fn from_byte_array(bytes: SignatureBytes) -> Self {
+        Self::from_slice(bytes.as_slice())
     }
 
     /// Encodes [`Signature`] into [`SignatureBytes`] byte array.
@@ -322,6 +289,27 @@ impl Signature {
         bytes[signature_value_offset..SIGNATURE_LENGTH].copy_from_slice(&self.value);
 
         bytes
+    }
+
+    pub(crate) fn from_slice(bytes: &[u8]) -> Self {
+        let link_id = bytes[0];
+        let mut timestamp_bytes: SignatureTimestampBytes = Default::default();
+        let mut signature: SignatureValue = Default::default();
+
+        let timestamp_start = SIGNATURE_LINK_ID_LENGTH;
+        let timestamp_end = timestamp_start + SIGNATURE_TIMESTAMP_LENGTH;
+        timestamp_bytes.copy_from_slice(&bytes[timestamp_start..timestamp_end]);
+        let timestamp: MavTimestamp = timestamp_bytes.into();
+
+        let value_start = timestamp_end;
+        let value_end = value_start + SIGNATURE_VALUE_LENGTH;
+        signature.copy_from_slice(&bytes[timestamp_end..value_end]);
+
+        Self {
+            link_id,
+            timestamp,
+            value: signature,
+        }
     }
 }
 

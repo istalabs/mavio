@@ -9,10 +9,7 @@
 //! * [MAVLink 1 Packet Format](https://mavlink.io/en/guide/serialization.html#v1_packet_format).
 //! * [MAVLink 2 Packet Format](https://mavlink.io/en/guide/serialization.html#mavlink2_packet_format).
 
-use core::convert::TryFrom;
-
 use crate::consts::{STX_V1, STX_V2};
-use crate::errors::{Error, FrameError, Result};
 use crate::protocol::MavLinkVersion;
 
 /// Packet start marker.
@@ -80,21 +77,11 @@ impl From<MavLinkVersion> for MavSTX {
     }
 }
 
-impl TryFrom<MavSTX> for MavLinkVersion {
-    type Error = Error;
-
-    /// Tries to convert [`MavSTX`] into [`MavLinkVersion`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`FrameError::InvalidStx`] if [`MavSTX::Unknown`] provided.
+impl From<MavSTX> for Option<MavLinkVersion> {
+    /// Converts [`MavSTX`] into [`Option<MavLinkVersion>`].
     #[inline]
-    fn try_from(value: MavSTX) -> Result<Self> {
-        Ok(match value {
-            MavSTX::V1 => Self::V1,
-            MavSTX::V2 => Self::V2,
-            MavSTX::Unknown(_) => return Err(FrameError::InvalidStx(value).into()),
-        })
+    fn from(value: MavSTX) -> Self {
+        value.to_mavlink_version()
     }
 }
 
@@ -103,5 +90,15 @@ impl MavSTX {
     #[inline]
     pub fn is_magic_byte(value: u8) -> bool {
         value == STX_V1 || value == STX_V2
+    }
+
+    /// Attempt to convert [`MavSTX`] into [`MavLinkVersion`]. Otherwise, returns [`None`].
+    #[inline]
+    pub fn to_mavlink_version(&self) -> Option<MavLinkVersion> {
+        Some(match self {
+            MavSTX::V1 => MavLinkVersion::V1,
+            MavSTX::V2 => MavLinkVersion::V2,
+            MavSTX::Unknown(_) => return None,
+        })
     }
 }

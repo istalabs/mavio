@@ -4,13 +4,13 @@ use crate::io::{Read, Write};
 
 /// Reads the contents of a predefined slice.
 ///
-/// Receives a pre-defined slice and reads it's contents while moving internal
+/// Receives a pre-defined slice and reads its contents while moving internal
 /// cursor position.
 ///
 /// Works both for `std` and `no_std` targets.
 ///
 /// [`SliceReader`] created mainly for testing purposes. In most use cases there will be a better alternative. However,
-/// since it may have a limited potential use, we've decide to include this struct into `mavio` API.
+/// since it may have a limited potential use, we've decided to include this struct into `mavio` API.
 #[derive(Debug, Default)]
 pub struct SliceReader<'a> {
     content: &'a [u8],

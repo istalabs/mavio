@@ -208,7 +208,7 @@ impl<
     ///
     /// # Errors
     ///
-    /// Returns [`MessageError`] if
+    /// Returns [`SpecError`] if
     /// message is misconfigured or does not support provided `mavlink_version`.
     #[allow(clippy::type_complexity)]
     pub fn message(

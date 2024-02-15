@@ -1,6 +1,6 @@
 //! # Constants
 //!
-//! We re-export from [`mavspec::rust::spec::consts`] to to provide a full specification of MAVLink-related types.
+//! We re-export from [`mavspec::rust::spec::consts`] to provide a full specification of MAVLink-related types.
 
 // Re-export from `mavspec::rust::spec::consts`
 #[doc(no_inline)]

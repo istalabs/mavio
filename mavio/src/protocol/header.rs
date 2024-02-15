@@ -304,7 +304,7 @@ impl<V: MaybeVersioned> Header<V> {
                 if !header_start.is_complete() {
                     reader.read_exact(header_start.remaining_bytes_mut())?;
                 }
-                return Header::<V>::try_from_slice(header_start.header_bytes());
+                return unsafe { Header::<V>::try_from_slice(header_start.header_bytes()) };
             } else {
                 continue;
             }
@@ -323,18 +323,19 @@ impl<V: MaybeVersioned> Header<V> {
                         .read_exact(header_start.remaining_bytes_mut())
                         .await?;
                 }
-                return Header::<V>::try_from_slice(header_start.header_bytes());
+                return unsafe { Header::<V>::try_from_slice(header_start.header_bytes()) };
             } else {
                 continue;
             }
         }
     }
 
-    fn try_from_slice(bytes: &[u8]) -> Result<Header<V>> {
+    // This function does not use unsafe Rust but may panic if first byte is not STX.
+    unsafe fn try_from_slice(bytes: &[u8]) -> Result<Header<V>> {
         let reader = TBytesReader::from(bytes);
 
         let magic: u8 = reader.read()?;
-        let mavlink_version: MavLinkVersion = MavLinkVersion::try_from(MavSTX::from(magic))?;
+        let mavlink_version: MavLinkVersion = MavSTX::from(magic).to_mavlink_version().unwrap();
         let payload_length: u8 = reader.read()?;
 
         let (incompat_flags, compat_flags) = if let MavLinkVersion::V2 = mavlink_version {
@@ -480,7 +481,7 @@ impl<V: MaybeVersioned> HeaderStart<V> {
         for (i, &byte) in buffer.iter().enumerate() {
             if V::is_magic_byte(byte) {
                 header_start_idx = i;
-                mavlink_version = MavLinkVersion::try_from(MavSTX::from(byte)).ok();
+                mavlink_version = MavSTX::from(byte).into();
             }
         }
 

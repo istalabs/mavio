@@ -14,11 +14,13 @@
 //!
 //! # Usage
 //!
-//! This library exposes [`Sender`] and [`Receiver`] to send and receive instances of MAVLink [`Frame`]. Frames contain
-//! encoded message body in [`Frame::payload`] and additional fields (such as `sequence` or `system_id`) as required by
-//! [MAVLink specification](https://mavlink.io/en/guide/serialization.html). Once frame is received, it can be decoded
-//! into a specific `Message`. Frame decoding requires dialect specification which can be either generated manually by
-//! using [MAVSpec](https://gitlab.com/mavka/libs/mavspec) or by enabling built-in [dialect features](#dialects).
+//! This library exposes [`Sender`] and [`Receiver`] to send and receive instances of MAVLink
+//! [`Frame`]. Frames contain encoded message body in [`Frame::payload`] and additional fields (such
+//! as `sequence` or `system_id`) as required by [MAVLink specification](https://mavlink.io/en/guide/serialization.html).
+//! Once frame is received, it can be decoded into a specific `Message`. Frame decoding requires
+//! dialect specification which can be either generated manually by using
+//! [MAVSpec](https://gitlab.com/mavka/libs/mavspec) or by enabling built-in
+//! [dialect features](#dialects).
 //!
 //! ### Receive
 //!

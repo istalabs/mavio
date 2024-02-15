@@ -120,7 +120,7 @@ impl Versioned for V2 {
 }
 
 #[inline]
-fn match_error(expected: MavLinkVersion, actual: MavLinkVersion) -> crate::Result<()> {
+fn match_error(expected: MavLinkVersion, actual: MavLinkVersion) -> Result<()> {
     if expected != actual {
         return Err(FrameError::InvalidVersion { expected, actual }.into());
     }
