@@ -650,6 +650,85 @@ impl Frame<V2> {
 #[cfg(test)]
 mod tests {
     use crc_any::CRCu16;
+    use std::io::Cursor;
+
+    use crate::consts::{STX_V1, STX_V2};
+    use crate::protocol::{Sequence, V1, V2};
+    use crate::Receiver;
+
+    #[test]
+    fn crc_calculation_algorithm_accepts_sequential_digests() {
+        // We just want to test that CRC algorithm is invariant in respect to the way we feed it
+        // data.
+
+        let data = [124, 12, 22, 34, 2, 148, 82, 201, 72, 0, 18, 215, 37, 63u8];
+        let split_at: usize = data.len() / 2;
+
+        // Get all data as one slice
+        let mut crc_calculator_bulk = CRCu16::crc16mcrf4cc();
+        crc_calculator_bulk.digest(&data);
+
+        // Get data as two chunks sequentially
+        let mut crc_calculator_seq = CRCu16::crc16mcrf4cc();
+        crc_calculator_seq.digest(&data[0..split_at]);
+        crc_calculator_seq.digest(&data[split_at..data.len()]);
+
+        assert_eq!(crc_calculator_bulk.get_crc(), crc_calculator_seq.get_crc());
+    }
+
+    #[test]
+    fn multiple_magic_bytes_in_stream_v1() {
+        let seq: Sequence = STX_V1;
+        let reader = Cursor::new(vec![
+            STX_V1, // magic byte
+            8,      // payload_length
+            seq,    // sequence
+            10,     // system ID
+            255,    // component ID
+            0,      // message ID
+            // -------------------------------
+            1, 1, 1, 1, 1, 1, 1, 1, // Payload
+            // -------------------------------
+            0, 0, // Checksum (fake)
+        ]);
+
+        let mut receiver = Receiver::new::<V1>(reader);
+        let frame = receiver.recv().unwrap();
+
+        assert_eq!(frame.payload_length(), 8);
+        assert_eq!(frame.sequence(), seq);
+        assert_eq!(frame.system_id(), 10);
+        assert_eq!(frame.component_id(), 255);
+    }
+
+    #[test]
+    fn multiple_magic_bytes_in_stream_v2() {
+        let seq: Sequence = STX_V2;
+        let reader = Cursor::new(vec![
+            STX_V2, // magic byte
+            8,      // payload_length
+            0,      // incompatibility flags
+            0,      // compatibility flags
+            seq,    // sequence
+            10,     // system ID
+            255,    // component ID
+            0,      // \
+            0,      //  | message ID
+            0,      // /
+            // -------------------------------
+            1, 1, 1, 1, 1, 1, 1, 1, // Payload
+            // -------------------------------
+            0, 0, // Checksum (fake)
+        ]);
+
+        let mut receiver = Receiver::new::<V2>(reader);
+        let frame = receiver.recv().unwrap();
+
+        assert_eq!(frame.payload_length(), 8);
+        assert_eq!(frame.sequence(), seq);
+        assert_eq!(frame.system_id(), 10);
+        assert_eq!(frame.component_id(), 255);
+    }
 
     #[cfg(feature = "minimal")]
     mod dialect_utils {
@@ -709,26 +788,6 @@ mod tests {
     }
     #[cfg(feature = "minimal")]
     use dialect_utils::*;
-
-    #[test]
-    fn crc_calculation_algorithm_accepts_sequential_digests() {
-        // We just want to test that CRC algorithm is invariant in respect to the way we feed it
-        // data.
-
-        let data = [124, 12, 22, 34, 2, 148, 82, 201, 72, 0, 18, 215, 37, 63u8];
-        let split_at: usize = data.len() / 2;
-
-        // Get all data as one slice
-        let mut crc_calculator_bulk = CRCu16::crc16mcrf4cc();
-        crc_calculator_bulk.digest(&data);
-
-        // Get data as two chunks sequentially
-        let mut crc_calculator_seq = CRCu16::crc16mcrf4cc();
-        crc_calculator_seq.digest(&data[0..split_at]);
-        crc_calculator_seq.digest(&data[split_at..data.len()]);
-
-        assert_eq!(crc_calculator_bulk.get_crc(), crc_calculator_seq.get_crc());
-    }
 
     #[test]
     #[cfg(feature = "minimal")]

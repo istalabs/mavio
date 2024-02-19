@@ -482,6 +482,7 @@ impl<V: MaybeVersioned> HeaderStart<V> {
             if V::is_magic_byte(byte) {
                 header_start_idx = i;
                 mavlink_version = MavSTX::from(byte).into();
+                break;
             }
         }
 
@@ -585,6 +586,38 @@ mod header_tests {
         assert_eq!(header.incompat_flags(), IncompatFlags::MAVLINK_IFLAG_SIGNED);
         assert_eq!(header.compat_flags(), CompatFlags::default());
         assert_eq!(header.sequence(), 1u8);
+        assert_eq!(header.system_id(), 10u8);
+        assert_eq!(header.component_id(), 255u8);
+        assert_eq!(header.message_id(), 0u32);
+    }
+
+    #[test]
+    fn read_v2_header_magic_bytes_in_sequence() {
+        let mut reader = Cursor::new(vec![
+            12,     // \
+            24,     //  |Junk bytes
+            240,    // /
+            STX_V2, // magic byte
+            8,      // payload_length
+            1,      // incompatibility flags
+            0,      // compatibility flags
+            STX_V2, // sequence
+            10,     // system ID
+            255,    // component ID
+            0,      // \
+            0,      //  | message ID
+            0,      // /
+        ]);
+
+        let header = Header::<V2>::recv(&mut reader).unwrap();
+
+        assert!(header.try_versioned(V1).is_err());
+        assert!(matches!(header.version(), MavLinkVersion::V2));
+
+        assert_eq!(header.payload_length(), 8u8);
+        assert_eq!(header.incompat_flags(), IncompatFlags::MAVLINK_IFLAG_SIGNED);
+        assert_eq!(header.compat_flags(), CompatFlags::default());
+        assert_eq!(header.sequence(), STX_V2);
         assert_eq!(header.system_id(), 10u8);
         assert_eq!(header.component_id(), 255u8);
         assert_eq!(header.message_id(), 0u32);

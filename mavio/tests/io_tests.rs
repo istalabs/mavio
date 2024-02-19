@@ -3,7 +3,7 @@ mod needs_dialect {
     use dialect::messages::Heartbeat;
     use mavio::dialects::minimal as dialect;
     use mavio::dialects::minimal::enums::{MavAutopilot, MavModeFlag, MavState, MavType};
-    use mavio::protocol::{Versioned, V1, V2};
+    use mavio::protocol::{Sequence, Versioned, V1, V2};
     use mavio::utils::{SliceReader, SliceWriter};
     use mavio::{Frame, Receiver, Sender};
 
@@ -121,5 +121,36 @@ mod needs_dialect {
         let mut receiver_v2_first_frame =
             Receiver::new::<V2>(SliceReader::new(&buffer.as_slice()[0..frame_v2_offset]));
         assert!(receiver_v2_first_frame.recv().is_err());
+    }
+
+    #[test]
+    fn test_all_sequences() {
+        fn make_frame(sequence: Sequence) -> Frame<V2> {
+            Frame::builder()
+                .version(V2)
+                .sequence(sequence)
+                .system_id(1)
+                .component_id(42)
+                .message(&default_heartbeat_message())
+                .unwrap()
+                .build()
+        }
+
+        let mut buf = [0u8; u16::MAX as usize];
+
+        let mut sender = Sender::new(SliceWriter::new(buf.as_mut_slice()));
+
+        let mut bytes_written = 0;
+        for i in 0..255 {
+            let frame = make_frame(i);
+            bytes_written += sender.send(&frame).unwrap();
+        }
+
+        let mut receiver = Receiver::new(SliceReader::new(&buf[0..bytes_written]));
+
+        for i in 0..255 {
+            let frame: Frame<V2> = receiver.recv().unwrap();
+            assert_eq!(frame.sequence(), i);
+        }
     }
 }
