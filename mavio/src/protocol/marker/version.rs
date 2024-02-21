@@ -6,6 +6,7 @@ use crate::utils::sealed::Sealed;
 
 use crate::prelude::*;
 
+/// <sup>🔒</sup>
 /// Marks structures which may or may not have a specified MAVLink protocol version.
 ///
 /// ⚠ This trait is sealed ⚠
@@ -48,6 +49,7 @@ impl IsMagicByte for Versionless {}
 
 impl MaybeVersioned for Versionless {}
 
+/// <sup>🔒</sup>
 /// Marks entities which have a specified MAVLink protocol version.
 ///
 /// ⚠ This trait is sealed ⚠

@@ -22,14 +22,6 @@ use crate::prelude::*;
 ///  * [`std::result::Result`].
 #[derive(Clone, Debug)]
 pub enum IoError {
-    /// Operation was interrupted.
-    ///
-    /// In most cases this means that operation can be retried.
-    Interrupted,
-    /// Invalid data received.
-    InvalidData,
-    /// This operation is unsupported.
-    Unsupported,
     /// Unexpected end-of-file.
     ///
     /// In most cases this means that smaller amount of bytes are available.

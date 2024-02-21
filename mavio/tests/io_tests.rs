@@ -1,4 +1,5 @@
 #[cfg(feature = "minimal")]
+#[cfg(feature = "extras")]
 mod needs_dialect {
     use dialect::messages::Heartbeat;
     use mavio::dialects::minimal as dialect;

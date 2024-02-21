@@ -53,6 +53,8 @@ mavspec = { version = "0.3.0-rc1", path = "../../mavspec/mavspec", default-featu
 default = ["std", "sha2"]
 ## Enable unstable API features.
 unstable = []
+## Additional auxilary tools.
+extras = []
 
 ## Enable memory allocation support.
 alloc = [

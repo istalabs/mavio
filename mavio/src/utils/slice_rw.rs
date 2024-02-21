@@ -1,16 +1,20 @@
-//! Implementation for [`Read`] and [`Write`] that work with slices.
+//! Reader and writer for byte slices.
 
 use crate::io::{Read, Write};
 
+/// <sup>`extras`</sup>
 /// Reads the contents of a predefined slice.
+///
+/// <sup>Available with `extras` Cargo feature</sup>
 ///
 /// Receives a pre-defined slice and reads its contents while moving internal
 /// cursor position.
 ///
 /// Works both for `std` and `no_std` targets.
 ///
-/// [`SliceReader`] created mainly for testing purposes. In most use cases there will be a better alternative. However,
-/// since it may have a limited potential use, we've decided to include this struct into `mavio` API.
+/// [`SliceReader`] created mainly for testing purposes. In most use cases there will be a better
+/// alternative. However, since it may have a limited potential use, we've decided to include this
+/// struct into `mavio` API.
 #[derive(Debug, Default)]
 pub struct SliceReader<'a> {
     content: &'a [u8],
@@ -116,15 +120,18 @@ impl<'a> Read for SliceReader<'a> {
     }
 }
 
-/// Reads the contents of a predefined slice.
+/// <sup>`extras`</sup>
+/// Writes the contents to a predefined slice.
 ///
-/// Receives a pre-defined slice and reads it's contents while moving internal
+/// <sup>Available with `extras` Cargo feature</sup>
+///
+/// Receives a pre-defined slice and reads its contents while moving internal
 /// cursor position.
 ///
 /// Works both for `std` and `no_std` targets.
 ///
 /// [`SliceWriter`] created mainly for testing purposes. In most use cases there will be a better alternative. However,
-/// since it may have a limited potential use, we've decide to include this struct into `mavio` API.
+/// since it may have a limited potential use, we've decided to include this struct into `mavio` API.
 #[derive(Debug, Default)]
 pub struct SliceWriter<'a> {
     content: &'a mut [u8],

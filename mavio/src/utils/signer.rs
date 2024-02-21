@@ -4,7 +4,10 @@ use sha2::{Digest, Sha256};
 use crate::protocol::signature::Sign;
 use crate::protocol::SignatureValue;
 
+/// <sup>`sha2`</sup>
 /// Signs MAVLink packages with [`sha2`](https://crates.io/crates/sha2) library.
+///
+/// <sup>Available with `sha2` Cargo feature</sup>
 ///
 /// Implements `sha256_48`, a `MAVLink 2` specific hashing algorithm similar to regular `sha256` except that only first
 /// 48 bits are considered.
