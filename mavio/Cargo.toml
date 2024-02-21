@@ -50,7 +50,7 @@ mavspec = { version = "0.3.0-rc1", path = "../../mavspec/mavspec", default-featu
 ###########################################################
 [features]
 ## Default features.
-default = ["std", "sha2"]
+default = []
 ## Enable unstable API features.
 unstable = []
 ## Additional auxilary tools.
