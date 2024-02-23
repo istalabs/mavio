@@ -202,7 +202,7 @@ pub use crate::io::{Receiver, Sender};
 #[doc(inline)]
 pub use errors::Result;
 #[doc(inline)]
-pub use protocol::Frame;
+pub use protocol::{Dialect, Frame, Message};
 
 mod mavlink {
     include!(concat!(env!("OUT_DIR"), "/mavlink/mod.rs"));

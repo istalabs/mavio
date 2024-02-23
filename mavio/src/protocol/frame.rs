@@ -47,9 +47,8 @@ use crate::prelude::*;
 /// # Construction
 ///
 /// Since MAVLink frames has a complex internal structure that depends on [`MavLinkVersion`],
-/// encoded [`MessageImpl`](crate::protocol::MessageImpl) and presence of [`Signature`], there are
-/// is direct no constructor for this struct. [`Frame`] can be either received as they were sent by
-/// remote or built from [`FrameBuilder`].
+/// encoded [`Message`] and presence of [`Signature`], there are is direct no constructor for this
+/// struct. [`Frame`] can be either received as they were sent by remote or built from [`FrameBuilder`].
 ///
 /// Use [`Frame::builder`] to create new frames via builder and [`Frame::add_signature`] (for
 /// [`Frame<V2>`] only) to sign frames.
@@ -255,7 +254,7 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// # Links
     ///
-    /// * [`DialectSpec`] for dialect specification.
+    /// * [`Dialect`] for dialect specification.
     /// * [`Frame::calculate_crc`] for CRC implementation details.
     pub fn validate_checksum<D: Dialect>(&self) -> Result<()> {
         let message_info = D::message_info(self.header().message_id())?;
@@ -351,7 +350,7 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// * Returns [`FrameError::InvalidChecksum`] if checksum validation failed.
     /// * Returns [`Error::Spec`] if frame can't be correctly decoded to the provided
-    ///   [`DialectMessage`] (generic type argument).
+    ///   [`Dialect`] (generic type argument).
     ///
     /// # Links
     ///

@@ -196,7 +196,7 @@ impl<
 {
     /// Set MAVLink message.
     ///
-    /// Imports and encodes MAVLink message. Uses `crc_extra` from [`MessageImpl`] to create a
+    /// Imports and encodes MAVLink message. Uses `crc_extra` from [`Message`] to create a
     /// checksum.
     ///
     /// Uses `message` to define:
@@ -208,8 +208,8 @@ impl<
     ///
     /// # Errors
     ///
-    /// Returns [`SpecError`] if
-    /// message is misconfigured or does not support provided `mavlink_version`.
+    /// Returns [`SpecError`] if message is misconfigured or does not support previously specified
+    /// [`FrameBuilder::version`].
     #[allow(clippy::type_complexity)]
     pub fn message(
         self,
@@ -245,8 +245,8 @@ impl<
     /// use mavio::protocol::{FrameBuilder, V1, V2};
     ///
     /// FrameBuilder::new()
-    ///     .mavlink_version(V1)
-    ///     .mavlink_version(V2); // can't set MAVLink version twice!
+    ///     .version(V1)
+    ///     .version(V2); // can't set MAVLink version twice!
     /// ```
     pub fn version<Version: Versioned>(
         self,
