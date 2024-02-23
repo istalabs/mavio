@@ -6,8 +6,8 @@ use crate::protocol::marker::{
     NoCrcExtra, NoMsgId, NoPayload, NoPayloadLen, NoSysId, NotSequenced, NotSigned, Sequenced,
 };
 use crate::protocol::{
-    CompatFlags, ComponentId, CrcExtra, HeaderBuilder, IncompatFlags, MaybeVersioned, MessageId,
-    MessageImpl, Payload, Sequence, Signature, SystemId, Versioned, Versionless, V1, V2,
+    CompatFlags, ComponentId, CrcExtra, HeaderBuilder, IncompatFlags, MaybeVersioned, Message,
+    MessageId, Payload, Sequence, Signature, SystemId, Versioned, Versionless, V1, V2,
 };
 use crate::Frame;
 
@@ -213,7 +213,7 @@ impl<
     #[allow(clippy::type_complexity)]
     pub fn message(
         self,
-        message: &dyn MessageImpl,
+        message: &dyn Message,
     ) -> Result<FrameBuilder<V, HasPayloadLen, Seq, S, C, HasMsgId, HasPayload, HasCrcExtra, Sig>>
     {
         let payload = message.encode(V::version())?;

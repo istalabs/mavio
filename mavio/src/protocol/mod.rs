@@ -11,7 +11,7 @@ pub use mavspec::rust::spec::types::{CrcExtra, MessageId};
 /// <sup>From [`mavspec`](https://docs.rs/mavspec/latest/mavspec/rust/spec)</sup>
 #[doc(inline)]
 pub use mavspec::rust::spec::{
-    Dialect, IntoPayload, MavLinkVersion, MessageImpl, MessageSpec, Payload,
+    Dialect, IntoPayload, MavLinkVersion, Message, MessageSpec, Payload,
 };
 
 pub(super) mod flags;
