@@ -4,7 +4,7 @@ mod needs_dialect {
     use dialect::messages::Heartbeat;
     use mavio::dialects::minimal as dialect;
     use mavio::dialects::minimal::enums::{MavAutopilot, MavModeFlag, MavState, MavType};
-    use mavio::protocol::{Sequence, Versioned, V1, V2};
+    use mavio::protocol::{Dialect, Sequence, Versioned, V1, V2};
     use mavio::utils::{SliceReader, SliceWriter};
     use mavio::{Frame, Receiver, Sender};
 
@@ -15,7 +15,7 @@ mod needs_dialect {
             base_mode: MavModeFlag::TEST_ENABLED & MavModeFlag::CUSTOM_MODE_ENABLED,
             custom_mode: 0,
             system_status: MavState::Active,
-            mavlink_version: dialect::spec().version().unwrap_or(0),
+            mavlink_version: dialect::Minimal::version().unwrap_or(0),
         }
     }
 

@@ -14,9 +14,9 @@ use crate::protocol::marker::{
 };
 use crate::protocol::signature::{Sign, Signature, SignatureConf};
 use crate::protocol::{
-    Checksum, CompatFlags, ComponentId, CrcExtra, DialectMessage, DialectSpec, FrameBuilder,
-    IncompatFlags, MavLinkVersion, MavTimestamp, MaybeVersioned, MessageId, Payload, PayloadLength,
-    Sequence, SignatureBytes, SignatureLinkId, SystemId, Versioned, Versionless, V2,
+    Checksum, CompatFlags, ComponentId, CrcExtra, Dialect, FrameBuilder, IncompatFlags,
+    MavLinkVersion, MavTimestamp, MaybeVersioned, MessageId, Payload, PayloadLength, Sequence,
+    SignatureBytes, SignatureLinkId, SystemId, Versioned, Versionless, V2,
 };
 
 use crate::prelude::*;
@@ -257,8 +257,8 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// * [`DialectSpec`] for dialect specification.
     /// * [`Frame::calculate_crc`] for CRC implementation details.
-    pub fn validate_checksum(&self, dialect_spec: &dyn DialectSpec) -> Result<()> {
-        let message_info = dialect_spec.message_info(self.header().message_id())?;
+    pub fn validate_checksum<D: Dialect>(&self) -> Result<()> {
+        let message_info = D::message_info(self.header().message_id())?;
         self.validate_checksum_with_crc_extra(message_info.crc_extra())?;
 
         Ok(())
@@ -359,8 +359,8 @@ impl<V: MaybeVersioned> Frame<V> {
     /// * [`SpecError`] contains errors related to MAVLink dialect specification and message
     ///   encoding/decoding.
     #[inline]
-    pub fn decode<M: DialectMessage>(&self) -> Result<M> {
-        let message = M::decode(self.payload()).map_err(Error::from)?;
+    pub fn decode<D: Dialect>(&self) -> Result<D> {
+        let message = D::decode(self.payload()).map_err(Error::from)?;
         self.validate_checksum_with_crc_extra(message.crc_extra())?;
         Ok(message)
     }
@@ -756,7 +756,7 @@ mod tests {
                 base_mode: MavModeFlag::TEST_ENABLED & MavModeFlag::CUSTOM_MODE_ENABLED,
                 custom_mode: 0,
                 system_status: MavState::Active,
-                mavlink_version: dialect::spec().version().unwrap_or(0),
+                mavlink_version: dialect::Minimal::version().unwrap_or(0),
             }
         }
 

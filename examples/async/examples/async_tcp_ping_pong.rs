@@ -6,7 +6,7 @@ use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 
 use mavio::dialects::minimal as dialect;
-use mavio::protocol::V2;
+use mavio::protocol::{Dialect, V2};
 use mavio::{AsyncReceiver, AsyncSender, Frame};
 
 use dialect::enums::{MavAutopilot, MavModeFlag, MavState, MavType};
@@ -35,7 +35,7 @@ async fn listen<R: AsyncRead + Unpin>(
         let frame = receiver.recv().await?;
 
         // Validate frame in the context of dialect specification (including checksum)
-        if let Err(err) = frame.validate_checksum(dialect::spec()) {
+        if let Err(err) = frame.validate_checksum::<Minimal>() {
             log::warn!("[{whoami}] INVALID FRAME #{}: {err:?}", frame.sequence());
             continue;
         }
@@ -90,7 +90,7 @@ async fn send_heartbeats<W: AsyncWrite + Unpin>(
             base_mode: MavModeFlag::TEST_ENABLED & MavModeFlag::CUSTOM_MODE_ENABLED,
             custom_mode: 0,
             system_status: MavState::Active,
-            mavlink_version: dialect::spec().version().unwrap_or(0),
+            mavlink_version: Minimal::version().unwrap_or(0),
         };
 
         // Build frame from message

@@ -42,7 +42,7 @@
 //! for i in 0..10 {
 //!     let frame = receiver.recv()?;
 //!     
-//!     if let Err(err) = frame.validate_checksum(dialect::spec()) {
+//!     if let Err(err) = frame.validate_checksum::<Minimal>() {
 //!         eprintln!("Invalid checksum: {err:?}");
 //!         continue;
 //!     }
