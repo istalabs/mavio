@@ -165,12 +165,14 @@ impl From<&str> for SecretKey {
     }
 }
 
+#[cfg(feature = "alloc")]
 impl From<String> for SecretKey {
     fn from(value: String) -> Self {
         value.as_str().into()
     }
 }
 
+#[cfg(feature = "alloc")]
 impl From<&String> for SecretKey {
     fn from(value: &String) -> Self {
         value.as_str().into()
@@ -489,6 +491,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "alloc")]
     fn key_from_strings() {
         let expected = {
             let mut expected = [0u8; SIGNATURE_SECRET_KEY_LENGTH];
