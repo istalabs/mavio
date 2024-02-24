@@ -20,7 +20,7 @@ pub trait MaybeVersioned: IsMagicByte + Clone + Debug + Sync + Send + Sealed {
     ///
     /// The blanket implementation will always return [`Ok`] meaning that everything is compatible.
     #[inline]
-    fn expect(#[allow(unused_variables)] version: MavLinkVersion) -> crate::Result<()> {
+    fn expect(#[allow(unused_variables)] version: MavLinkVersion) -> Result<()> {
         Ok(())
     }
 
@@ -35,12 +35,12 @@ pub trait MaybeVersioned: IsMagicByte + Clone + Debug + Sync + Send + Sealed {
 
 /// Marker for entities which are not constrained by a specific MAVLink protocol version.
 ///
-/// In the context of [`Frame`](crate::Frame) and [`Header`](crate::protocol::Header) this means
+/// In the context of [`Frame`](Frame) and [`Header`](crate::protocol::Header) this means
 /// that although these entities are always belong to some MAVLink protocol version, this
 /// information is opaque to the caller. For example, default [`Receiver`](crate::Receiver) will
 /// look up for both `MAVLink 1` and `MAVLink 2` packets and return
-/// [`Frame<Versionless>`](crate::Frame<Versionless>) which then can be converted to their
-/// version-specific form by [`Frame::try_versioned`](crate::Frame::try_versioned).
+/// [`Frame<Versionless>`](Frame<Versionless>) which then can be converted to their
+/// version-specific form by [`Frame::try_versioned`](Frame::try_versioned).
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Versionless;
@@ -55,13 +55,113 @@ impl MaybeVersioned for Versionless {}
 /// ⚠ This trait is sealed ⚠
 ///
 /// Such entities allow to discover their protocol version by [`Versioned::version`] and
-/// provide a static `marker` for themselves.
+/// provide a static `marker` for themselves. This trait also enables converting [`V1`] / [`V2`]
+/// from type parameter to a type by [`Versioned::v`] and to treat them as unit type instances using
+/// [`Versioned::ver`].
 ///
 /// For example, [`Receiver::versioned`](crate::Receiver::versioned) constructs a protocol-specific
 /// receiver which looks up for frames only of a specific dialect.
+///
+/// # Examples
+///
+/// ```rust
+/// use mavio::prelude::*;
+///
+/// fn release_turbofish<V: Versioned>() {
+///     pass_argument(V::v());
+///     stay_with_enum(V::v().ver());
+/// }
+///
+/// fn pass_argument<V: Versioned>(version: V) {
+///     stay_with_enum(version.ver());
+/// }
+///
+/// fn stay_with_enum(version: MavLinkVersion) {
+///     match version {
+///         MavLinkVersion::V1 => { /* MAVLink1 specific */ }
+///         MavLinkVersion::V2 => { /* MAVLink2 specific */ }
+///     }
+/// }
+///
+/// release_turbofish::<V2>();
+/// pass_argument(V1);
+/// stay_with_enum(MavLinkVersion::V2);
+/// ```
 pub trait Versioned: MaybeVersioned {
-    /// MAVLink protocol version of an entity.
+    /// MAVLink protocol version of a type.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use mavio::prelude::*;
+    ///
+    /// fn feed_with_enum(version: MavLinkVersion) {
+    ///     match version {
+    ///         MavLinkVersion::V1 => { /* MAVLink1 specific */ }
+    ///         MavLinkVersion::V2 => { /* MAVLink2 specific */ }
+    ///     }
+    /// }
+    ///
+    /// feed_with_enum(V1::version());
+    /// ```
     fn version() -> MavLinkVersion;
+
+    /// MAVLink protocol version of a unit.
+    ///
+    /// Allows to obtain [`MavLinkVersion`] from [`V1`] / [`V2`] as unit types.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use mavio::prelude::*;
+    ///
+    /// fn feed_with_argument<V: Versioned>(version: V) {
+    /// #   return;
+    ///     feed_with_enum(version.ver());
+    /// }
+    ///
+    /// fn feed_with_enum(version: MavLinkVersion) {
+    ///     match version {
+    ///         MavLinkVersion::V1 => { /* MAVLink1 specific */ }
+    ///         MavLinkVersion::V2 => { /* MAVLink1 specific */ }
+    ///     }
+    /// }
+    ///
+    /// feed_with_argument(V1);
+    /// ```
+    fn ver(&self) -> MavLinkVersion;
+
+    /// Returns MAVLink version as [`V1`] / [`V2`] for type parameters.
+    ///
+    /// Useful when [`Versioned`] is provided as a type parameter, but you need a corresponding
+    /// marker. This allows to switch between regular arguments and [turbofish](https://turbo.fish/)
+    /// syntax.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use mavio::prelude::*;
+    ///
+    /// fn gimme_argument<V: Versioned>(version: V) {
+    /// #   return;
+    ///     gimme_turbofish::<V>();
+    /// }
+    ///
+    /// fn gimme_turbofish<V: Versioned>() {
+    /// #   return;
+    ///     // Hard way
+    ///     match V::version() {
+    ///         MavLinkVersion::V1 => gimme_argument(V1),
+    ///         MavLinkVersion::V2 => gimme_argument(V2),
+    ///     }
+    ///     // Easy way
+    ///     gimme_argument(V::v());
+    /// }
+    ///
+    /// gimme_argument(V2);
+    /// gimme_turbofish::<V2>()
+    /// ```
+    fn v() -> Self;
 }
 
 /// Marks entities which are strictly `MAVLink 1` protocol compliant.
@@ -70,25 +170,34 @@ pub trait Versioned: MaybeVersioned {
 pub struct V1;
 impl Sealed for V1 {}
 impl IsMagicByte for V1 {
-    #[inline]
+    #[inline(always)]
     fn is_magic_byte(byte: u8) -> bool {
         byte == STX_V1
     }
 }
 impl MaybeVersioned for V1 {
     #[inline]
-    fn expect(version: MavLinkVersion) -> crate::Result<()> {
+    fn expect(version: MavLinkVersion) -> Result<()> {
         match_error(MavLinkVersion::V1, version)
     }
-    #[inline]
+    #[inline(always)]
     fn matches(version: MavLinkVersion) -> bool {
         version == MavLinkVersion::V1
     }
 }
 impl Versioned for V1 {
-    #[inline]
+    #[inline(always)]
     fn version() -> MavLinkVersion {
         MavLinkVersion::V1
+    }
+
+    fn ver(&self) -> MavLinkVersion {
+        MavLinkVersion::V1
+    }
+
+    #[inline(always)]
+    fn v() -> Self {
+        V1
     }
 }
 
@@ -98,26 +207,36 @@ impl Versioned for V1 {
 pub struct V2;
 impl Sealed for V2 {}
 impl IsMagicByte for V2 {
-    #[inline]
+    #[inline(always)]
     fn is_magic_byte(byte: u8) -> bool {
         byte == STX_V2
     }
 }
 impl MaybeVersioned for V2 {
     #[inline]
-    fn expect(version: MavLinkVersion) -> crate::Result<()> {
+    fn expect(version: MavLinkVersion) -> Result<()> {
         match_error(MavLinkVersion::V2, version)
     }
 
-    #[inline]
+    #[inline(always)]
     fn matches(version: MavLinkVersion) -> bool {
         version == MavLinkVersion::V2
     }
 }
 impl Versioned for V2 {
-    #[inline]
+    #[inline(always)]
     fn version() -> MavLinkVersion {
         MavLinkVersion::V2
+    }
+
+    #[inline(always)]
+    fn ver(&self) -> MavLinkVersion {
+        MavLinkVersion::V2
+    }
+
+    #[inline(always)]
+    fn v() -> Self {
+        V2
     }
 }
 
