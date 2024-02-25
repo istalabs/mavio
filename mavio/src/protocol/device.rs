@@ -3,25 +3,32 @@ use core::marker::PhantomData;
 use crate::protocol::{ComponentId, Sequence, Sequencer, SystemId, Versioned, V1, V2};
 
 /// MAVLink device `ID`.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct DeviceId {
+pub struct MavLinkId {
     /// System `ID`.
     pub system: SystemId,
     /// Component `ID`.
     pub component: ComponentId,
 }
 
-/// MAVLink device.
+/// MAVLink device with defined `ID` and internal frame sequence counter.
 pub struct Device<V: Versioned> {
-    id: DeviceId,
-    sequencer: Sequencer,
+    pub(super) id: MavLinkId,
+    pub(super) sequencer: Sequencer,
     _version: PhantomData<V>,
 }
 
+impl MavLinkId {
+    /// Creates a new `ID` from the combination of MAVLink system and component ids.
+    pub fn new(system: SystemId, component: ComponentId) -> Self {
+        Self { system, component }
+    }
+}
+
 impl Device<V2> {
-    /// Creates a new device with specified [`DeviceId`].
-    pub fn new<V: Versioned>(id: DeviceId) -> Device<V> {
+    /// Creates a new device with specified [`MavLinkId`].
+    pub fn new<V: Versioned>(id: MavLinkId) -> Device<V> {
         Device {
             id,
             sequencer: Sequencer::new(),
@@ -29,19 +36,21 @@ impl Device<V2> {
         }
     }
 
-    /// Creates a MAVLink1 device with specified [`DeviceId`].
-    pub fn v1(id: DeviceId) -> Device<V1> {
+    /// Creates a MAVLink1 device with specified [`MavLinkId`].
+    pub fn v1(id: MavLinkId) -> Device<V1> {
         Device::new::<V1>(id)
     }
 
-    /// Creates a MAVLink2 device with specified [`DeviceId`].
-    pub fn v2(id: DeviceId) -> Self {
+    /// Creates a MAVLink2 device with specified [`MavLinkId`].
+    pub fn v2(id: MavLinkId) -> Self {
         Self::new(id)
     }
+}
 
+impl<V: Versioned> Device<V> {
     /// Device `ID`.
     #[inline(always)]
-    pub fn id(&self) -> DeviceId {
+    pub fn id(&self) -> MavLinkId {
         self.id
     }
 

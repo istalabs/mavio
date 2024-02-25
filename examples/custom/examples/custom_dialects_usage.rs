@@ -38,6 +38,7 @@ fn write_to_buffer() {
         .version(V2)
         .message(&message)
         .unwrap()
+        .build()
         .versionless();
     log::info!("Frame: {message:#?}");
 

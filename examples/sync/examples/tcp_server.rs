@@ -83,6 +83,7 @@ fn send_heartbeats<W: Write>(writer: W, whoami: String) -> mavio::errors::Result
             .component_id(component_id)
             .version(mavlink_version)
             .message(&message)?
+            .build()
             .versionless();
 
         sender.send(&frame)?;

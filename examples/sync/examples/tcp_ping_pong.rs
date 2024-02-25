@@ -94,6 +94,7 @@ fn send_heartbeats<W: Write>(
             .component_id(component_id)
             .version(mavlink_version)
             .message(&message)?
+            .build()
             .versionless();
 
         if let Err(err) = sender.send(&frame) {

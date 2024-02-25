@@ -6,8 +6,8 @@ use crate::protocol::marker::{
     NoCrcExtra, NoMsgId, NoPayload, NoPayloadLen, NoSysId, NotSequenced, NotSigned, Sequenced,
 };
 use crate::protocol::{
-    CompatFlags, ComponentId, CrcExtra, HeaderBuilder, IncompatFlags, MaybeVersioned, Message,
-    MessageId, Payload, Sequence, Signature, SystemId, Versioned, Versionless, V1, V2,
+    CompatFlags, ComponentId, CrcExtra, Device, HeaderBuilder, IncompatFlags, MaybeVersioned,
+    Message, Sequence, Signature, SystemId, Versioned, Versionless, V1, V2,
 };
 use crate::Frame;
 
@@ -128,53 +128,53 @@ impl<
             signature: self.signature,
         }
     }
+}
 
-    /// Set payload data.
+impl<
+        L: IsPayloadLen,
+        Seq: IsSequenced,
+        S: IsSysId,
+        C: IsCompId,
+        M: IsMsgId,
+        P: IsPayload,
+        E: IsCrcExtra,
+        Sig: IsSigned,
+    > FrameBuilder<Versionless, L, Seq, S, C, M, P, E, Sig>
+{
+    /// Updates frame builder with parameters of a MAVlink [`Device`].
     ///
-    /// Also sets [`Frame::message_id`] from [`Payload::id`] and [`Frame::payload_length`] .
+    /// Defines the following fields:
     ///
-    /// # Links
+    /// * [`Frame::sequence`]
+    /// * [`Frame::system_id`]
+    /// * [`Frame::component_id`]
+    /// * [`Frame::version`]
     ///
-    /// * [`Frame::payload`]
-    /// * [`Frame::message_id`]
-    pub fn payload(
+    /// The [`Frame::sequence`] is defined by using a frame sequence counter from the provided
+    /// device you may either advance counter with [`FrameBuilder::build_next`], or use its current
+    /// value by building a frame with [`FrameBuilder::build`].
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use mavio::prelude::*;
+    /// use mavio::protocol::{Device, MavLinkId, FrameBuilder};
+    ///
+    /// let device = Device::new::<V2>(MavLinkId::new(1, 1));
+    ///
+    /// FrameBuilder::new().device(&device);
+    /// ```
+    pub fn device<V: Versioned>(
         self,
-        payload: Payload,
-    ) -> FrameBuilder<V, HasPayloadLen, Seq, S, C, HasMsgId, HasPayload, E, Sig> {
+        device: &Device<V>,
+    ) -> FrameBuilder<V, L, Sequenced, HasSysId, HasCompId, M, P, E, Sig> {
         FrameBuilder {
             header_builder: self
                 .header_builder
-                .message_id(payload.id())
-                .payload_length(payload.length()),
-            payload: HasPayload(payload),
-            crc_extra: self.crc_extra,
-            signature: self.signature,
-        }
-    }
-
-    /// Set `CRC_EXTRA`.
-    ///
-    /// # Links
-    ///
-    /// * [`Frame::checksum`] is calculated using [`CrcExtra`].
-    pub fn crc_extra(
-        self,
-        crc_extra: CrcExtra,
-    ) -> FrameBuilder<V, L, Seq, S, C, M, P, HasCrcExtra, Sig> {
-        FrameBuilder {
-            header_builder: self.header_builder,
-            payload: self.payload,
-            crc_extra: HasCrcExtra(crc_extra),
-            signature: self.signature,
-        }
-    }
-
-    fn message_id(
-        self,
-        message_id: MessageId,
-    ) -> FrameBuilder<V, L, Seq, S, C, HasMsgId, P, E, Sig> {
-        FrameBuilder {
-            header_builder: self.header_builder.message_id(message_id),
+                .version(V::v())
+                .sequence(device.next_sequence())
+                .system_id(device.id.system)
+                .component_id(device.id.component),
             payload: self.payload,
             crc_extra: self.crc_extra,
             signature: self.signature,
@@ -217,11 +217,46 @@ impl<
     ) -> Result<FrameBuilder<V, HasPayloadLen, Seq, S, C, HasMsgId, HasPayload, HasCrcExtra, Sig>>
     {
         let payload = message.encode(V::version())?;
+        let crc_extra = HasCrcExtra(message.crc_extra());
 
-        Ok(self
-            .message_id(message.id())
-            .payload(payload)
-            .crc_extra(message.crc_extra()))
+        Ok(FrameBuilder {
+            header_builder: self
+                .header_builder
+                .message_id(payload.id())
+                .payload_length(payload.length()),
+            payload: HasPayload(payload),
+            crc_extra,
+            signature: self.signature,
+        })
+    }
+}
+
+impl<
+        V: MaybeVersioned,
+        L: IsPayloadLen,
+        Seq: IsSequenced,
+        S: IsSysId,
+        C: IsCompId,
+        M: IsMsgId,
+        P: IsPayload,
+        Sig: IsSigned,
+    > FrameBuilder<V, L, Seq, S, C, M, P, NoCrcExtra, Sig>
+{
+    /// Set `CRC_EXTRA`.
+    ///
+    /// # Links
+    ///
+    /// * [`Frame::checksum`] is calculated using [`CrcExtra`].
+    pub fn crc_extra(
+        self,
+        crc_extra: CrcExtra,
+    ) -> FrameBuilder<V, L, Seq, S, C, M, P, HasCrcExtra, Sig> {
+        FrameBuilder {
+            header_builder: self.header_builder,
+            payload: self.payload,
+            crc_extra: HasCrcExtra(crc_extra),
+            signature: self.signature,
+        }
     }
 }
 
@@ -447,6 +482,8 @@ impl<V: Versioned, Sig: IsSigned>
     >
 {
     /// Build [`Frame`] for a specific MAVLink protocol version.
+    ///
+    /// If you want a frame with opaque version, use [`Frame::versionless`] from the obtained frame.
     pub fn build(self) -> Frame<V> {
         let mut frame = Frame {
             header: self.header_builder.build(),
@@ -458,14 +495,6 @@ impl<V: Versioned, Sig: IsSigned>
         frame.checksum = frame.calculate_crc(self.crc_extra.0);
 
         frame
-    }
-
-    /// Build a versionless [`Frame`].
-    ///
-    /// Versionless frames can be exchanged between protocol-agnostic channels. Internally, frames
-    /// still possess a capability to encode and decode themselves.
-    pub fn versionless(self) -> Frame<Versionless> {
-        self.build().versionless()
     }
 }
 

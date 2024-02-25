@@ -26,7 +26,7 @@ pub(super) mod signature;
 pub(crate) mod stx;
 pub(super) mod types;
 
-pub use device::{Device, DeviceId};
+pub use device::{Device, MavLinkId};
 pub use flags::{CompatFlags, IncompatFlags};
 pub use frame::Frame;
 pub use frame_builder::FrameBuilder;
@@ -38,5 +38,5 @@ pub use signature::{MavTimestamp, SecretKey, Sign, Signature, SignatureConf};
 pub use stx::MavSTX;
 pub use types::{
     Checksum, ComponentId, HeaderV1Bytes, HeaderV2Bytes, PayloadLength, Sequence, SignatureBytes,
-    SignatureLinkId, SignatureTimestampBytes, SignatureValue, SystemId,
+    SignatureLinkId, SignatureTimestampBytes, SignatureValue, SystemId, Unsafe,
 };

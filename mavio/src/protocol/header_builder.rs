@@ -136,13 +136,13 @@ impl<V: MaybeVersioned, L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsComp
     /// Set packet sequence number.
     ///
     /// See: [`Header::sequence`].
-    pub fn sequence(self, sequence: Sequence) -> HeaderBuilder<V, L, Sequenced, S, C, M> {
+    pub fn sequence(self, sequencer: Sequence) -> HeaderBuilder<V, L, Sequenced, S, C, M> {
         HeaderBuilder {
             mavlink_version: self.mavlink_version,
             payload_length: self.payload_length,
             incompat_flags: self.incompat_flags,
             compat_flags: self.compat_flags,
-            sequence: Sequenced(sequence),
+            sequence: Sequenced(sequencer),
             system_id: self.system_id,
             component_id: self.component_id,
             message_id: self.message_id,
@@ -260,7 +260,7 @@ impl<L: IsPayloadLen, Seq: IsSequenced, S: IsSysId, C: IsCompId, M: IsMsgId>
 
 impl<V: Versioned> HeaderBuilder<V, HasPayloadLen, Sequenced, HasSysId, HasCompId, HasMsgId> {
     /// Build [`Header`] for a specific MAVLink protocol version.
-    pub fn build(self) -> Header<V> {
+    pub fn build(&self) -> Header<V> {
         Header {
             version: V::version(),
             payload_length: self.payload_length.0,
@@ -272,10 +272,5 @@ impl<V: Versioned> HeaderBuilder<V, HasPayloadLen, Sequenced, HasSysId, HasCompI
             message_id: self.message_id.0,
             _marker_version: PhantomData,
         }
-    }
-
-    /// Build a versionless [`Header`].
-    pub fn versionless(self) -> Header<Versionless> {
-        self.build().versionless()
     }
 }
