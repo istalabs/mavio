@@ -13,7 +13,7 @@ use crate::consts::{
     SIGNATURE_LENGTH, SIGNATURE_LINK_ID_LENGTH, SIGNATURE_SECRET_KEY_LENGTH,
     SIGNATURE_TIMESTAMP_LENGTH, SIGNATURE_TIMESTAMP_OFFSET, SIGNATURE_VALUE_LENGTH,
 };
-use crate::protocol::{SignatureBytes, SignatureLinkId, SignatureTimestampBytes, SignatureValue};
+use crate::protocol::{SignatureBytes, SignatureTimestampBytes, SignatureValue, SignedLinkId};
 
 /// `MAVLink 2` packet signature.
 ///
@@ -24,7 +24,7 @@ use crate::protocol::{SignatureBytes, SignatureLinkId, SignatureTimestampBytes, 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Signature {
     /// `ID` of link on which packet is sent.
-    pub link_id: SignatureLinkId,
+    pub link_id: SignedLinkId,
     /// Timestamp in 10 microsecond units since the beginning of MAVLink epoch (1st January 2015 GMT).
     pub timestamp: MavTimestamp,
     /// Value of a signature.
@@ -79,7 +79,7 @@ pub trait Sign {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SignatureConf {
     /// Defines [`Signature::link_id`] that will be appended to MAVLink packet upon signing.
-    pub link_id: SignatureLinkId,
+    pub link_id: SignedLinkId,
     /// Defines [`Signature::timestamp`] that will be appended to MAVLink packet upon signing.
     pub timestamp: MavTimestamp,
     /// Secret key is used to calculate [`Signature::value`] value.
@@ -240,7 +240,7 @@ impl Signature {
     /// have higher priority over another during routing. Or even different secret keys for
     /// authorization.
     #[inline(always)]
-    pub fn link_id(&self) -> SignatureLinkId {
+    pub fn link_id(&self) -> SignedLinkId {
         self.link_id
     }
 

@@ -43,13 +43,15 @@ pub type HeaderV2Bytes = [u8; HEADER_V2_SIZE];
 ///  * [`Signature`](crate::protocol::Signature).
 ///  * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
 pub type SignatureBytes = [u8; SIGNATURE_LENGTH];
-/// `MAVLink 2` signature link ID.
+/// `MAVLink 2` signed link `ID`.
+///
+/// Link `ID` is an identifier of a communication channel in
+/// [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html) protocol.
 ///
 /// # Links
 ///
 ///  * [`Signature`](crate::protocol::Signature).
-///  * `link id` field in [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
-pub type SignatureLinkId = u8;
+pub type SignedLinkId = u8;
 /// `MAVLink 2` signature timestamp.
 ///
 /// # Links
@@ -65,10 +67,11 @@ pub type SignatureTimestampBytes = [u8; SIGNATURE_TIMESTAMP_LENGTH];
 ///  * `signature` field in [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
 pub type SignatureValue = [u8; SIGNATURE_VALUE_LENGTH];
 
-/// Return type for operations which may lead to data corruption.
+/// Return type for operations which may lead to data corruption or return data that may be
+/// misleading in some circumstances.
 ///
-/// The caller explicitly accepts the consequences, retrieving the result by calling
-/// [`Unsafe::accept_unsafe`].
+/// The caller can either explicitly accept the consequences, retrieving the result by calling
+/// [`Unsafe::accept`], or discard the value with [`Unsafe::discard`].
 pub struct Unsafe<T>(T);
 impl<T> Unsafe<T> {
     /// Creates an unsafe wrapper for a value.
@@ -79,9 +82,15 @@ impl<T> Unsafe<T> {
     }
 
     /// Accept the danger and retrieve wrapped value.
-    #[must_use]
+    ///
+    /// The accepted values are `#[must_use]`.
     #[inline(always)]
-    pub fn accept_unsafe(self) -> T {
+    #[must_use]
+    pub fn accept(self) -> T {
         self.0
     }
+
+    /// Discard the value.
+    #[inline(always)]
+    pub fn discard(self) {}
 }

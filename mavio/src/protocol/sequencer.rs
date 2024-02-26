@@ -1,7 +1,7 @@
 use core::fmt::{Debug, Formatter};
 use core::sync::atomic::Ordering;
 
-use crate::protocol::Sequence;
+use crate::protocol::{Sequence, Unsafe};
 
 #[cfg(not(feature = "alloc"))]
 use no_std::_Sequencer;
@@ -135,6 +135,28 @@ impl Sequencer {
     #[inline(always)]
     pub fn rewind(&self, value: Sequence) {
         self.0 .0.store(value, Ordering::Release)
+    }
+
+    /// Skips `increment` items in sequence and return the updated current value.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use mavio::protocol::Sequencer;
+    ///
+    /// let seq = Sequencer::new();
+    /// seq.advance(3).discard();
+    /// assert_eq!(seq.next(), 3, "should skip 0, 1, and 2");
+    /// ```
+    ///
+    /// The return value is wrapped with [`Unsafe`] since it is not guaranteed in multithreaded
+    /// environments that the [`Sequencer::next`] will return the same value in this thread. Use
+    /// [`Unsafe::accept`] to explicitly acknowledge that you understand what you are doing or
+    /// discard it calling [`Unsafe::discard`].
+    #[inline(always)]
+    #[must_use]
+    pub fn advance(&self, increment: Sequence) -> Unsafe<Sequence> {
+        Unsafe::new(self.0 .0.fetch_add(increment, Ordering::Release) + increment)
     }
 
     #[inline]

@@ -16,7 +16,7 @@ use crate::protocol::signature::{Sign, Signature, SignatureConf};
 use crate::protocol::{
     Checksum, CompatFlags, ComponentId, CrcExtra, Dialect, FrameBuilder, IncompatFlags,
     MavLinkVersion, MavTimestamp, MaybeVersioned, MessageId, Payload, PayloadLength, Sequence,
-    SignatureBytes, SignatureLinkId, SystemId, Versioned, Versionless, V2,
+    SignatureBytes, SignedLinkId, SystemId, Versioned, Versionless, V2,
 };
 
 use crate::prelude::*;
@@ -566,7 +566,7 @@ impl Frame<V2> {
     /// * [`Self::signature`] from which [`Signature`] can be obtained. The former contains all signature-related fields
     ///   (if applicable).
     /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
-    pub fn link_id(&self) -> Option<SignatureLinkId> {
+    pub fn link_id(&self) -> Option<SignedLinkId> {
         self.signature.map(|sig| sig.link_id)
     }
 

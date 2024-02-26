@@ -6,8 +6,8 @@ use crate::protocol::marker::{
     NoCrcExtra, NoMsgId, NoPayload, NoPayloadLen, NoSysId, NotSequenced, NotSigned, Sequenced,
 };
 use crate::protocol::{
-    CompatFlags, ComponentId, CrcExtra, Device, HeaderBuilder, IncompatFlags, MaybeVersioned,
-    Message, Sequence, Signature, SystemId, Versioned, Versionless, V1, V2,
+    CompatFlags, ComponentId, CrcExtra, Endpoint, HeaderBuilder, IncompatFlags, MaybeVersioned,
+    Message, Sequence, Signature, SystemId, Unsafe, Versioned, Versionless, V1, V2,
 };
 use crate::Frame;
 
@@ -141,7 +141,7 @@ impl<
         Sig: IsSigned,
     > FrameBuilder<Versionless, L, Seq, S, C, M, P, E, Sig>
 {
-    /// Updates frame builder with parameters of a MAVlink [`Device`].
+    /// Updates frame builder with parameters of a MAVlink [`Endpoint`].
     ///
     /// Defines the following fields:
     ///
@@ -150,23 +150,19 @@ impl<
     /// * [`Frame::component_id`]
     /// * [`Frame::version`]
     ///
-    /// The [`Frame::sequence`] is defined by using a frame sequence counter from the provided
-    /// device you may either advance counter with [`FrameBuilder::build_next`], or use its current
-    /// value by building a frame with [`FrameBuilder::build`].
-    ///
     /// # Examples
     ///
     /// ```rust
     /// use mavio::prelude::*;
-    /// use mavio::protocol::{Device, MavLinkId, FrameBuilder};
+    /// use mavio::protocol::{Endpoint, MavLinkId, FrameBuilder};
     ///
-    /// let device = Device::new::<V2>(MavLinkId::new(1, 1));
+    /// let device = Endpoint::new::<V2>(MavLinkId::new(1, 1));
     ///
-    /// FrameBuilder::new().device(&device);
+    /// FrameBuilder::new().endpoint(&device);
     /// ```
-    pub fn device<V: Versioned>(
+    pub fn endpoint<V: Versioned>(
         self,
-        device: &Device<V>,
+        device: &Endpoint<V>,
     ) -> FrameBuilder<V, L, Sequenced, HasSysId, HasCompId, M, P, E, Sig> {
         FrameBuilder {
             header_builder: self
@@ -379,6 +375,11 @@ impl<
 
     /// Set packet signature for `MAVLink 2` header.
     ///
+    /// Setting signature manually is dangerous and may lead to creation of invalid frame. Use
+    /// [`Frame::add_signature`] whenever possible. Still, we provide this method to use on your own
+    /// discretion. The result is wrapped with [`Unsafe`] and marked as `#[must_use]` to give caller
+    /// a hint.
+    ///
     /// This method becomes available only once [`FrameBuilder::version`] is set to [`V2`].
     /// So, the following is okay:
     ///
@@ -391,7 +392,7 @@ impl<
     /// #        link_id: 0,
     /// #        timestamp: Default::default(),
     /// #        value: Default::default(),
-    ///     });
+    ///     }).discard();
     /// ```
     ///
     /// While this won't compile:
@@ -407,16 +408,17 @@ impl<
     /// #        value: Default::default(),
     ///     }); // Won't compile
     /// ```
+    #[must_use]
     pub fn signature(
         self,
         signature: Signature,
-    ) -> FrameBuilder<V2, L, Seq, S, C, M, P, E, HasSignature> {
-        FrameBuilder {
+    ) -> Unsafe<FrameBuilder<V2, L, Seq, S, C, M, P, E, HasSignature>> {
+        Unsafe::new(FrameBuilder {
             header_builder: self.header_builder.signed(true),
             payload: self.payload,
             crc_extra: self.crc_extra,
             signature: HasSignature(signature),
-        }
+        })
     }
 }
 
