@@ -2,13 +2,9 @@
 //!
 //! We re-export from [`mavspec::rust::spec::consts`] to provide a full specification of MAVLink-related types.
 
-// Re-export from `mavspec::rust::spec::consts`
-#[doc(no_inline)]
-pub use mavspec::rust::spec::consts::MESSAGE_ID_V1_MAX;
-#[doc(no_inline)]
-pub use mavspec::rust::spec::consts::MESSAGE_ID_V2_MAX;
-#[doc(no_inline)]
-pub use mavspec::rust::spec::consts::PAYLOAD_MAX_SIZE;
+/// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
+#[doc(inline)]
+pub use mavspec::rust::spec::consts::{MESSAGE_ID_V1_MAX, MESSAGE_ID_V2_MAX, PAYLOAD_MAX_SIZE};
 
 /// `MAVLink 1` packet start marker value.
 ///

@@ -151,8 +151,8 @@ impl Sequencer {
     ///
     /// The return value is wrapped with [`Unsafe`] since it is not guaranteed in multithreaded
     /// environments that the [`Sequencer::next`] will return the same value in this thread. Use
-    /// [`Unsafe::accept`] to explicitly acknowledge that you understand what you are doing or
-    /// discard it calling [`Unsafe::discard`].
+    /// [`Unsafe::unwrap`] to explicitly acknowledge that you understand what you are doing and
+    /// retrieve the value or discard it by calling [`Unsafe::discard`].
     #[inline(always)]
     #[must_use]
     pub fn advance(&self, increment: Sequence) -> Unsafe<Sequence> {

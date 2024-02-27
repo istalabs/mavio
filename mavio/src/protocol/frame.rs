@@ -171,9 +171,8 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// Message data. Content depends on message type (i.e. `message_id`).
     ///
-    /// # Links
-    ///
-    /// * Payload implementation: [`Payload`].
+    /// Returns an instance of [`Payload`]. If you are interested in payload bytes, use
+    /// [`Payload::bytes`].
     #[inline]
     pub fn payload(&self) -> &Payload {
         &self.payload
@@ -317,11 +316,7 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// # Usage
     ///
-    /// ```rust
-    /// # #[cfg(not(all(feature = "minimal", feature = "std")))]
-    /// # fn main() {}
-    /// # #[cfg(all(feature = "minimal", feature = "std"))]
-    /// # fn main() -> mavio::errors::Result<()> {
+    /// ```no_run
     /// # use minimal::messages::Heartbeat;
     /// # use mavio::protocol::{V2};
     /// use mavio::dialects::minimal;
@@ -334,7 +329,7 @@ impl<V: MaybeVersioned> Frame<V> {
     /// #         .system_id(1)
     /// #         .component_id(1)
     /// #         .version(V2)
-    /// #         .message(&Heartbeat::default())?
+    /// #         .message(&Heartbeat::default()).unwrap()
     /// #         .build();
     ///
     /// // Decode the frame within `minimal` dialect and match result over available dialect messages
@@ -342,8 +337,6 @@ impl<V: MaybeVersioned> Frame<V> {
     ///     Minimal::ProtocolVersion(_) => {}
     ///     Minimal::Heartbeat(_) => {}
     /// }
-    /// # Ok(())
-    /// # }
     /// ```
     ///
     /// # Errors

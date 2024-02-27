@@ -71,7 +71,7 @@ pub type SignatureValue = [u8; SIGNATURE_VALUE_LENGTH];
 /// misleading in some circumstances.
 ///
 /// The caller can either explicitly accept the consequences, retrieving the result by calling
-/// [`Unsafe::accept`], or discard the value with [`Unsafe::discard`].
+/// [`Unsafe::unwrap`], or discard the value with [`Unsafe::discard`].
 pub struct Unsafe<T>(T);
 impl<T> Unsafe<T> {
     /// Creates an unsafe wrapper for a value.
@@ -81,16 +81,16 @@ impl<T> Unsafe<T> {
         Self(value)
     }
 
-    /// Accept the danger and retrieve wrapped value.
+    /// Accept the unsafe consequences and retrieve the wrapped value.
     ///
     /// The accepted values are `#[must_use]`.
     #[inline(always)]
     #[must_use]
-    pub fn accept(self) -> T {
+    pub fn unwrap(self) -> T {
         self.0
     }
 
-    /// Discard the value.
+    /// Discards the wrapped value.
     #[inline(always)]
     pub fn discard(self) {}
 }

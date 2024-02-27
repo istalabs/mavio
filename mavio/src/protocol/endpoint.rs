@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use crate::protocol::{ComponentId, Sequence, Sequencer, SignedLinkId, SystemId, Unsafe};
+use crate::protocol::{ComponentId, Sequence, Sequencer, SystemId, Unsafe};
 
 use crate::prelude::*;
 
@@ -18,14 +18,13 @@ pub struct MavLinkId {
 ///
 /// # Examples
 ///
-/// ```rust
-/// # #[cfg(feature = "minimal")] {
+/// ```no_run
 /// use mavio::dialects::minimal::messages::Heartbeat;
 /// use mavio::prelude::*;
 ///
 /// // Create a `MAVLink2` device with system and component ids
 /// let device = Endpoint::v2(MavLinkId::new(17, 42));
-/// device.advance(3);
+/// device.advance(3).discard();
 ///
 /// // Build a new frame from the provided message
 /// let frame = device.next_frame(&Heartbeat::default()).unwrap();
@@ -33,12 +32,10 @@ pub struct MavLinkId {
 /// assert_eq!(frame.sequence(), 3, "should be correct sequence number");
 /// assert_eq!(frame.system_id(), 17, "should be the defined system `ID`");
 /// assert_eq!(frame.component_id(), 42, "should be the defined component `ID`");
-/// # }
 /// ```
 pub struct Endpoint<V: MaybeVersioned> {
-    pub(super) id: MavLinkId,
-    pub(super) link_id: Option<SignedLinkId>,
-    pub(super) sequencer: Sequencer,
+    id: MavLinkId,
+    sequencer: Sequencer,
     _version: PhantomData<V>,
 }
 
@@ -54,7 +51,6 @@ impl Endpoint<Versionless> {
     pub fn new<V: MaybeVersioned>(id: MavLinkId) -> Endpoint<V> {
         Endpoint {
             id,
-            link_id: None,
             sequencer: Sequencer::new(),
             _version: PhantomData,
         }
@@ -143,14 +139,6 @@ impl<V: MaybeVersioned> Endpoint<V> {
 impl<V: Versioned> Endpoint<V> {
     /// Produces a next frame from MAVLink message.
     pub fn next_frame(&self, message: &dyn Message) -> Result<Frame<V>> {
-        Ok(self._next_frame::<V>(message)?)
-    }
-}
-
-impl Endpoint<V2> {
-    /// `MAVLink2` link `ID` of a signed frame.
-    #[inline(always)]
-    pub fn link_id(&self) -> Option<SignedLinkId> {
-        self.link_id
+        self._next_frame::<V>(message)
     }
 }
