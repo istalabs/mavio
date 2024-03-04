@@ -1,7 +1,7 @@
 use core::fmt::{Debug, Formatter};
 use core::sync::atomic::Ordering;
 
-use crate::protocol::{Sequence, Unsafe};
+use crate::protocol::{Behold, Sequence};
 
 #[cfg(not(feature = "alloc"))]
 use no_std::_Sequencer;
@@ -149,14 +149,13 @@ impl Sequencer {
     /// assert_eq!(seq.next(), 3, "should skip 0, 1, and 2");
     /// ```
     ///
-    /// The return value is wrapped with [`Unsafe`] since it is not guaranteed in multithreaded
+    /// The return value is wrapped with [`Behold`] since it is not guaranteed in multithreaded
     /// environments that the [`Sequencer::next`] will return the same value in this thread. Use
-    /// [`Unsafe::unwrap`] to explicitly acknowledge that you understand what you are doing and
-    /// retrieve the value or discard it by calling [`Unsafe::discard`].
+    /// [`Behold::unwrap`] to explicitly acknowledge that you understand what you are doing and
+    /// retrieve the value or discard it by calling [`Behold::discard`].
     #[inline(always)]
-    #[must_use]
-    pub fn advance(&self, increment: Sequence) -> Unsafe<Sequence> {
-        Unsafe::new(self.0 .0.fetch_add(increment, Ordering::Release) + increment)
+    pub fn advance(&self, increment: Sequence) -> Behold<Sequence> {
+        Behold::new(self.0 .0.fetch_add(increment, Ordering::Release) + increment)
     }
 
     #[inline]

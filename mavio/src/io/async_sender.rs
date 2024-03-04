@@ -2,7 +2,7 @@
 
 use core::marker::PhantomData;
 
-use tokio::io::AsyncWrite;
+use tokio::io::{AsyncWrite, AsyncWriteExt};
 
 use crate::protocol::{Frame, MaybeVersioned, Versioned, Versionless};
 
@@ -65,5 +65,12 @@ impl<W: AsyncWrite + Unpin, V: MaybeVersioned> AsyncSender<W, V> {
     pub async fn send(&mut self, frame: &Frame<V>) -> Result<usize> {
         V::expect(frame.version())?;
         frame.send_async(&mut self.writer).await
+    }
+
+    /// Flushes all buffers.
+    ///
+    /// Certain writers require flush to be called on tear down in order to write all contents.
+    pub async fn flush(&mut self) -> Result<()> {
+        self.writer.flush().await.map_err(Error::from)
     }
 }

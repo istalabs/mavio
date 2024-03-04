@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use crate::protocol::{ComponentId, Sequence, Sequencer, SystemId, Unsafe};
+use crate::protocol::{Behold, ComponentId, Sequence, Sequencer, SystemId};
 
 use crate::prelude::*;
 
@@ -33,6 +33,7 @@ pub struct MavLinkId {
 /// assert_eq!(frame.system_id(), 17, "should be the defined system `ID`");
 /// assert_eq!(frame.component_id(), 42, "should be the defined component `ID`");
 /// ```
+#[derive(Clone, Debug)]
 pub struct Endpoint<V: MaybeVersioned> {
     id: MavLinkId,
     sequencer: Sequencer,
@@ -116,11 +117,10 @@ impl<V: MaybeVersioned> Endpoint<V> {
 
     /// Skips `increment` items in sequence and return the updated current value.
     ///
-    /// The return value is wrapped in [`Unsafe`] since it is not guaranteed in multithreaded
+    /// The return value is wrapped in [`Behold`] since it is not guaranteed in multithreaded
     /// environments, that the [`Endpoint::next_frame`] will use the same value of a sequence in
     /// this thread.
-    #[must_use]
-    pub fn advance(&self, increment: Sequence) -> Unsafe<Sequence> {
+    pub fn advance(&self, increment: Sequence) -> Behold<Sequence> {
         self.sequencer.advance(increment)
     }
 

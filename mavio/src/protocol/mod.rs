@@ -37,6 +37,6 @@ pub use sequencer::{IntoSequencer, Sequencer};
 pub use signature::{MavTimestamp, SecretKey, Sign, Signature, SignatureConf};
 pub use stx::MavSTX;
 pub use types::{
-    Checksum, ComponentId, HeaderV1Bytes, HeaderV2Bytes, PayloadLength, Sequence, SignatureBytes,
-    SignatureTimestampBytes, SignatureValue, SignedLinkId, SystemId, Unsafe,
+    Behold, Checksum, ComponentId, HeaderV1Bytes, HeaderV2Bytes, PayloadLength, Sequence,
+    SignatureBytes, SignatureTimestampBytes, SignatureValue, SignedLinkId, SystemId,
 };

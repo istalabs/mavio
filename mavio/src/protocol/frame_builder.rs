@@ -6,9 +6,9 @@ use crate::protocol::marker::{
     NoCrcExtra, NoMsgId, NoPayload, NoPayloadLen, NoSysId, NotSequenced, NotSigned, Sequenced,
 };
 use crate::protocol::{
-    CompatFlags, ComponentId, CrcExtra, Endpoint, HeaderBuilder, IncompatFlags, MaybeVersioned,
-    Message, MessageId, Payload, Sequence, Signature, SystemId, Unsafe, Versioned, Versionless, V1,
-    V2,
+    Behold, CompatFlags, ComponentId, CrcExtra, Endpoint, HeaderBuilder, IncompatFlags,
+    MaybeVersioned, Message, MessageId, Payload, Sequence, Signature, SystemId, Versioned,
+    Versionless, V1, V2,
 };
 use crate::Frame;
 
@@ -432,7 +432,7 @@ impl<
     ///
     /// Setting signature manually is dangerous and may lead to creation of invalid frame. Use
     /// [`Frame::add_signature`] whenever possible. Still, we provide this method to use on your own
-    /// discretion. The result is wrapped with [`Unsafe`] and marked as `#[must_use]` to give caller
+    /// discretion. The result is wrapped with [`Behold`] and marked as `#[must_use]` to give caller
     /// a hint.
     ///
     /// This method becomes available only once [`FrameBuilder::version`] is set to [`V2`].
@@ -463,13 +463,12 @@ impl<
     /// #        value: Default::default(),
     ///     }); // Won't compile
     /// ```
-    #[must_use]
     #[allow(clippy::type_complexity)]
     pub fn signature(
         self,
         signature: Signature,
-    ) -> Unsafe<FrameBuilder<V2, L, Seq, S, C, M, P, E, HasSignature>> {
-        Unsafe::new(FrameBuilder {
+    ) -> Behold<FrameBuilder<V2, L, Seq, S, C, M, P, E, HasSignature>> {
+        Behold::new(FrameBuilder {
             header_builder: self.header_builder.signed(true),
             payload: self.payload,
             crc_extra: self.crc_extra,
