@@ -1,7 +1,7 @@
 //! # Mavio
 //!
-//! Minimalistic library for transport-agnostic [MAVLink](https://mavlink.io/en/) communication. It supports `no-std`
-//! (and `no-alloc`) targets.
+//! Minimalistic library for transport-agnostic [MAVLink](https://mavlink.io/en/) communication.
+//! It supports `no-std` (and `no-alloc`) targets.
 //!
 //! <span style="font-size:24px">[🇺🇦](https://mavka.gitlab.io/home/a_note_on_the_war_in_ukraine/)</span>
 //! [![`repository`](https://img.shields.io/gitlab/pipeline-status/mavka/libs/mavio.svg?branch=main&label=repository)](https://gitlab.com/mavka/libs/mavio)
@@ -12,7 +12,7 @@
 //! This library is a part of [Mavka](https://mavka.gitlab.io/home/) toolchain. It uses
 //! [MAVSpec](https://gitlab.com/mavka/libs/mavspec) to generate MAVLink dialects.
 //!
-//! # Usage
+//! ## Usage
 //!
 //! This library exposes [`Sender`] and [`Receiver`] to send and receive instances of MAVLink
 //! [`Frame`]. Frames contain encoded message body in [`Frame::payload`] and additional fields (such
@@ -111,7 +111,7 @@
 //! # }
 //! ```
 //!
-//! # Features
+//! ## Features
 //!
 //! This library is a building block for more sophisticated tools. It includes absolute minimum of functionality
 //! required for correct communication with everything that speaks MAVLink protocol:
@@ -125,7 +125,7 @@
 //! * Implements message verification via checksum.
 //! * Includes tools for [message signing](https://mavlink.io/en/guide/message_signing.html).
 //!
-//! ## Extra features
+//! ### Extra features
 //!
 //! Most of the "extra" features are related to decoupling from MAVLink XML definitions parsing and code generation.
 //! These tasks are performed by [MAVInspect](https://gitlab.com/mavka/libs/mavinspect) and
@@ -142,7 +142,7 @@
 //!   dialect. This means that if you have a message `M` from dialect `A` being included by dialect `B`, it guaranteed
 //!   that you can use Rust structs for message `M` with both of the dialects.
 //!
-//! ## Out of scope
+//! ### Out of scope
 //!
 //! There are few *stateful* features required by MAVLink protocol this library intentionally does not implements and
 //! leaves for the client:
@@ -154,26 +154,26 @@
 //! * Stateful timestamp management for [message signing](https://mavlink.io/en/guide/message_signing.html) that ensures
 //!   that two messages are not sent with the same timestamp.
 //!
-//! # Dialects
+//! ## Dialects
 //!
 //! Standard MAVLink dialect can be enabled by the corresponding feature flags.
 //!
-//! * [`minimal`]((https://mavlink.io/en/messages/minimal.html)) — minimal dialect required to expose your presence to
-//!   other MAVLink devices.
-//! * [`standard`](https://mavlink.io/en/messages/standard.html) — a superset of `minimal` dialect which expected to be
-//!   used by almost all flight stack.
-//! * [`common`](https://mavlink.io/en/messages/common.html) — minimum viable dialect with most of the features, a
-//!   building block for other future-rich dialects.
+//! * [`minimal`]((https://mavlink.io/en/messages/minimal.html)) — minimal dialect required to
+//!   expose your presence to other MAVLink devices.
+//! * [`standard`](https://mavlink.io/en/messages/standard.html) — a superset of `minimal` dialect,
+//!   that expected to be used by almost all flight stack.
+//! * [`common`](https://mavlink.io/en/messages/common.html) — minimum viable dialect with most of
+//!   the features, a building block for other future-rich dialects.
 //! * [`ardupilotmega`](https://mavlink.io/en/messages/common.html) — feature-full dialect used by
-//!   [ArduPilot](http://ardupilot.org). In most cases this dialect is the go-to choice if you want to recognize almost
-//!   all MAVLink messages used by existing flight stacks.
-//! * [`all`](https://mavlink.io/en/messages/all.html) — meta-dialect which includes all other standard dialects
-//!   including these which were created for testing purposes. It is guaranteed that namespaces of the dialects in `all`
-//!   family do not collide.
+//!   [ArduPilot](http://ardupilot.org). In most cases this dialect is the go-to choice if you want
+//!   to recognize almost all MAVLink messages used by existing flight stacks.
+//! * [`all`](https://mavlink.io/en/messages/all.html) — meta-dialect which includes all other
+//!   standard dialects including these which were created for testing purposes. It is guaranteed
+//!   that namespaces of the dialects in `all` family do not collide.
 //! * Other dialects from MAVLink XML [definitions](https://github.com/mavlink/mavlink/tree/master/message_definitions/v1.0):
-//!   `asluav`, `avssuas`, `csairlink`, `cubepilot`, `development`, `icarous`, `matrixpilot`, `paparazzi`, `ualberta`,
-//!   `uavionix`. These do not include `python_array_test` and `test` dialects which should be either generated manually
-//!   or as a part of `all` meta-dialect.
+//!   `asluav`, `avssuas`, `csairlink`, `cubepilot`, `development`, `icarous`, `matrixpilot`,
+//!   `paparazzi`, `ualberta`, `uavionix`. These do not include `python_array_test` and `test`
+//!   dialects which should be either generated manually or as a part of `all` meta-dialect.
 
 #![warn(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]

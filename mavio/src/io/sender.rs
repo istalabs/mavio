@@ -65,4 +65,11 @@ impl<W: Write, V: MaybeVersioned> Sender<W, V> {
         V::expect(frame.version())?;
         frame.send(&mut self.writer)
     }
+
+    /// Flushes all buffers.
+    ///
+    /// Certain writers require flush to be called on tear down in order to write all contents.
+    pub fn flush(&mut self) -> Result<()> {
+        self.writer.flush().map_err(Error::from)
+    }
 }
