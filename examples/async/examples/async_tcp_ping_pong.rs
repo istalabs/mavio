@@ -7,7 +7,7 @@ use tokio::sync::oneshot;
 
 use mavio::dialects::minimal as dialect;
 use mavio::protocol::{Dialect, V2};
-use mavio::{AsyncReceiver, AsyncSender, Frame};
+use mavio::{AsyncReceiver, AsyncSender, Endpoint, MavLinkId};
 
 use dialect::enums::{MavAutopilot, MavModeFlag, MavState, MavType};
 use dialect::Minimal;
@@ -77,10 +77,11 @@ async fn send_heartbeats<W: AsyncWrite + Unpin>(
     let mavlink_version = V2;
     let system_id = 15;
     let component_id = 42;
-    let mut sequence: u8 = 0;
 
     // Use a versioned `AsyncSender` that will accept only messages of a specified MAVLink version
-    let mut sender = AsyncSender::versioned(writer, V2);
+    let mut sender = AsyncSender::versioned(writer, mavlink_version);
+    // Create an endpoint that will track frame sequence
+    let endpoint = Endpoint::v2(MavLinkId::new(system_id, component_id));
 
     for _ in 0..n_iter {
         // Define message
@@ -94,22 +95,14 @@ async fn send_heartbeats<W: AsyncWrite + Unpin>(
         };
 
         // Build frame from message
-        let frame = Frame::builder()
-            .sequence(sequence)
-            .system_id(system_id)
-            .component_id(component_id)
-            .version(mavlink_version)
-            .message(&message)?
-            .build();
+        let frame = endpoint.next_frame(&message)?;
 
         if let Err(err) = sender.send(&frame).await {
             log::warn!("[{whoami}] SEND ERROR #{}: {err:?}", frame.sequence());
             continue;
         }
 
-        log::info!("[{whoami}] FRAME #{} SENT", sequence);
-
-        sequence = sequence.wrapping_add(1); // Increase sequence number
+        log::info!("[{whoami}] FRAME #{} SENT", frame.sequence());
         tokio::time::sleep(SEND_INTERVAL).await;
     }
 

@@ -84,7 +84,7 @@ serde = [
     "bitflags/serde",
 ]
 ## Enable tokio (async) support
-tokio = ["dep:tokio", "std"]
+async = ["dep:tokio", "std"]
 
 ###########################################################
 # Dialects

@@ -76,7 +76,7 @@ fn send_heartbeats<W: Write>(writer: W, whoami: String) -> mavio::errors::Result
             mavlink_version: Minimal::version().unwrap_or(0),
         };
 
-        // Build frame from message
+        // Manually build frame from message (without `Endpoint`)
         let frame = Frame::builder()
             .sequence(sequence)
             .system_id(system_id)

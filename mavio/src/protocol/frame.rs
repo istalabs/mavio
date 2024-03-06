@@ -2,7 +2,7 @@
 
 use crc_any::CRCu16;
 
-#[cfg(feature = "tokio")]
+#[cfg(feature = "async")]
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::consts::{CHECKSUM_SIZE, SIGNATURE_LENGTH};
@@ -373,7 +373,7 @@ impl<V: MaybeVersioned> Frame<V> {
         Ok(frame)
     }
 
-    #[cfg(feature = "tokio")]
+    #[cfg(feature = "async")]
     pub(crate) async fn recv_async<R: AsyncRead + Unpin>(reader: &mut R) -> Result<Frame<V>> {
         let header = Header::<V>::recv_async(reader).await?;
         let body_length = header.body_length();
@@ -404,7 +404,7 @@ impl<V: MaybeVersioned> Frame<V> {
         Ok(header_bytes_sent + self.body_length())
     }
 
-    #[cfg(feature = "tokio")]
+    #[cfg(feature = "async")]
     pub(crate) async fn send_async<W: AsyncWrite + Unpin>(&self, writer: &mut W) -> Result<usize> {
         let header_bytes_sent = self.header.send_async(writer).await?;
 

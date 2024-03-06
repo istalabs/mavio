@@ -63,12 +63,12 @@ pub use receiver::Receiver;
 pub(crate) mod sender;
 pub use sender::Sender;
 
-#[cfg(feature = "tokio")]
+#[cfg(feature = "async")]
 mod async_receiver;
-#[cfg(feature = "tokio")]
+#[cfg(feature = "async")]
 pub use async_receiver::AsyncReceiver;
 
-#[cfg(feature = "tokio")]
+#[cfg(feature = "async")]
 mod async_sender;
-#[cfg(feature = "tokio")]
+#[cfg(feature = "async")]
 pub use async_sender::AsyncSender;

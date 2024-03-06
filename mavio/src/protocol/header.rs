@@ -6,7 +6,7 @@
 use core::marker::PhantomData;
 use tbytes::{TBytesReader, TBytesReaderFor};
 
-#[cfg(feature = "tokio")]
+#[cfg(feature = "async")]
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::consts::{
@@ -258,7 +258,7 @@ impl<V: MaybeVersioned> Header<V> {
         Ok(self.size())
     }
 
-    #[cfg(feature = "tokio")]
+    #[cfg(feature = "async")]
     pub(super) async fn send_async<W: AsyncWrite + Unpin>(&self, writer: &mut W) -> Result<usize> {
         writer.write_all(self.decode().as_slice()).await?;
         Ok(self.size())
@@ -311,7 +311,7 @@ impl<V: MaybeVersioned> Header<V> {
         }
     }
 
-    #[cfg(feature = "tokio")]
+    #[cfg(feature = "async")]
     pub(super) async fn recv_async<R: AsyncRead + Unpin>(reader: &mut R) -> Result<Header<V>> {
         loop {
             let mut buffer = [0u8; HEADER_MIN_SIZE];
