@@ -76,6 +76,29 @@ pub trait Sign {
 /// signatures.
 pub struct Signer<'a>(&'a mut dyn Sign);
 
+/// Message signing configuration for [`Frame`].
+///
+/// **⚠** Secret key is excluded from [Serde](https://serde.rs) serialization.
+///
+/// # Links
+///
+/// * [`Sign`] trait defines signing algorithm protocol.
+/// * [Signature specification](https://mavlink.io/en/guide/message_signing.html#signature) in MAVLink docs.
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SigningConf {
+    /// Defines [`Signature::link_id`] that will be appended to MAVLink packet upon signing.
+    pub link_id: SignedLinkId,
+    /// Defines [`Signature::timestamp`] that will be appended to MAVLink packet upon signing.
+    pub timestamp: MavTimestamp,
+    /// Secret key is used to calculate [`Signature::value`].
+    ///
+    /// **⚠** Since `secret` contains sensitive value, it will be excluded from
+    /// [Serde](https://serde.rs) serialization.
+    #[cfg_attr(feature = "serde", serde(skip_serializing))]
+    pub secret: SecretKey,
+}
+
 impl<'a> Signer<'a> {
     /// Creates a [`Signer`] from anything that implements [`Sign`].
     pub fn new(signer: &'a mut dyn Sign) -> Self {
@@ -116,33 +139,11 @@ impl<'a> Signer<'a> {
     ) -> bool {
         let expected_value = self.calculate(&frame, signature.link_id, signature.timestamp, key);
 
-        expected_value != signature.value
+        expected_value == signature.value
     }
 }
 
-/// [`Signature`] configuration for [`Frame`].
-///
-/// # Links
-///
-/// * [`Sign`] trait defines signing algorithm protocol.
-/// * [Signature specification](https://mavlink.io/en/guide/message_signing.html#signature) in MAVLink docs.
-#[derive(Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct SignatureConf {
-    /// Defines [`Signature::link_id`] that will be appended to MAVLink packet upon signing.
-    pub link_id: SignedLinkId,
-    /// Defines [`Signature::timestamp`] that will be appended to MAVLink packet upon signing.
-    pub timestamp: MavTimestamp,
-    /// Secret key is used to calculate [`Signature::value`] value.
-    ///
-    /// > **Note!** Since `secret` contains sensitive value it will be excluded from serialization. In addition,
-    /// > [`SignatureConf::fmt`] used by [`Debug`] trait will mask `secret` value preventing it from being accidental
-    /// printed to logs.
-    #[cfg_attr(feature = "serde", serde(skip_serializing))]
-    pub secret: SecretKey,
-}
-
-impl SignatureConf {
+impl SigningConf {
     /// Signs a [`Frame`] using stored signing configuration and provided `signer`.
     ///
     /// This method signs `MAVLink 2` frames keeping `MAVLink 1` frames unchanged.
@@ -150,8 +151,10 @@ impl SignatureConf {
         if !frame.matches_version(V2) {
             return;
         }
-        let mut signer = Signer::new(signer);
 
+        frame.header.set_is_signed(true);
+
+        let mut signer = Signer::new(signer);
         let value = signer.calculate(frame, self.link_id, self.timestamp, &self.secret);
 
         frame.signature = Some(Signature {
@@ -274,22 +277,8 @@ impl From<Signature> for SignatureBytes {
     }
 }
 
-impl Debug for SignatureConf {
-    /// Formats debug string for [`SignatureConf`] masking `secret` value.
-    ///
-    /// Replaces secret value with bytes with `[0xff; SIGNATURE_SECRET_KEY_LENGTH]` as recommended by
-    /// [MAVLink documentation](https://mavlink.io/en/guide/message_signing.html#logging).
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "SignatureConf {{ link_id: {}, timestamp: {:?}, secret: [0xff; {}] }}",
-            self.link_id, self.timestamp, SIGNATURE_SECRET_KEY_LENGTH
-        )
-    }
-}
-
-impl Default for SignatureConf {
-    /// Instantiates [`SignatureConf`] with default values.
+impl Default for SigningConf {
+    /// Instantiates [`SigningConf`] with default values.
     ///
     /// Sets `secret` bytes to `0xff` which is recommended as a masked value by
     /// [MAVLink documentation](https://mavlink.io/en/guide/message_signing.html#logging).
@@ -433,17 +422,24 @@ impl MavTimestamp {
         timestamp
     }
 
-    /// Creates [`MavTimestamp`] from the [`SystemTime`].
+    /// Creates [`MavTimestamp`] from microseconds since the beginning of the Unix epoch.
+    pub fn from_micros(value: u128) -> Self {
+        let mut timestamp = MavTimestamp::default();
+        timestamp.set_micros(value);
+        timestamp
+    }
+
+    /// Creates [`MavTimestamp`] from the [`SystemTime`]. Uses microsecond * 10 precision.
     ///
     /// Available only when `std` feature is enabled.
     #[cfg(feature = "std")]
     pub fn from_system_time(value: SystemTime) -> Self {
-        Self::from_millis(value.duration_since(UNIX_EPOCH).unwrap().as_millis() as u64)
+        Self::from_micros(value.duration_since(UNIX_EPOCH).unwrap().as_micros())
     }
 
     /// Creates [`MavTimestamp`] from [`u64`] raw value discarding two higher bytes.
     ///
-    /// Provided `value` should represent [`Self::raw`] `MAVLink 2` signature timestamp.
+    /// Provided `value` should represent [`Self::as_raw_u64`] `MAVLink 2` signature timestamp.
     pub fn from_raw_u64(value: u64) -> Self {
         // Discard two higher bytes.
         let raw = value & 0xffffffffffff;
@@ -469,26 +465,26 @@ impl MavTimestamp {
     ///
     /// Returns number of milliseconds * 10 since the start of MAVLink epoch (1st January 2015 GMT).
     ///
-    /// Use [`Self::raw`] to set this value.
+    /// Use [`Self::as_raw_u64`] to set this value.
     ///
     /// # Links
     ///
     /// * [Timestamp handling](https://mavlink.io/en/guide/message_signing.html#timestamp) in MAVLink documentation.
     #[inline(always)]
-    pub fn raw(&self) -> u64 {
+    pub fn as_raw_u64(&self) -> u64 {
         self.raw
     }
 
     /// Sets raw MAVLink timestamp value.
     ///
-    /// Use [`Self::raw`] to get this value.
+    /// Use [`Self::as_raw_u64`] to get this value.
     ///
     /// # Links
     ///
     /// * [Timestamp handling](https://mavlink.io/en/guide/message_signing.html#timestamp) in MAVLink documentation.
     #[inline(always)]
-    pub fn set_raw(&mut self, raw: u64) -> &mut Self {
-        self.raw = raw;
+    pub fn set_raw_u64(&mut self, raw: u64) -> &mut Self {
+        self.raw = raw & 0xffffffffffff;
         self
     }
 
@@ -497,30 +493,32 @@ impl MavTimestamp {
     /// Returns timestamp as a number of milliseconds since the start of MAVLink epoch
     /// (1st January 2015 GMT).
     ///
-    /// Use [`Self::millis_mavlink`] to set this value.
+    /// Use [`Self::as_millis_mavlink`] to set this value.
     ///
     /// # Links
     ///
     /// * [Timestamp handling](https://mavlink.io/en/guide/message_signing.html#timestamp) in MAVLink documentation.
     #[inline(always)]
-    pub fn millis_mavlink(&self) -> u64 {
-        self.raw * 10
+    pub fn as_millis_mavlink(&self) -> u64 {
+        self.raw / 100
     }
 
     /// Sets MAVLink timestamp in milliseconds.
     ///
-    /// Use [`Self::millis_mavlink`] to get this value.
+    /// Use [`Self::as_millis_mavlink`] to get this value.
     ///
     /// # Links
     ///
     /// * [Timestamp handling](https://mavlink.io/en/guide/message_signing.html#timestamp) in MAVLink documentation.
-    #[inline]
+    #[inline(always)]
     pub fn set_millis_mavlink(&mut self, millis_mavlink: u64) -> &mut Self {
-        self.raw = millis_mavlink / 10;
+        self.raw = (millis_mavlink * 100) & 0xffffffffffff;
         self
     }
 
     /// Unix timestamp in milliseconds.
+    ///
+    /// Use [`Self::set_millis`] to set this value.
     ///
     /// Returns value as number of milliseconds since the start of Unix epoch (1st January 1970 GMT).
     ///
@@ -528,21 +526,77 @@ impl MavTimestamp {
     ///
     /// * [Timestamp handling](https://mavlink.io/en/guide/message_signing.html#timestamp) in MAVLink documentation.
     /// * [`SIGNATURE_TIMESTAMP_OFFSET`] defines offset between epochs.
-    #[inline]
-    pub fn millis(&self) -> u64 {
-        self.raw * 10 + SIGNATURE_TIMESTAMP_OFFSET * 10u64.pow(6)
+    #[inline(always)]
+    pub fn as_millis(&self) -> u64 {
+        (self.raw + SIGNATURE_TIMESTAMP_OFFSET * 100_000) / 100
     }
 
     /// Sets Unix timestamp in milliseconds.
     ///
-    /// Use [`Self::millis`] to get this value.
+    /// Use [`Self::as_millis`] to get this value.
     ///
     /// # Links
     ///
     /// * [Timestamp handling](https://mavlink.io/en/guide/message_signing.html#timestamp) in MAVLink documentation.
-    #[inline]
+    #[inline(always)]
     pub fn set_millis(&mut self, millis: u64) -> &mut Self {
-        self.set_millis_mavlink(millis - SIGNATURE_TIMESTAMP_OFFSET * 10u64.pow(6));
+        self.set_millis_mavlink(millis - SIGNATURE_TIMESTAMP_OFFSET * 1000);
+        self
+    }
+
+    /// MAVLink timestamp in microseconds.
+    ///
+    /// Returns timestamp as a number of microseconds since the start of MAVLink epoch
+    /// (1st January 2015 GMT).
+    ///
+    /// Use [`Self::set_micros_mavlink`] to set this value.
+    ///
+    /// # Links
+    ///
+    /// * [Timestamp handling](https://mavlink.io/en/guide/message_signing.html#timestamp) in MAVLink documentation.
+    #[inline(always)]
+    pub fn as_micros_mavlink(&self) -> u128 {
+        self.raw as u128 * 10
+    }
+
+    /// Sets MAVLink timestamp in microseconds.
+    ///
+    /// Use [`Self::as_micros_mavlink`] to get this value.
+    ///
+    /// # Links
+    ///
+    /// * [Timestamp handling](https://mavlink.io/en/guide/message_signing.html#timestamp) in MAVLink documentation.
+    #[inline(always)]
+    pub fn set_micros_mavlink(&mut self, micros_mavlink: u128) -> &mut Self {
+        self.raw = (micros_mavlink / 10) as u64 & 0xffffffffffff;
+        self
+    }
+
+    /// Unix timestamp in microseconds.
+    ///
+    /// Returns value as number of microseconds since the start of Unix epoch (1st January 1970 GMT).
+    ///
+    /// Use [`Self::set_micros`] to set this value.
+    ///
+    /// # Links
+    ///
+    /// * [Timestamp handling](https://mavlink.io/en/guide/message_signing.html#timestamp) in MAVLink documentation.
+    /// * [`SIGNATURE_TIMESTAMP_OFFSET`] defines offset between epochs.
+    #[inline(always)]
+    pub fn as_micros(&self) -> u128 {
+        (self.raw as u128 + SIGNATURE_TIMESTAMP_OFFSET as u128 * 100_000) * 10
+    }
+
+    /// Sets Unix timestamp in microseconds.
+    ///
+    /// Use [`Self::as_micros`] to get this value.
+    ///
+    /// # Links
+    ///
+    /// * [Timestamp handling](https://mavlink.io/en/guide/message_signing.html#timestamp) in MAVLink documentation.
+    #[inline(always)]
+    pub fn set_micros(&mut self, micros: u128) -> &mut Self {
+        self.set_micros_mavlink(micros - SIGNATURE_TIMESTAMP_OFFSET as u128 * 1_000_000);
         self
     }
 
@@ -605,5 +659,22 @@ mod tests {
 
         let key = SecretKey::from(key_str);
         assert_eq!(key.value(), expected);
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn timestamp_std_basics() {
+        let now = SystemTime::now();
+        let timestamp = MavTimestamp::from(now);
+
+        assert_eq!(
+            timestamp.as_millis(),
+            now.duration_since(UNIX_EPOCH).unwrap().as_millis() as u64
+        );
+
+        assert_eq!(
+            timestamp.as_micros(),
+            now.duration_since(UNIX_EPOCH).unwrap().as_micros() / 10 * 10
+        );
     }
 }

@@ -12,7 +12,7 @@ use crate::protocol::marker::{
     HasCompId, HasMsgId, HasPayload, HasPayloadLen, HasSysId, NoCompId, NoCrcExtra, NoMsgId,
     NoPayload, NoPayloadLen, NoSysId, NotSequenced, NotSigned, Sequenced,
 };
-use crate::protocol::signature::{Sign, Signature, SignatureConf, Signer};
+use crate::protocol::signature::{Sign, Signature, Signer, SigningConf};
 use crate::protocol::{
     Checksum, CompatFlags, ComponentId, CrcExtra, FrameBuilder, IncompatFlags, MavLinkVersion,
     MavTimestamp, MessageId, Payload, PayloadLength, SecretKey, Sequence, SignatureBytes,
@@ -615,14 +615,14 @@ impl Frame<V2> {
     /// Adds signature to `MAVLink 2` frame.
     ///
     /// Signs `MAVLink 2` frame with provided instance of `signer` that implements [`Sign`] trait and signature
-    /// configuration specified as [`SignatureConf`].
+    /// configuration specified as [`SigningConf`].
     ///
     /// # Links
     ///
     /// * [`Sign`] trait.
     /// * [`Signature`] struct which contains frame signature.
     /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
-    pub fn add_signature(&mut self, signer: &mut dyn Sign, conf: &SignatureConf) -> &mut Self {
+    pub fn add_signature(&mut self, signer: &mut dyn Sign, conf: &SigningConf) -> &mut Self {
         conf.apply(self, signer);
         self
     }
@@ -806,7 +806,7 @@ mod tests {
         let mut frame = default_v2_heartbeat_frame();
         let frame = frame.add_signature(
             &mut MavSha256::default(),
-            &SignatureConf {
+            &SigningConf {
                 link_id: 0,
                 timestamp: Default::default(),
                 secret: [0u8; SIGNATURE_SECRET_KEY_LENGTH].into(),
@@ -832,7 +832,7 @@ mod tests {
         let mut frame = default_v2_heartbeat_frame();
         frame.add_signature(
             &mut MavSha256::default(),
-            &SignatureConf {
+            &SigningConf {
                 link_id: 0,
                 timestamp: Default::default(),
                 secret: [0u8; SIGNATURE_SECRET_KEY_LENGTH].into(),

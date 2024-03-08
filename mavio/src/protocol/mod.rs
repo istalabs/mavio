@@ -18,7 +18,7 @@
 //!
 //! `MAVLink 2` protocol is capable of signing frames allowing the receiver to authenticate frame's
 //! sender. To sign a frame you can either use [`Frame<V2>::add_signature`] or
-//! [`SignatureConf::apply`]. The latter will sign only `MAVLink 2` frames keeping `MAVLink 1`
+//! [`SigningConf::apply`]. The latter will sign only `MAVLink 2` frames keeping `MAVLink 1`
 //! frames untouched.
 //!
 //! The signing algorithm is split into [`Sign`] and [`Signer`]. The former is a trait that provides
@@ -56,7 +56,7 @@ pub use header::{Header, HeaderBytes};
 pub use header_builder::HeaderBuilder;
 pub use marker::{MaybeVersioned, Versioned, Versionless, V1, V2};
 pub use sequencer::{IntoSequencer, Sequencer};
-pub use signature::{MavTimestamp, SecretKey, Sign, Signature, SignatureConf, Signer};
+pub use signature::{MavTimestamp, SecretKey, Sign, Signature, Signer, SigningConf};
 pub use stx::MavSTX;
 pub use types::{
     Behold, Checksum, ComponentId, HeaderV1Bytes, HeaderV2Bytes, PayloadLength, Sequence,
