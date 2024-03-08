@@ -34,9 +34,9 @@ use crate::prelude::*;
 ///
 /// In most cases, you are going to receive a [`Versionless`] header. However, if you want to work
 /// in a context of a specific MAVLink protocol version, you can convert header into a [`Versioned`]
-/// variant by calling [`Header::try_versioned`].
+/// variant by calling [`Header::try_into_versioned`].
 ///
-/// You always can forget about header's version by calling [`Header::versionless`].
+/// You always can forget about header's version by calling [`Header::into_versionless`].
 ///
 /// # Links
 ///
@@ -218,15 +218,15 @@ impl<V: MaybeVersioned> Header<V> {
         header_bytes
     }
 
-    /// Attempts to transform header into its [`Versioned`] version.
-    pub fn try_versioned<Version: Versioned>(
-        self,
-        #[allow(unused_variables)] version: Version,
-    ) -> Result<Header<Version>> {
+    /// Attempts to transform existing header into its versioned form.
+    ///
+    /// This method never changes the internal MAVLink protocol version. It will return an error,
+    /// if conversion is not possible.
+    pub fn try_into_versioned<Version: MaybeVersioned>(self) -> Result<Header<Version>> {
         Version::expect(self.version)?;
 
         Ok(Header {
-            version: Version::version(),
+            version: self.version,
             payload_length: self.payload_length,
             incompat_flags: self.incompat_flags,
             compat_flags: self.compat_flags,
@@ -238,8 +238,16 @@ impl<V: MaybeVersioned> Header<V> {
         })
     }
 
+    /// Attempts to create header with specified version from existing one.
+    ///
+    /// This method never changes the internal MAVLink protocol version. It will return an error,
+    /// if conversion is not possible.
+    pub fn try_to_versioned<Version: MaybeVersioned>(&self) -> Result<Header<Version>> {
+        self.clone().try_into_versioned()
+    }
+
     /// Forget about header's version transforming it into a [`Versionless`] variant.
-    pub fn versionless(self) -> Header<Versionless> {
+    pub fn into_versionless(self) -> Header<Versionless> {
         Header {
             version: self.version,
             payload_length: self.payload_length,
@@ -251,6 +259,11 @@ impl<V: MaybeVersioned> Header<V> {
             message_id: self.message_id,
             _marker_version: PhantomData,
         }
+    }
+
+    /// Create a [`Versionless`] header from the existing one.
+    pub fn to_versionless(&self) -> Header<Versionless> {
+        self.clone().into_versionless()
     }
 
     pub(super) fn send<W: Write>(&self, writer: &mut W) -> Result<usize> {
@@ -525,13 +538,18 @@ impl<V: MaybeVersioned> HeaderStart<V> {
 
 #[cfg(test)]
 mod header_tests {
-    use crate::consts::{STX_V1, STX_V2};
-    use crate::protocol::V1;
+    #[cfg(feature = "std")]
     use std::io::Cursor;
+
+    #[cfg(feature = "std")]
+    use crate::consts::{STX_V1, STX_V2};
+
+    use crate::protocol::V1;
 
     use super::*;
 
     #[test]
+    #[cfg(feature = "std")]
     fn read_v1_header() {
         let mut buffer = Cursor::new(vec![
             12,     // \
@@ -546,9 +564,9 @@ mod header_tests {
         ]);
 
         let header = Header::<V1>::recv(&mut buffer).unwrap();
-        let header = header.try_versioned(V1).unwrap();
+        let header = header.try_into_versioned::<V1>().unwrap();
 
-        assert!(header.try_versioned(V2).is_err());
+        assert!(header.try_into_versioned::<V2>().is_err());
         assert!(matches!(header.version(), MavLinkVersion::V1));
 
         assert_eq!(header.payload_length(), 8u8);
@@ -559,6 +577,7 @@ mod header_tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn read_v2_header() {
         let mut reader = Cursor::new(vec![
             12,     // \
@@ -577,9 +596,9 @@ mod header_tests {
         ]);
 
         let header = Header::<Versionless>::recv(&mut reader).unwrap();
-        let header = header.try_versioned(V2).unwrap();
+        let header = header.try_into_versioned::<V2>().unwrap();
 
-        assert!(header.try_versioned(V1).is_err());
+        assert!(header.try_into_versioned::<V1>().is_err());
         assert!(matches!(header.version(), MavLinkVersion::V2));
 
         assert_eq!(header.payload_length(), 8u8);
@@ -592,6 +611,7 @@ mod header_tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn read_v2_header_magic_bytes_in_sequence() {
         let mut reader = Cursor::new(vec![
             12,     // \
@@ -611,7 +631,7 @@ mod header_tests {
 
         let header = Header::<V2>::recv(&mut reader).unwrap();
 
-        assert!(header.try_versioned(V1).is_err());
+        assert!(header.try_into_versioned::<V1>().is_err());
         assert!(matches!(header.version(), MavLinkVersion::V2));
 
         assert_eq!(header.payload_length(), 8u8);

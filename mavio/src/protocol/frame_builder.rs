@@ -637,7 +637,7 @@ impl<V: Versioned, Sig: IsSigned>
 {
     /// Build [`Frame`] for a specific MAVLink protocol version.
     ///
-    /// If you want a frame with opaque version, use [`Frame::versionless`] from the obtained frame.
+    /// If you want a frame with opaque version, use [`Frame::into_versionless`] from the obtained frame.
     pub fn build(self) -> Frame<V> {
         let mut frame = Frame {
             header: self.header_builder.build(),

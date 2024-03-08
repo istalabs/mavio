@@ -48,7 +48,7 @@ impl<R: AsyncRead + Unpin> AsyncReceiver<R, Versionless> {
     /// [`MavSTX`](crate::protocol::MavSTX) magic byte, it may behave incorrectly, if the incoming
     /// stream contains frames of a different protocol version. If this is the case, it is preferred
     /// to construct versionless receiver by [`AsyncReceiver::new`] and then attempt to convert incoming
-    /// frames into a specific protocol version with [`Frame::try_versioned`].
+    /// frames into a specific protocol version with [`Frame::try_into_versioned`].
     pub fn versioned<Version: Versioned>(
         reader: R,
         #[allow(unused_variables)] version: Version,

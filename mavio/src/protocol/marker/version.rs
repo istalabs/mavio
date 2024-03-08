@@ -40,7 +40,7 @@ pub trait MaybeVersioned: IsMagicByte + Clone + Debug + Sync + Send + Sealed {
 /// information is opaque to the caller. For example, default [`Receiver`](crate::Receiver) will
 /// look up for both `MAVLink 1` and `MAVLink 2` packets and return
 /// [`Frame<Versionless>`](Frame<Versionless>) which then can be converted to their
-/// version-specific form by [`Frame::try_versioned`](Frame::try_versioned).
+/// version-specific form by [`Frame::try_versioned`](Frame::try_into_versioned).
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Versionless;

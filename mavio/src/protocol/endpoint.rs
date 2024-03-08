@@ -33,7 +33,7 @@ pub struct MavLinkId {
 /// assert_eq!(frame.system_id(), 17, "should be the defined system `ID`");
 /// assert_eq!(frame.component_id(), 42, "should be the defined component `ID`");
 /// ```
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Endpoint<V: MaybeVersioned> {
     id: MavLinkId,
     sequencer: Sequencer,
@@ -80,7 +80,7 @@ impl Endpoint<Versionless> {
     /// The actual protocol version still has to be specified as a generic parameter using
     /// [turbofish](https://turbo.fish/about) syntax.
     pub fn next_frame<V: Versioned>(&self, message: &dyn Message) -> Result<Frame<Versionless>> {
-        Ok(self._next_frame::<V>(message)?.versionless())
+        Ok(self._next_frame::<V>(message)?.into_versionless())
     }
 }
 
@@ -124,6 +124,44 @@ impl<V: MaybeVersioned> Endpoint<V> {
         self.sequencer.advance(increment)
     }
 
+    /// Forks existing endpoint.
+    ///
+    /// Forking is similar to cloning, except the internal frame [`Sequencer`] will be forked to
+    /// start from the next value. This method is available for all targets, while cloning is
+    /// possible only for `alloc` targets.
+    ///
+    /// See [`Sequencer::fork`] for details.
+    pub fn fork(&self) -> Self {
+        Self {
+            id: self.id,
+            sequencer: self.sequencer.fork(),
+            _version: PhantomData,
+        }
+    }
+
+    /// Synchronizes this endpoint with another one.
+    ///
+    /// Synchronizes internal sequencer with the sequencer of the `other` [`Endpoint`].
+    ///
+    /// See [`Sequencer::sync`] for details.
+    pub fn sync<Version: MaybeVersioned>(&self, other: &Endpoint<Version>) {
+        self.sequencer.sync(other.sequencer())
+    }
+
+    /// <sup>`alloc`</sup>
+    /// Joins another endpoint with current one.
+    ///
+    /// From this moment internal sequencers will share the same counter. The current sequencer will
+    /// be synced with the one it joins.
+    ///
+    /// Available only when `alloc` feature is enabled.
+    ///
+    /// See [`Sequencer::join`] for details.
+    #[cfg(feature = "alloc")]
+    pub fn join<Version: MaybeVersioned>(&self, other: &mut Endpoint<Version>) {
+        self.sequencer.join(&mut other.sequencer)
+    }
+
     fn _next_frame<Version: Versioned>(&self, message: &dyn Message) -> Result<Frame<Version>> {
         let frame = Frame::builder()
             .sequence(self.next_sequence())
@@ -140,5 +178,16 @@ impl<V: Versioned> Endpoint<V> {
     /// Produces a next frame from MAVLink message.
     pub fn next_frame(&self, message: &dyn Message) -> Result<Frame<V>> {
         self._next_frame::<V>(message)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<V: MaybeVersioned> Clone for Endpoint<V> {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id,
+            sequencer: self.sequencer.clone(),
+            _version: PhantomData,
+        }
     }
 }

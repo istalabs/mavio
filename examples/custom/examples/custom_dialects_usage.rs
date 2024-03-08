@@ -39,7 +39,7 @@ fn write_to_buffer() {
         .message(&message)
         .unwrap()
         .build()
-        .versionless();
+        .into_versionless();
     log::info!("Frame: {message:#?}");
 
     // Write MAVLink frame to a buffer

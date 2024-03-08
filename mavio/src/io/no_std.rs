@@ -92,4 +92,8 @@ pub trait Write {
     ///
     /// Returns [`Error::Io`] / [`Error::NoStdIo`] in case of an error.
     fn write_all(&mut self, buf: &[u8]) -> Result<()>;
+
+    /// Flush this output stream, ensuring that all intermediately buffered
+    /// contents reach their destination.
+    fn flush(&mut self) -> Result<()>;
 }

@@ -84,7 +84,7 @@ fn send_heartbeats<W: Write>(writer: W, whoami: String) -> mavio::errors::Result
             .version(mavlink_version)
             .message(&message)?
             .build()
-            .versionless();
+            .into_versionless();
 
         sender.send(&frame)?;
         log::info!("[{whoami}] FRAME #{} SENT", sequence);

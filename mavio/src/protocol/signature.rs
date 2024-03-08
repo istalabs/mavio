@@ -1,19 +1,17 @@
-//! # `MAVLink 2` packet signature
-//!
-//! Implements [`Signature`].
-//!
-//! # Links
-//!
-//! * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
-
 use core::cmp::min;
 use core::fmt::{Debug, Formatter};
+
+#[cfg(feature = "std")]
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::consts::{
     SIGNATURE_LENGTH, SIGNATURE_LINK_ID_LENGTH, SIGNATURE_SECRET_KEY_LENGTH,
     SIGNATURE_TIMESTAMP_LENGTH, SIGNATURE_TIMESTAMP_OFFSET, SIGNATURE_VALUE_LENGTH,
 };
-use crate::protocol::{SignatureBytes, SignatureTimestampBytes, SignatureValue, SignedLinkId};
+use crate::protocol::{
+    Frame, MaybeVersioned, SignatureBytes, SignatureTimestampBytes, SignatureValue, SignedLinkId,
+    V2,
+};
 
 /// `MAVLink 2` packet signature.
 ///
@@ -46,13 +44,14 @@ pub struct MavTimestamp {
     raw: u64,
 }
 
-/// Interface for `MAVLink 2` frames signing.
+/// Interface for `MAVLink 2` frames signing algorithm.
 ///
-/// Implements `sha256_48`, a `MAVLink 2` specific hashing algorithm similar to regular `sha256` except that only first
-/// 48 bits are considered.
+/// An implementor of [`Sign`] should be capable to calculate `sha256_48`, a `MAVLink 2` specific
+/// hashing algorithm similar to regular `sha256` except that only first 48 bits are considered.
 ///
 /// # Links
 ///
+/// * [`Signer`] wraps and implementor of [`Sign`] and capable of signing and validating frames.
 /// * Values calculated by implementors of [`Sign`] are stored in [`Signature`] struct as `value`.
 /// * [Signature specification](https://mavlink.io/en/guide/message_signing.html#signature) format in MAVLink docs.
 pub trait Sign {
@@ -60,16 +59,68 @@ pub trait Sign {
     ///
     /// Used by caller to ensure that signer's inner state does not have any digested data.
     fn reset(&mut self);
+
     /// Adds value to digest.
     ///
-    /// Caller can invoke [`Sign::digest`] multiple times. Passing data as several sequential chunks is the same as
-    /// calling `digest` with the whole data at once.
+    /// Caller can invoke [`Sign::digest`] multiple times. Passing data as several sequential chunks
+    /// is the same as calling `digest` with the whole data at once.
     fn digest(&mut self, bytes: &[u8]);
-    /// Calculates `MAVLink 2` signature.
-    fn signature(&self) -> SignatureValue;
+
+    /// Produces `MAVLink 2` signature from the internal state.
+    fn produce(&self) -> SignatureValue;
 }
 
-/// A struct to set specify [`Signature`] configuration for [`Frame`](crate::protocol::Frame).
+/// Frame signer.
+///
+/// Stores an implementor of [`Sign`] and provides methods for signing frames and validating their
+/// signatures.
+pub struct Signer<'a>(&'a mut dyn Sign);
+
+impl<'a> Signer<'a> {
+    /// Creates a [`Signer`] from anything that implements [`Sign`].
+    pub fn new(signer: &'a mut dyn Sign) -> Self {
+        Self(signer)
+    }
+
+    /// Calculates `MAVLink 2` signature for a [`Frame`] using provided `link_id`, `timestamp`, and
+    /// `key`.
+    ///
+    /// This method has a blanked implementation which does not require changing, unless you want
+    /// to completely change signing protocol.
+    pub fn calculate<V: MaybeVersioned>(
+        &mut self,
+        frame: &Frame<V>,
+        link_id: SignedLinkId,
+        timestamp: MavTimestamp,
+        key: &SecretKey,
+    ) -> SignatureValue {
+        self.0.reset();
+
+        self.0.digest(key.value());
+        self.0.digest(frame.header().decode().as_slice());
+        self.0.digest(frame.payload().bytes());
+        self.0.digest(&frame.checksum().to_le_bytes());
+        self.0.digest(&[link_id]);
+        self.0.digest(&timestamp.to_bytes_array());
+
+        self.0.produce()
+    }
+
+    /// Validates a [`Signature`] using the provided [`SecretKey`]. Returns `true` if signature is
+    /// valid.
+    pub fn validate<V: MaybeVersioned>(
+        &mut self,
+        frame: &Frame<V>,
+        signature: &Signature,
+        key: &SecretKey,
+    ) -> bool {
+        let expected_value = self.calculate(&frame, signature.link_id, signature.timestamp, key);
+
+        expected_value != signature.value
+    }
+}
+
+/// [`Signature`] configuration for [`Frame`].
 ///
 /// # Links
 ///
@@ -89,6 +140,26 @@ pub struct SignatureConf {
     /// printed to logs.
     #[cfg_attr(feature = "serde", serde(skip_serializing))]
     pub secret: SecretKey,
+}
+
+impl SignatureConf {
+    /// Signs a [`Frame`] using stored signing configuration and provided `signer`.
+    ///
+    /// This method signs `MAVLink 2` frames keeping `MAVLink 1` frames unchanged.
+    pub fn apply<V: MaybeVersioned>(&self, frame: &mut Frame<V>, signer: &mut dyn Sign) {
+        if !frame.matches_version(V2) {
+            return;
+        }
+        let mut signer = Signer::new(signer);
+
+        let value = signer.calculate(frame, self.link_id, self.timestamp, &self.secret);
+
+        frame.signature = Some(Signature {
+            link_id: self.link_id,
+            timestamp: self.timestamp,
+            value,
+        });
+    }
 }
 
 /// `MAVLink 2` signature secret key.
@@ -138,9 +209,7 @@ pub struct SecretKey([u8; SIGNATURE_SECRET_KEY_LENGTH]);
 
 impl Debug for SecretKey {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("SecretKey")
-            .field("0", &"[0xff; u8]")
-            .finish()
+        f.debug_struct("SecretKey").finish_non_exhaustive()
     }
 }
 
@@ -315,10 +384,22 @@ impl Signature {
     }
 }
 
+#[cfg(feature = "std")]
+impl From<SystemTime> for MavTimestamp {
+    /// Creates [`MavTimestamp`] from the [`SystemTime`].
+    ///
+    /// Available only when `std` feature is enabled. Uses [`Self::from_system_time`] internally.
+    #[inline(always)]
+    fn from(value: SystemTime) -> Self {
+        Self::from_system_time(value)
+    }
+}
+
 impl From<u64> for MavTimestamp {
     /// Creates [`MavTimestamp`] from [`u64`] raw value discarding two higher bytes.
     ///
     /// Uses [Self::from_raw_u64] internally.
+    #[inline(always)]
     fn from(value: u64) -> Self {
         Self::from_raw_u64(value)
     }
@@ -345,6 +426,21 @@ impl From<MavTimestamp> for SignatureTimestampBytes {
 }
 
 impl MavTimestamp {
+    /// Creates [`MavTimestamp`] from milliseconds since the beginning of the Unix epoch.
+    pub fn from_millis(value: u64) -> Self {
+        let mut timestamp = MavTimestamp::default();
+        timestamp.set_millis(value);
+        timestamp
+    }
+
+    /// Creates [`MavTimestamp`] from the [`SystemTime`].
+    ///
+    /// Available only when `std` feature is enabled.
+    #[cfg(feature = "std")]
+    pub fn from_system_time(value: SystemTime) -> Self {
+        Self::from_millis(value.duration_since(UNIX_EPOCH).unwrap().as_millis() as u64)
+    }
+
     /// Creates [`MavTimestamp`] from [`u64`] raw value discarding two higher bytes.
     ///
     /// Provided `value` should represent [`Self::raw`] `MAVLink 2` signature timestamp.
@@ -398,7 +494,8 @@ impl MavTimestamp {
 
     /// MAVLink timestamp in milliseconds.
     ///
-    /// Returns value as number of milliseconds since the start of MAVLink epoch (1st January 2015 GMT).
+    /// Returns timestamp as a number of milliseconds since the start of MAVLink epoch
+    /// (1st January 2015 GMT).
     ///
     /// Use [`Self::millis_mavlink`] to set this value.
     ///
@@ -466,8 +563,7 @@ impl MavTimestamp {
 
 #[cfg(test)]
 mod tests {
-    use crate::consts::SIGNATURE_SECRET_KEY_LENGTH;
-    use crate::protocol::SecretKey;
+    use super::*;
 
     #[test]
     fn key_from_array() {

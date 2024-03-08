@@ -63,6 +63,9 @@ impl Sequencer {
 
     /// Forks sequencer to a new independent sequence counter that starts from the next value.
     ///
+    /// Forking is similar to cloning and available for all targets, while cloning is possible only
+    /// for `alloc` targets.
+    ///
     /// # Examples
     ///
     /// ```

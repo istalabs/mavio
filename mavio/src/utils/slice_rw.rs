@@ -201,6 +201,10 @@ impl<'a> Write for SliceWriter<'a> {
         self.write_internal(buf);
         Ok(())
     }
+
+    fn flush(&mut self) -> crate::Result<()> {
+        Ok(())
+    }
 }
 
 #[cfg(feature = "std")]

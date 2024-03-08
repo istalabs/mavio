@@ -12,11 +12,11 @@ use crate::protocol::marker::{
     HasCompId, HasMsgId, HasPayload, HasPayloadLen, HasSysId, NoCompId, NoCrcExtra, NoMsgId,
     NoPayload, NoPayloadLen, NoSysId, NotSequenced, NotSigned, Sequenced,
 };
-use crate::protocol::signature::{Sign, Signature, SignatureConf};
+use crate::protocol::signature::{Sign, Signature, SignatureConf, Signer};
 use crate::protocol::{
-    Checksum, CompatFlags, ComponentId, CrcExtra, Dialect, FrameBuilder, IncompatFlags,
-    MavLinkVersion, MavTimestamp, MaybeVersioned, MessageId, Payload, PayloadLength, Sequence,
-    SignatureBytes, SignedLinkId, SystemId, Versioned, Versionless, V2,
+    Checksum, CompatFlags, ComponentId, CrcExtra, FrameBuilder, IncompatFlags, MavLinkVersion,
+    MavTimestamp, MessageId, Payload, PayloadLength, SecretKey, Sequence, SignatureBytes,
+    SignedLinkId, SystemId,
 };
 
 use crate::prelude::*;
@@ -30,9 +30,9 @@ use crate::prelude::*;
 ///
 /// All MAVLink frames are always belong to a specific MAVLink protocol version. However, for the
 /// sake of generality, this library provides a way to deal with MAVLink protocol version both
-/// explicitly by operating on [`Frame<V1>`](Frame<crate::protocol::V1>) / [`Frame<V2>`] and
-/// implicitly through [`Frame<Versionless>`]. The latter can be obtained by [`Frame::versionless`]
-/// and converted into protocol-specific form through [`Frame::try_versioned`]. Both versionless and
+/// explicitly by operating on [`Frame<V1>`] / [`Frame<V2>`] and implicitly through
+/// [`Frame<Versionless>`]. The latter can be obtained by [`Frame::into_versionless`]
+/// and converted into protocol-specific form through [`Frame::try_into_versioned`]. Both versionless and
 /// versioned forms of a frame could be correctly decoded into the corresponding MAVLink message.
 ///
 /// # Encoding / Decoding
@@ -201,10 +201,40 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// Returns `true` if [`Frame`] contains [`Signature`]. Correctness of signature is not validated.
     ///
-    /// For `MAVLink 1` always returns `false`.
+    /// For `MAVLink 1` frames always returns `false`.
     #[inline]
     pub fn is_signed(&self) -> bool {
         self.signature.is_some()
+    }
+
+    /// `MAVLink 2` signature.
+    ///
+    /// Returns signature that ensures the link is tamper-proof.
+    ///
+    /// Available only for signed `MAVLink 2` frames. For `MAVLink 1` always return `None`.
+    ///
+    /// # Links
+    ///
+    /// * [`Frame::is_signed`] checks that frame is signed.
+    /// * [`Frame::link_id`] and [`Frame::timestamp`] provide direct access to signature fields
+    ///   ([`Frame<V2>`] only).
+    /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
+    #[inline]
+    pub fn signature(&self) -> Option<&Signature> {
+        if self.matches_version(V2) {
+            self.signature.as_ref()
+        } else {
+            None
+        }
+    }
+
+    /// Removes `MAVLink 2` signature from [`Frame`].
+    ///
+    /// Applicable only for `MAVLink 2` frames. `MAVLink 1` frames will be kept untouched.
+    pub fn remove_signature(&mut self) -> &mut Self {
+        self.signature = None;
+        self.header.set_is_signed(false);
+        self
     }
 
     /// Body length.
@@ -288,26 +318,42 @@ impl<V: MaybeVersioned> Frame<V> {
         Version::matches(self.version())
     }
 
-    /// Attempts to transform frame into its [`Versioned`] form.
-    pub fn try_versioned<Version: Versioned>(self, version: Version) -> Result<Frame<Version>> {
+    /// Attempts to transform frame into its versioned form.
+    ///
+    /// This method never changes the internal MAVLink protocol version. It will return an error,
+    /// if conversion is not possible.
+    pub fn try_into_versioned<Version: MaybeVersioned>(self) -> Result<Frame<Version>> {
         Version::expect(self.version())?;
 
         Ok(Frame {
-            header: self.header.try_versioned(version)?,
+            header: self.header.try_into_versioned::<Version>()?,
             payload: self.payload,
             checksum: self.checksum,
             signature: self.signature,
         })
     }
 
+    /// Attempts to create frame of specified version from the existing one.
+    ///
+    /// This method never changes the internal MAVLink protocol version. It will return an error,
+    /// if conversion is not possible.
+    pub fn try_to_versioned<Version: MaybeVersioned>(&self) -> Result<Frame<Version>> {
+        self.clone().try_into_versioned()
+    }
+
     /// Forget about frame's version transforming it into a [`Versionless`] variant.
-    pub fn versionless(self) -> Frame<Versionless> {
+    pub fn into_versionless(self) -> Frame<Versionless> {
         Frame {
-            header: self.header.versionless(),
+            header: self.header.into_versionless(),
             payload: self.payload,
             checksum: self.checksum,
             signature: self.signature,
         }
+    }
+
+    /// Forget about frame's version transforming it into a [`Versionless`] variant.
+    pub fn to_versionless(&self) -> Frame<Versionless> {
+        self.clone().into_versionless()
     }
 
     /// Decodes frame into a message of particular MAVLink dialect.
@@ -396,7 +442,7 @@ impl<V: MaybeVersioned> Frame<V> {
         #[cfg(not(feature = "alloc"))]
         let mut buf = [0u8; crate::consts::PAYLOAD_MAX_SIZE + SIGNATURE_LENGTH];
         #[cfg(feature = "alloc")]
-        let mut buf = vec![0u8; self.body_length()];
+        let mut buf = alloc::vec![0u8; self.body_length()];
 
         self.fill_body_buffer(&mut buf);
         writer.write_all(buf.as_slice())?;
@@ -531,22 +577,6 @@ impl Frame<V2> {
         self.header.compat_flags()
     }
 
-    /// `MAVLink 2` signature.
-    ///
-    /// Returns signature that ensures the link is tamper-proof.
-    ///
-    /// Available only for signed `MAVLink 2` frame. For `MAVLink 1` always return `None`.
-    ///
-    /// # Links
-    ///
-    /// * [`Frame::is_signed`].
-    /// * [`Frame::link_id`] and [`Frame::timestamp`] provide direct access to signature fields.
-    /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
-    #[inline]
-    pub fn signature(&self) -> Option<&Signature> {
-        self.signature.as_ref()
-    }
-
     /// `MAVLink 2` signature `link_id`, an 8-bit identifier of a MAVLink channel.
     ///
     /// Peers may have different semantics or rules for different links. For example, some links may have higher
@@ -592,47 +622,28 @@ impl Frame<V2> {
     /// * [`Sign`] trait.
     /// * [`Signature`] struct which contains frame signature.
     /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
-    pub fn add_signature(
-        &mut self,
-        signer: &mut dyn Sign,
-        conf: &SignatureConf,
-    ) -> Result<&mut Self> {
-        let signature = self.calculate_signature(signer, conf)?;
-
-        self.signature = Some(signature);
-        self.header.set_is_signed(true);
-
-        Ok(self)
-    }
-
-    /// Removes `MAVLink 2` signature from [`Frame`].
-    ///
-    /// Applicable only for `MAVLink 2` frames.
-    pub fn remove_signature(&mut self) -> &mut Self {
-        self.signature = None;
-        self.header.set_is_signed(false);
+    pub fn add_signature(&mut self, signer: &mut dyn Sign, conf: &SignatureConf) -> &mut Self {
+        conf.apply(self, signer);
         self
     }
 
-    fn calculate_signature(
-        &self,
-        signer: &mut dyn Sign,
-        conf: &SignatureConf,
-    ) -> Result<Signature> {
-        signer.reset();
+    /// Validates frame signature using a `signer` and a secret `key`.
+    ///
+    /// Returns [`FrameError::InvalidSignature`] variant of an [`Error::Frame`] if frame missing a
+    /// signature or have an incorrect one.
+    pub fn validate_signature(&self, signer: &mut dyn Sign, key: &SecretKey) -> Result<()> {
+        let signature = if let Some(signature) = self.signature {
+            signature
+        } else {
+            return Err(FrameError::InvalidSignature.into());
+        };
+        let mut signer = Signer::new(signer);
 
-        signer.digest(conf.secret.value());
-        signer.digest(self.header.decode().as_slice());
-        signer.digest(self.payload.bytes());
-        signer.digest(&self.checksum.to_le_bytes());
-        signer.digest(&[conf.link_id]);
-        signer.digest(&conf.timestamp.to_bytes_array());
+        if !signer.validate(&self, &signature, key) {
+            return Err(FrameError::InvalidSignature.into());
+        }
 
-        Ok(Signature {
-            link_id: conf.link_id,
-            timestamp: conf.timestamp,
-            value: signer.signature(),
-        })
+        Ok(())
     }
 }
 
@@ -641,12 +652,12 @@ impl Frame<V2> {
 ///////////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 mod tests {
-    use crc_any::CRCu16;
+    #[cfg(feature = "std")]
     use std::io::Cursor;
 
-    use crate::consts::{STX_V1, STX_V2};
-    use crate::protocol::{Sequence, V1, V2};
-    use crate::Receiver;
+    use crc_any::CRCu16;
+
+    use crate::protocol::{V1, V2};
 
     #[test]
     fn crc_calculation_algorithm_accepts_sequential_digests() {
@@ -669,8 +680,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn multiple_magic_bytes_in_stream_v1() {
-        let seq: Sequence = STX_V1;
+        use crate::consts::STX_V1;
+        let seq = STX_V1;
         let reader = Cursor::new(vec![
             STX_V1, // magic byte
             8,      // payload_length
@@ -684,7 +697,7 @@ mod tests {
             0, 0, // Checksum (fake)
         ]);
 
-        let mut receiver = Receiver::new::<V1>(reader);
+        let mut receiver = crate::Receiver::new::<V1>(reader);
         let frame = receiver.recv().unwrap();
 
         assert_eq!(frame.payload_length(), 8);
@@ -694,8 +707,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn multiple_magic_bytes_in_stream_v2() {
-        let seq: Sequence = STX_V2;
+        use crate::consts::STX_V2;
+        let seq = STX_V2;
         let reader = Cursor::new(vec![
             STX_V2, // magic byte
             8,      // payload_length
@@ -713,7 +728,7 @@ mod tests {
             0, 0, // Checksum (fake)
         ]);
 
-        let mut receiver = Receiver::new::<V2>(reader);
+        let mut receiver = crate::Receiver::new::<V2>(reader);
         let frame = receiver.recv().unwrap();
 
         assert_eq!(frame.payload_length(), 8);
@@ -724,11 +739,11 @@ mod tests {
 
     #[cfg(feature = "minimal")]
     mod dialect_utils {
-        pub(super) use crate::consts::SIGNATURE_SECRET_KEY_LENGTH;
         pub(super) use crate::dialects::minimal as dialect;
-        use crate::dialects::minimal::enums::{MavAutopilot, MavModeFlag, MavState, MavType};
+        pub(super) use crate::dialects::minimal::enums::{
+            MavAutopilot, MavModeFlag, MavState, MavType,
+        };
         pub(super) use crate::protocol::V1;
-        pub(super) use crate::utils::MavSha256;
         pub(super) use dialect::messages::Heartbeat;
 
         pub(super) use super::super::*;
@@ -785,6 +800,9 @@ mod tests {
     #[cfg(feature = "minimal")]
     #[cfg(feature = "std")]
     fn test_signing() {
+        use crate::consts::SIGNATURE_SECRET_KEY_LENGTH;
+        use crate::utils::MavSha256;
+
         let mut frame = default_v2_heartbeat_frame();
         let frame = frame.add_signature(
             &mut MavSha256::default(),
@@ -795,7 +813,6 @@ mod tests {
             },
         );
 
-        let frame = frame.unwrap();
         assert!(frame.is_signed());
     }
 
@@ -807,18 +824,20 @@ mod tests {
 
     #[test]
     #[cfg(feature = "minimal")]
+    #[cfg(feature = "std")]
     fn test_rebuild_frame() {
+        use crate::consts::SIGNATURE_SECRET_KEY_LENGTH;
+        use crate::utils::MavSha256;
+
         let mut frame = default_v2_heartbeat_frame();
-        frame
-            .add_signature(
-                &mut MavSha256::default(),
-                &SignatureConf {
-                    link_id: 0,
-                    timestamp: Default::default(),
-                    secret: [0u8; SIGNATURE_SECRET_KEY_LENGTH].into(),
-                },
-            )
-            .unwrap();
+        frame.add_signature(
+            &mut MavSha256::default(),
+            &SignatureConf {
+                link_id: 0,
+                timestamp: Default::default(),
+                secret: [0u8; SIGNATURE_SECRET_KEY_LENGTH].into(),
+            },
+        );
 
         let updated = frame
             .to_builder()
@@ -856,5 +875,35 @@ mod tests {
         assert_eq!(upgraded.payload_length(), expected.payload_length());
         assert_eq!(upgraded.payload().bytes(), expected.payload().bytes());
         assert_eq!(upgraded.checksum(), expected.checksum());
+    }
+
+    #[test]
+    #[cfg(feature = "minimal")]
+    fn test_try_versioned() {
+        let v1 = default_v1_heartbeat_frame();
+        assert!(v1.clone().try_into_versioned::<V1>().is_ok());
+        assert!(v1.clone().try_into_versioned::<V2>().is_err());
+        assert!(v1.clone().try_into_versioned::<Versionless>().is_ok());
+
+        let versionless_v1 = v1.into_versionless();
+        assert!(versionless_v1.clone().try_into_versioned::<V1>().is_ok());
+        assert!(versionless_v1.clone().try_into_versioned::<V2>().is_err());
+        assert!(versionless_v1
+            .clone()
+            .try_into_versioned::<Versionless>()
+            .is_ok());
+
+        let v2 = default_v2_heartbeat_frame();
+        assert!(v2.clone().try_into_versioned::<V1>().is_err());
+        assert!(v2.clone().try_into_versioned::<V2>().is_ok());
+        assert!(v2.clone().try_into_versioned::<Versionless>().is_ok());
+
+        let versionless_v2 = v2.into_versionless();
+        assert!(versionless_v2.clone().try_into_versioned::<V1>().is_err());
+        assert!(versionless_v2.clone().try_into_versioned::<V2>().is_ok());
+        assert!(versionless_v2
+            .clone()
+            .try_into_versioned::<Versionless>()
+            .is_ok());
     }
 }

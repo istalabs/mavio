@@ -31,7 +31,7 @@ impl Sign for MavSha256 {
     }
 
     /// Calculates signature from digested data.
-    fn signature(&self) -> SignatureValue {
+    fn produce(&self) -> SignatureValue {
         let sha256 = self.hasher.clone().finalize();
         let mut bytes = [0; SIGNATURE_VALUE_LENGTH];
         bytes.copy_from_slice(&sha256[0..SIGNATURE_VALUE_LENGTH]);

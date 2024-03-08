@@ -76,16 +76,16 @@ mod needs_dialect {
         let mut sender = Sender::versionless(SliceWriter::new(buffer.as_mut_slice()));
 
         sender
-            .send(&default_heartbeat_frame(V1).versionless())
+            .send(&default_heartbeat_frame(V1).into_versionless())
             .unwrap();
         sender
-            .send(&default_heartbeat_frame(V2).versionless())
+            .send(&default_heartbeat_frame(V2).into_versionless())
             .unwrap();
 
         let mut receiver = Receiver::versionless(SliceReader::new(buffer.as_slice()));
 
-        let frame_v1 = receiver.recv().unwrap().try_versioned(V1).unwrap();
-        let frame_v2 = receiver.recv().unwrap().try_versioned(V2).unwrap();
+        let frame_v1 = receiver.recv().unwrap().try_into_versioned::<V1>().unwrap();
+        let frame_v2 = receiver.recv().unwrap().try_into_versioned::<V2>().unwrap();
 
         assert_default_frame(frame_v1);
         assert_default_frame(frame_v2);
@@ -97,8 +97,8 @@ mod needs_dialect {
 
         let mut receiver = Receiver::versionless(SliceReader::new(buffer.as_slice()));
 
-        let frame_v1 = receiver.recv().unwrap().try_versioned(V1).unwrap();
-        let frame_v2 = receiver.recv().unwrap().try_versioned(V2).unwrap();
+        let frame_v1 = receiver.recv().unwrap().try_into_versioned::<V1>().unwrap();
+        let frame_v2 = receiver.recv().unwrap().try_into_versioned::<V2>().unwrap();
 
         assert_default_frame(frame_v1);
         assert_default_frame(frame_v2);

@@ -78,6 +78,9 @@ pub enum FrameError {
     /// Upon calculation, CRC does not match received [Frame::checksum](crate::Frame::checksum).
     #[cfg_attr(feature = "std", error("checksum validation failed"))]
     InvalidChecksum,
+    /// Upon validation, the [Frame::signature](crate::Frame::signature) was considered incorrect.
+    #[cfg_attr(feature = "std", error("signature validation failed"))]
+    InvalidSignature,
 }
 
 #[cfg(feature = "std")]

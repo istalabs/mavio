@@ -88,7 +88,7 @@ fn send_heartbeats<W: Write>(
         };
 
         // Build frame from message
-        let frame = endpoint.next_frame(&message)?.versionless();
+        let frame = endpoint.next_frame(&message)?.into_versionless();
 
         if let Err(err) = sender.send(&frame) {
             log::warn!("[{whoami}] SEND ERROR #{}: {err:?}", frame.sequence());

@@ -95,7 +95,7 @@ fn send_heartbeats<W: Write>(
             .version(mavlink_version)
             .message(&message)?
             .build()
-            .versionless();
+            .into_versionless();
 
         if let Err(err) = sender.send(&frame) {
             log::warn!("[{whoami}] SEND ERROR #{}: {err:?}", frame.sequence());
