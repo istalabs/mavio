@@ -22,6 +22,9 @@
 //! [MAVSpec](https://gitlab.com/mavka/libs/mavspec) or by enabling built-in
 //! [dialect features](#dialects).
 //!
+//! Upon receiving or building a frame, it can be converted into a protocol-agnostic [`MavFrame`],
+//! that hides generic version parameter of a [`Frame`].
+//!
 //! ### Receive
 //!
 //! Connect to TCP port and receive first 10 MAVLink frames, decode any received
@@ -200,7 +203,7 @@ pub use crate::io::{Receiver, Sender};
 #[doc(inline)]
 pub use errors::Result;
 #[doc(inline)]
-pub use protocol::{Dialect, Endpoint, Frame, MavLinkId, Message};
+pub use protocol::{Dialect, Endpoint, Frame, MavFrame, MavLinkId, Message};
 
 mod mavlink {
     include!(concat!(env!("OUT_DIR"), "/mavlink/mod.rs"));

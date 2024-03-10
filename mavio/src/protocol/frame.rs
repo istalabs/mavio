@@ -82,8 +82,9 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// # Links
     ///
-    /// * [MavLinkVersion]
-    /// * [Header::version]
+    /// * [`MavLinkVersion`]
+    /// * [`Header::version`]
+    /// * [`MavFrame::version`]
     #[inline]
     pub fn version(&self) -> MavLinkVersion {
         self.header.version()
@@ -95,7 +96,8 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// # Links
     ///
-    /// * [Header::payload_length].
+    /// * [`Header::payload_length`].
+    /// * [`MavFrame::payload_length`].
     #[inline]
     pub fn payload_length(&self) -> PayloadLength {
         self.header.payload_length()
@@ -107,7 +109,8 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// # Links
     ///
-    /// * [Header::sequence].
+    /// * [`Header::sequence`].
+    /// * [`MavFrame::sequence`]
     #[inline]
     pub fn sequence(&self) -> Sequence {
         self.header.sequence()
@@ -122,7 +125,8 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// # Links
     ///
-    /// * [Header::system_id].
+    /// * [`Header::system_id`].
+    /// * [`MavFrame::system_id`].
     #[inline]
     pub fn system_id(&self) -> SystemId {
         self.header.system_id()
@@ -139,7 +143,8 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// # Links
     ///
-    /// * [Header::component_id].
+    /// * [`Header::component_id`].
+    /// * [`MavFrame::component_id`].
     #[inline]
     pub fn component_id(&self) -> ComponentId {
         self.header.component_id()
@@ -151,7 +156,8 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// # Links
     ///
-    /// * [Header::message_id].
+    /// * [`Header::message_id`].
+    /// * [`MavFrame::message_id`].
     #[inline]
     pub fn message_id(&self) -> MessageId {
         self.header.message_id()
@@ -163,6 +169,10 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// Returns an instance of [`Payload`]. If you are interested in payload bytes, use
     /// [`Payload::bytes`].
+    ///
+    /// # Links
+    ///
+    /// * [`MavFrame::payload`].
     #[inline]
     pub fn payload(&self) -> &Payload {
         &self.payload
@@ -182,16 +192,21 @@ impl<V: MaybeVersioned> Frame<V> {
     /// * [`Frame::calculate_crc`] for implementation.
     /// * [MAVLink checksum definition](https://mavlink.io/en/guide/serialization.html#checksum).
     /// * [CRC-16/MCRF4XX](https://ww1.microchip.com/downloads/en/AppNotes/00752a.pdf) (PDF).
+    /// * [`MavFrame::checksum`]
     #[inline]
     pub fn checksum(&self) -> Checksum {
         self.checksum
     }
 
-    /// Whether a [`Frame`] is signed.
+    /// Returns `true` if frame is signed.
     ///
     /// Returns `true` if [`Frame`] contains [`Signature`]. Correctness of signature is not validated.
     ///
     /// For `MAVLink 1` frames always returns `false`.
+    ///
+    /// # Links
+    ///
+    /// * [`MavFrame::is_signed`]
     #[inline]
     pub fn is_signed(&self) -> bool {
         self.signature.is_some()
@@ -208,6 +223,7 @@ impl<V: MaybeVersioned> Frame<V> {
     /// * [`Frame::is_signed`] checks that frame is signed.
     /// * [`Frame::link_id`] and [`Frame::timestamp`] provide direct access to signature fields
     ///   ([`Frame<V2>`] only).
+    /// # [`MavFrame::signature`].
     /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
     #[inline]
     pub fn signature(&self) -> Option<&Signature> {
@@ -218,13 +234,16 @@ impl<V: MaybeVersioned> Frame<V> {
         }
     }
 
-    /// Removes `MAVLink 2` signature from [`Frame`].
+    /// Removes `MAVLink 2` signature from frame.
     ///
     /// Applicable only for `MAVLink 2` frames. `MAVLink 1` frames will be kept untouched.
-    pub fn remove_signature(&mut self) -> &mut Self {
+    ///
+    /// # Links
+    ///
+    /// [`MavFrame::remove_signature`]
+    pub fn remove_signature(&mut self) {
         self.signature = None;
-        self.header.set_is_signed(false);
-        self
+        self.header.set_is_signed(false)
     }
 
     /// Body length.
@@ -235,18 +254,20 @@ impl<V: MaybeVersioned> Frame<V> {
     /// # Links
     ///
     /// * [`Header::body_length`].
+    /// * [`MavFrame::body_length`].
     #[inline]
     pub fn body_length(&self) -> usize {
         self.header().body_length()
     }
 
-    /// Calculates CRC for [`Frame`] within `crc_extra`.
+    /// Calculates CRC for frame within `crc_extra`.
     ///
     /// Provided `crc_extra` depends on a dialect and contains a digest of message XML definition.
     ///
     /// # Links
     ///
     /// * [`Frame::checksum`].
+    /// * [`MavFrame::calculate_crc`].
     /// * [MAVLink checksum definition](https://mavlink.io/en/guide/serialization.html#checksum).
     /// * [CRC-16/MCRF4XX](https://ww1.microchip.com/downloads/en/AppNotes/00752a.pdf) (PDF).
     pub fn calculate_crc(&self, crc_extra: CrcExtra) -> Checksum {
@@ -275,6 +296,7 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// * [`Dialect`] for dialect specification.
     /// * [`Frame::calculate_crc`] for CRC implementation details.
+    /// * [`MavFrame::validate_checksum`].
     pub fn validate_checksum<D: Dialect>(&self) -> Result<()> {
         let message_info = D::message_info(self.header().message_id())?;
         self.validate_checksum_with_crc_extra(message_info.crc_extra())?;
@@ -282,7 +304,7 @@ impl<V: MaybeVersioned> Frame<V> {
         Ok(())
     }
 
-    /// Validates [`Frame::checksum`] using provided `crc_extra`.
+    /// Validates frame's checksum using provided `crc_extra`.
     ///
     /// # Errors
     ///
@@ -292,6 +314,7 @@ impl<V: MaybeVersioned> Frame<V> {
     /// # Links
     ///
     /// * [`Frame::calculate_crc`] for CRC implementation details.
+    /// * [`MavFrame::validate_checksum_with_crc_extra`].
     pub fn validate_checksum_with_crc_extra(&self, crc_extra: CrcExtra) -> Result<()> {
         if self.calculate_crc(crc_extra) != self.checksum {
             return Err(FrameError::InvalidChecksum.into());
@@ -301,6 +324,10 @@ impl<V: MaybeVersioned> Frame<V> {
     }
 
     /// Checks that frame has MAVLink version equal to the provided one.
+    ///
+    /// # Links
+    ///
+    /// # [`MavFrame::matches_version`]
     pub fn matches_version<Version: Versioned>(
         &self,
         #[allow(unused_variables)] version: Version,
@@ -346,6 +373,11 @@ impl<V: MaybeVersioned> Frame<V> {
         self.clone().into_versionless()
     }
 
+    /// Converts this frame into a dynamic [`MavFrame`].
+    pub fn into_mav_frame(self) -> MavFrame {
+        MavFrame::new(self)
+    }
+
     /// Decodes frame into a message of particular MAVLink dialect.
     ///
     /// Performs [`Frame::checksum`] validation before returning decoded message.
@@ -386,6 +418,7 @@ impl<V: MaybeVersioned> Frame<V> {
     /// * [`Frame::validate_checksum_with_crc_extra`] performs checksum validation.
     /// * [`SpecError`] contains errors related to MAVLink dialect specification and message
     ///   encoding/decoding.
+    /// * [`Frame::decode`]
     #[inline]
     pub fn decode<D: Dialect>(&self) -> Result<D> {
         let message = D::decode(self.payload()).map_err(Error::from)?;

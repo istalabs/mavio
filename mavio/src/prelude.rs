@@ -2,8 +2,8 @@
 
 pub use crate::errors::{Error, FrameError, Result, SpecError};
 pub use crate::protocol::{
-    Dialect, Endpoint, Frame, MavLinkId, MavLinkVersion, MaybeVersioned, Message, Versioned,
-    Versionless, V1, V2,
+    Dialect, Endpoint, Frame, MavFrame, MavLinkId, MavLinkVersion, MaybeVersioned, Message,
+    Versioned, Versionless, V1, V2,
 };
 
 #[cfg(feature = "async")]
