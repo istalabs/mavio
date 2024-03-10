@@ -2,8 +2,7 @@ use core::marker::PhantomData;
 
 use crate::protocol::marker::{
     HasCompId, HasCrcExtra, HasMsgId, HasPayload, HasPayloadLen, HasSignature, HasSysId, IsCompId,
-    IsCrcExtra, IsMsgId, IsPayload, IsPayloadLen, IsSequenced, IsSigned, IsSysId, NoCompId,
-    NoCrcExtra, NoMsgId, NoPayload, NoPayloadLen, NoSysId, NotSequenced, NotSigned, Sequenced,
+    IsCrcExtra, IsMsgId, IsPayload, IsPayloadLen, IsSequenced, IsSigned, IsSysId, Sequenced, Unset,
 };
 use crate::protocol::{
     Behold, CompatFlags, ComponentId, CrcExtra, Endpoint, HeaderBuilder, IncompatFlags,
@@ -74,44 +73,20 @@ pub struct FrameBuilder<
     pub(super) signature: Sig,
 }
 
-impl Default
-    for FrameBuilder<
-        Versionless,
-        NoPayloadLen,
-        NotSequenced,
-        NoSysId,
-        NoCompId,
-        NoMsgId,
-        NoPayload,
-        NoCrcExtra,
-        NotSigned,
-    >
-{
+impl Default for FrameBuilder<Versionless, Unset, Unset, Unset, Unset, Unset, Unset, Unset, Unset> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl
-    FrameBuilder<
-        Versionless,
-        NoPayloadLen,
-        NotSequenced,
-        NoSysId,
-        NoCompId,
-        NoMsgId,
-        NoPayload,
-        NoCrcExtra,
-        NotSigned,
-    >
-{
+impl FrameBuilder<Versionless, Unset, Unset, Unset, Unset, Unset, Unset, Unset, Unset> {
     /// Default constructor.
     pub fn new() -> Self {
         Self {
             header_builder: HeaderBuilder::new(),
-            payload: NoPayload,
-            crc_extra: NoCrcExtra,
-            signature: NotSigned,
+            payload: Unset,
+            crc_extra: Unset,
+            signature: Unset,
         }
     }
 }
@@ -136,12 +111,12 @@ impl<
     pub fn sequence(
         self,
         sequence: Sequence,
-    ) -> FrameBuilder<V, L, Sequenced, S, C, M, P, E, NotSigned> {
+    ) -> FrameBuilder<V, L, Sequenced, S, C, M, P, E, Unset> {
         FrameBuilder {
             header_builder: self.header_builder.sequence(sequence),
             payload: self.payload,
             crc_extra: self.crc_extra,
-            signature: NotSigned,
+            signature: Unset,
         }
     }
 
@@ -153,12 +128,12 @@ impl<
     pub fn system_id(
         self,
         system_id: SystemId,
-    ) -> FrameBuilder<V, L, Seq, HasSysId, C, M, P, E, NotSigned> {
+    ) -> FrameBuilder<V, L, Seq, HasSysId, C, M, P, E, Unset> {
         FrameBuilder {
             header_builder: self.header_builder.system_id(system_id),
             payload: self.payload,
             crc_extra: self.crc_extra,
-            signature: NotSigned,
+            signature: Unset,
         }
     }
 
@@ -187,7 +162,7 @@ impl<
         P: IsPayload,
         E: IsCrcExtra,
         Sig: IsSigned,
-    > FrameBuilder<V, L, Seq, S, C, NoMsgId, P, E, Sig>
+    > FrameBuilder<V, L, Seq, S, C, Unset, P, E, Sig>
 {
     /// Set message `ID`.
     ///
@@ -222,12 +197,12 @@ impl<
     pub fn message_id(
         self,
         message_id: MessageId,
-    ) -> FrameBuilder<V, L, Seq, S, C, HasMsgId, P, NoCrcExtra, NotSigned> {
+    ) -> FrameBuilder<V, L, Seq, S, C, HasMsgId, P, Unset, Unset> {
         FrameBuilder {
             header_builder: self.header_builder.message_id(message_id),
             payload: self.payload,
-            crc_extra: NoCrcExtra,
-            signature: NotSigned,
+            crc_extra: Unset,
+            signature: Unset,
         }
     }
 }
@@ -267,7 +242,7 @@ impl<
     pub fn payload(
         self,
         bytes: &[u8],
-    ) -> FrameBuilder<V, HasPayloadLen, Seq, S, C, HasMsgId, HasPayload, E, NotSigned> {
+    ) -> FrameBuilder<V, HasPayloadLen, Seq, S, C, HasMsgId, HasPayload, E, Unset> {
         let payload = Payload::new(self.header_builder.message_id.0, bytes, V::version());
 
         FrameBuilder {
@@ -277,7 +252,7 @@ impl<
                 .payload_length(payload.length()),
             payload: HasPayload(payload),
             crc_extra: self.crc_extra,
-            signature: NotSigned,
+            signature: Unset,
         }
     }
 }
@@ -291,7 +266,7 @@ impl<
         M: IsMsgId,
         P: IsPayload,
         Sig: IsSigned,
-    > FrameBuilder<V, L, Seq, S, C, M, P, NoCrcExtra, Sig>
+    > FrameBuilder<V, L, Seq, S, C, M, P, Unset, Sig>
 {
     /// Set `CRC_EXTRA`.
     ///
@@ -584,7 +559,7 @@ impl
         HasMsgId,
         HasPayload,
         HasCrcExtra,
-        NotSigned,
+        Unset,
     >
 {
     /// Upgrades from `MAVlink 1` to `MAVLink 2` protocol version.
@@ -601,7 +576,7 @@ impl
         HasMsgId,
         HasPayload,
         HasCrcExtra,
-        NotSigned,
+        Unset,
     > {
         let payload = self.payload.0.upgraded();
         FrameBuilder {
@@ -617,7 +592,7 @@ impl
             },
             payload: HasPayload(payload),
             crc_extra: self.crc_extra,
-            signature: NotSigned,
+            signature: Unset,
         }
     }
 }

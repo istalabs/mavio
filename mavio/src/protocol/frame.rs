@@ -9,8 +9,7 @@ use crate::consts::{CHECKSUM_SIZE, SIGNATURE_LENGTH};
 use crate::io::{Read, Write};
 use crate::protocol::header::Header;
 use crate::protocol::marker::{
-    HasCompId, HasMsgId, HasPayload, HasPayloadLen, HasSysId, NoCompId, NoCrcExtra, NoMsgId,
-    NoPayload, NoPayloadLen, NoSysId, NotSequenced, NotSigned, Sequenced,
+    HasCompId, HasMsgId, HasPayload, HasPayloadLen, HasSysId, Sequenced, Unset,
 };
 use crate::protocol::signature::{Sign, Signature, Signer, SigningConf};
 use crate::protocol::{
@@ -63,17 +62,8 @@ pub struct Frame<V: MaybeVersioned> {
 
 impl Frame<Versionless> {
     /// Instantiates an empty builder for [`Frame`].
-    pub fn builder() -> FrameBuilder<
-        Versionless,
-        NoPayloadLen,
-        NotSequenced,
-        NoSysId,
-        NoCompId,
-        NoMsgId,
-        NoPayload,
-        NoCrcExtra,
-        NotSigned,
-    > {
+    pub fn builder(
+    ) -> FrameBuilder<Versionless, Unset, Unset, Unset, Unset, Unset, Unset, Unset, Unset> {
         FrameBuilder::new()
     }
 }
@@ -539,14 +529,14 @@ impl<V: Versioned> Frame<V> {
         HasCompId,
         HasMsgId,
         HasPayload,
-        NoCrcExtra,
-        NotSigned,
+        Unset,
+        Unset,
     > {
         FrameBuilder {
             header_builder: self.header.to_builder(),
             payload: HasPayload(self.payload.clone()),
-            crc_extra: NoCrcExtra,
-            signature: NotSigned,
+            crc_extra: Unset,
+            signature: Unset,
         }
     }
 }

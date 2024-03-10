@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 use crate::protocol::header::Header;
 use crate::protocol::marker::{
     HasCompId, HasMsgId, HasPayloadLen, HasSysId, IsCompId, IsMsgId, IsPayloadLen, IsSequenced,
-    IsSysId, NoCompId, NoMsgId, NoPayloadLen, NoSysId, NotSequenced, Sequenced,
+    IsSysId, Sequenced, Unset,
 };
 use crate::protocol::{
     CompatFlags, IncompatFlags, MavLinkVersion, MaybeVersioned, MessageId, PayloadLength, Sequence,
@@ -34,18 +34,18 @@ pub struct HeaderBuilder<
     pub(super) message_id: M,
 }
 
-impl HeaderBuilder<Versionless, NoPayloadLen, NotSequenced, NoSysId, NoCompId, NoMsgId> {
+impl HeaderBuilder<Versionless, Unset, Unset, Unset, Unset, Unset> {
     /// Default constructor.
     pub fn new() -> Self {
         Self {
             mavlink_version: PhantomData,
-            payload_length: NoPayloadLen,
+            payload_length: Unset,
             incompat_flags: None,
             compat_flags: None,
-            sequence: NotSequenced,
-            system_id: NoSysId,
-            component_id: NoCompId,
-            message_id: NoMsgId,
+            sequence: Unset,
+            system_id: Unset,
+            component_id: Unset,
+            message_id: Unset,
         }
     }
 }

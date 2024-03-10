@@ -54,7 +54,7 @@ pub use frame::Frame;
 pub use frame_builder::FrameBuilder;
 pub use header::{Header, HeaderBytes};
 pub use header_builder::HeaderBuilder;
-pub use marker::{MaybeVersioned, Versioned, Versionless, V1, V2};
+pub use marker::{MaybeVersioned, Unset, Versioned, Versionless, V1, V2};
 pub use sequencer::{IntoSequencer, Sequencer};
 pub use signature::{MavTimestamp, SecretKey, Sign, Signature, Signer, SigningConf};
 pub use stx::MavSTX;

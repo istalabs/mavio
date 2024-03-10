@@ -14,10 +14,7 @@ use crate::consts::{
     SIGNATURE_LENGTH,
 };
 use crate::io::{Read, Write};
-use crate::protocol::marker::{
-    HasCompId, HasMsgId, HasPayloadLen, HasSysId, NoCompId, NoMsgId, NoPayloadLen, NoSysId,
-    NotSequenced, Sequenced,
-};
+use crate::protocol::marker::{HasCompId, HasMsgId, HasPayloadLen, HasSysId, Sequenced, Unset};
 use crate::protocol::{
     CompatFlags, ComponentId, HeaderBuilder, IncompatFlags, MavSTX, MaybeVersioned, PayloadLength,
     Sequence, SystemId, Versioned, Versionless, V2,
@@ -446,8 +443,7 @@ impl Header<Versionless> {
     /// pattern. An instance of [`HeaderBuilder`] returned by this function is initialized
     /// with default values. Once desired values are set, you can call [`HeaderBuilder::build`]
     /// to obtain [`Header`].
-    pub fn builder(
-    ) -> HeaderBuilder<Versionless, NoPayloadLen, NotSequenced, NoSysId, NoCompId, NoMsgId> {
+    pub fn builder() -> HeaderBuilder<Versionless, Unset, Unset, Unset, Unset, Unset> {
         HeaderBuilder::new()
     }
 
