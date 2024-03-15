@@ -6,6 +6,7 @@ use crc_any::CRCu16;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::consts::{CHECKSUM_SIZE, SIGNATURE_LENGTH};
+use crate::errors::{ChecksumError, SignatureError, VersionError};
 use crate::io::{Read, Write};
 use crate::protocol::header::Header;
 use crate::protocol::marker::{
@@ -289,7 +290,7 @@ impl<V: MaybeVersioned> Frame<V> {
     /// # Errors
     ///
     /// * Returns [`Error::Spec`] if message discovery failed.  
-    /// * Returns [`FrameError::InvalidChecksum`] (wrapped by [`Error`]) if checksum
+    /// * Returns [`FrameError::Checksum`] (wrapped by [`Error`]) if checksum
     ///   validation failed.
     ///
     /// # Links
@@ -308,16 +309,18 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// # Errors
     ///
-    /// Returns [`FrameError::InvalidChecksum`] (wrapped by [`Error`]) if checksum validation
-    /// failed.
+    /// Returns [`ChecksumError`] if checksum validation failed.
     ///
     /// # Links
     ///
     /// * [`Frame::calculate_crc`] for CRC implementation details.
     /// * [`MavFrame::validate_checksum_with_crc_extra`].
-    pub fn validate_checksum_with_crc_extra(&self, crc_extra: CrcExtra) -> Result<()> {
+    pub fn validate_checksum_with_crc_extra(
+        &self,
+        crc_extra: CrcExtra,
+    ) -> core::result::Result<(), ChecksumError> {
         if self.calculate_crc(crc_extra) != self.checksum {
-            return Err(FrameError::InvalidChecksum.into());
+            return Err(ChecksumError);
         }
 
         Ok(())
@@ -339,7 +342,9 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// This method never changes the internal MAVLink protocol version. It will return an error,
     /// if conversion is not possible.
-    pub fn try_into_versioned<Version: MaybeVersioned>(self) -> Result<Frame<Version>> {
+    pub fn try_into_versioned<Version: MaybeVersioned>(
+        self,
+    ) -> core::result::Result<Frame<Version>, VersionError> {
         Version::expect(self.version())?;
 
         Ok(Frame {
@@ -354,7 +359,9 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// This method never changes the internal MAVLink protocol version. It will return an error,
     /// if conversion is not possible.
-    pub fn try_to_versioned<Version: MaybeVersioned>(&self) -> Result<Frame<Version>> {
+    pub fn try_to_versioned<Version: MaybeVersioned>(
+        &self,
+    ) -> core::result::Result<Frame<Version>, VersionError> {
         self.clone().try_into_versioned()
     }
 
@@ -384,7 +391,8 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// # Usage
     ///
-    /// ```no_run
+    /// ```rust,no_run
+    /// # #[cfg(feature = "minimal")] {
     /// # use minimal::messages::Heartbeat;
     /// # use mavio::protocol::{V2};
     /// use mavio::dialects::minimal;
@@ -405,11 +413,12 @@ impl<V: MaybeVersioned> Frame<V> {
     ///     Minimal::ProtocolVersion(_) => {}
     ///     Minimal::Heartbeat(_) => {}
     /// }
+    /// # }
     /// ```
     ///
     /// # Errors
     ///
-    /// * Returns [`FrameError::InvalidChecksum`] if checksum validation failed.
+    /// * Returns [`FrameError::Checksum`] if checksum validation failed.
     /// * Returns [`Error::Spec`] if frame can't be correctly decoded to the provided
     ///   [`Dialect`] (generic type argument).
     ///
@@ -652,18 +661,21 @@ impl Frame<V2> {
 
     /// Validates frame signature using a `signer` and a secret `key`.
     ///
-    /// Returns [`FrameError::InvalidSignature`] variant of an [`Error::Frame`] if frame missing a
-    /// signature or have an incorrect one.
-    pub fn validate_signature(&self, signer: &mut dyn Sign, key: &SecretKey) -> Result<()> {
+    /// Returns [`SignatureError`] if frame missing a signature or have an incorrect one.
+    pub fn validate_signature(
+        &self,
+        signer: &mut dyn Sign,
+        key: &SecretKey,
+    ) -> core::result::Result<(), SignatureError> {
         let signature = if let Some(signature) = self.signature {
             signature
         } else {
-            return Err(FrameError::InvalidSignature.into());
+            return Err(SignatureError);
         };
         let mut signer = Signer::new(signer);
 
         if !signer.validate(&self, &signature, key) {
-            return Err(FrameError::InvalidSignature.into());
+            return Err(SignatureError);
         }
 
         Ok(())

@@ -56,8 +56,7 @@ impl<W: Write, V: MaybeVersioned> Sender<W, V> {
     ///
     /// Blocks until all bytes written and returns the number of bytes sent.
     ///
-    /// [`Versioned`] sender accepts only frames of a specific MAVLink protocol version. Otherwise,
-    /// returns [`FrameError::InvalidVersion`].
+    /// [`Versioned`] sender accepts only frames of a specific MAVLink protocol version.
     ///
     /// [`Versionless`] sender accepts both `MAVLink 1` and `MAVLink 2` frames as
     /// [`Frame<Versionless>`].

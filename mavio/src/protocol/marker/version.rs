@@ -4,7 +4,8 @@ use crate::consts::{STX_V1, STX_V2};
 use crate::protocol::MavLinkVersion;
 use crate::utils::sealed::Sealed;
 
-use crate::prelude::*;
+#[cfg(doc)]
+use crate::protocol::Frame;
 
 /// <sup>🔒</sup>
 /// Marks structures which may or may not have a specified MAVLink protocol version.
@@ -20,7 +21,7 @@ pub trait MaybeVersioned: IsMagicByte + Clone + Debug + Sync + Send + Sealed {
     ///
     /// The blanket implementation will always return [`Ok`] meaning that everything is compatible.
     #[inline]
-    fn expect(#[allow(unused_variables)] version: MavLinkVersion) -> Result<()> {
+    fn expect(#[allow(unused_variables)] version: MavLinkVersion) -> Result<(), VersionError> {
         Ok(())
     }
 
@@ -177,7 +178,7 @@ impl IsMagicByte for V1 {
 }
 impl MaybeVersioned for V1 {
     #[inline]
-    fn expect(version: MavLinkVersion) -> Result<()> {
+    fn expect(version: MavLinkVersion) -> Result<(), VersionError> {
         match_error(MavLinkVersion::V1, version)
     }
     #[inline(always)]
@@ -214,7 +215,7 @@ impl IsMagicByte for V2 {
 }
 impl MaybeVersioned for V2 {
     #[inline]
-    fn expect(version: MavLinkVersion) -> Result<()> {
+    fn expect(version: MavLinkVersion) -> Result<(), VersionError> {
         match_error(MavLinkVersion::V2, version)
     }
 
@@ -241,9 +242,9 @@ impl Versioned for V2 {
 }
 
 #[inline]
-fn match_error(expected: MavLinkVersion, actual: MavLinkVersion) -> Result<()> {
+fn match_error(expected: MavLinkVersion, actual: MavLinkVersion) -> Result<(), VersionError> {
     if expected != actual {
-        return Err(FrameError::InvalidVersion { expected, actual }.into());
+        return Err(VersionError { expected, actual });
     }
     Ok(())
 }
@@ -258,6 +259,7 @@ mod is_magic_byte {
         }
     }
 }
+use crate::errors::VersionError;
 pub(crate) use is_magic_byte::IsMagicByte;
 
 #[cfg(test)]
@@ -279,7 +281,10 @@ mod version_marker_tests {
         assert!(!V1::matches(MavLinkVersion::V2));
         assert!(!V2::matches(MavLinkVersion::V1));
 
-        fn expect_versioned<V: Versioned>(_: V, version: MavLinkVersion) -> Result<()> {
+        fn expect_versioned<V: Versioned>(
+            _: V,
+            version: MavLinkVersion,
+        ) -> Result<(), VersionError> {
             V::expect(version)
         }
 

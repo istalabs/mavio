@@ -63,7 +63,6 @@ impl<R: AsyncRead + Unpin, V: MaybeVersioned> AsyncReceiver<R, V> {
     /// Blocks until a valid MAVLink frame received.
     ///
     /// [`Versioned`] receiver accepts only frames of a specific MAVLink protocol version.
-    /// Otherwise, returns [`FrameError::InvalidVersion`].
     ///
     /// [`Versionless`] receiver accepts both `MAVLink 1` and `MAVLink 2` frames.
     pub async fn recv(&mut self) -> Result<Frame<V>> {

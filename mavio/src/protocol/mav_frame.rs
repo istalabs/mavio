@@ -1,3 +1,4 @@
+use crate::errors::{ChecksumError, VersionError};
 use crate::prelude::*;
 
 use crate::protocol::{
@@ -212,7 +213,10 @@ impl MavFrame {
     ///
     /// See: [`Frame::validate_checksum_with_crc_extra`].
     #[inline]
-    pub fn validate_checksum_with_crc_extra(&self, crc_extra: CrcExtra) -> Result<()> {
+    pub fn validate_checksum_with_crc_extra(
+        &self,
+        crc_extra: CrcExtra,
+    ) -> core::result::Result<(), ChecksumError> {
         match self {
             MavFrame::V1(frame) => frame.validate_checksum_with_crc_extra(crc_extra),
             MavFrame::V2(frame) => frame.validate_checksum_with_crc_extra(crc_extra),
@@ -251,9 +255,10 @@ impl MavFrame {
 
     /// Attempts to convert into a versioned form of a [`Frame`].
     ///
-    /// Returns [`FrameError::InvalidVersion`] variant of [`Error::Frame`] if conversion is
-    /// impossible.
-    pub fn try_into_versioned<V: MaybeVersioned>(self) -> Result<Frame<V>> {
+    /// Returns [`VersionError`] if conversion is impossible.
+    pub fn try_into_versioned<V: MaybeVersioned>(
+        self,
+    ) -> core::result::Result<Frame<V>, VersionError> {
         match self {
             MavFrame::V1(frame) => frame.try_into_versioned::<V>(),
             MavFrame::V2(frame) => frame.try_into_versioned::<V>(),
@@ -262,9 +267,9 @@ impl MavFrame {
 }
 
 impl<V: MaybeVersioned> TryFrom<MavFrame> for Frame<V> {
-    type Error = Error;
+    type Error = VersionError;
 
-    fn try_from(value: MavFrame) -> Result<Self> {
+    fn try_from(value: MavFrame) -> core::result::Result<Self, VersionError> {
         value.try_into_versioned()
     }
 }

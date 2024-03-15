@@ -13,6 +13,7 @@ use crate::consts::{
     CHECKSUM_SIZE, HEADER_MAX_SIZE, HEADER_MIN_SIZE, HEADER_V1_SIZE, HEADER_V2_SIZE,
     SIGNATURE_LENGTH,
 };
+use crate::errors::VersionError;
 use crate::io::{Read, Write};
 use crate::protocol::marker::{HasCompId, HasMsgId, HasPayloadLen, HasSysId, Sequenced, Unset};
 use crate::protocol::{
@@ -219,7 +220,9 @@ impl<V: MaybeVersioned> Header<V> {
     ///
     /// This method never changes the internal MAVLink protocol version. It will return an error,
     /// if conversion is not possible.
-    pub fn try_into_versioned<Version: MaybeVersioned>(self) -> Result<Header<Version>> {
+    pub fn try_into_versioned<Version: MaybeVersioned>(
+        self,
+    ) -> core::result::Result<Header<Version>, VersionError> {
         Version::expect(self.version)?;
 
         Ok(Header {
@@ -239,7 +242,9 @@ impl<V: MaybeVersioned> Header<V> {
     ///
     /// This method never changes the internal MAVLink protocol version. It will return an error,
     /// if conversion is not possible.
-    pub fn try_to_versioned<Version: MaybeVersioned>(&self) -> Result<Header<Version>> {
+    pub fn try_to_versioned<Version: MaybeVersioned>(
+        &self,
+    ) -> core::result::Result<Header<Version>, VersionError> {
         self.clone().try_into_versioned()
     }
 

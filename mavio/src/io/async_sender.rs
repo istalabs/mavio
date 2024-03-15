@@ -55,8 +55,7 @@ impl<W: AsyncWrite + Unpin> AsyncSender<W, Versionless> {
 impl<W: AsyncWrite + Unpin, V: MaybeVersioned> AsyncSender<W, V> {
     /// Send MAVLink [`Frame`] asynchronously.
     ///
-    /// [`Versioned`] sender accepts only frames of a specific MAVLink protocol version. Otherwise,
-    /// returns [`FrameError::InvalidVersion`].
+    /// [`Versioned`] sender accepts only frames of a specific MAVLink protocol version.
     ///
     /// [`Versionless`] sender accepts both `MAVLink 1` and `MAVLink 2` frames as
     /// [`Frame<Versionless>`].

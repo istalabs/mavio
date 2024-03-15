@@ -13,7 +13,7 @@ use tbytes::errors::TBytesError;
 #[cfg(feature = "std")]
 use std::sync::Arc;
 
-use crate::protocol::MavLinkVersion;
+use crate::protocol::{IncompatFlags, MavLinkVersion};
 
 // Re-export `mavspec::rust::spec` errors.
 #[doc(no_inline)]
@@ -65,22 +65,106 @@ pub enum Error {
 #[cfg_attr(feature = "std", derive(thiserror::Error))]
 pub enum FrameError {
     /// Incorrect MAVLink version.
-    #[cfg_attr(
-        feature = "std",
-        error("invalid MAVLink version, expected: {expected:?}, actual: {actual:?}")
-    )]
-    InvalidVersion {
-        /// Expected protocol version.
-        expected: MavLinkVersion,
-        /// Actual protocol version.
-        actual: MavLinkVersion,
-    },
+    #[cfg_attr(feature = "std", error("invalid MAVLink version: {0:?}"))]
+    Version(VersionError),
     /// Upon calculation, CRC does not match received [Frame::checksum](crate::Frame::checksum).
     #[cfg_attr(feature = "std", error("checksum validation failed"))]
-    InvalidChecksum,
-    /// Upon validation, the [Frame::signature](crate::Frame::signature) was considered incorrect.
+    Checksum,
+    /// Upon validation, the [Frame::signature](crate::Frame::signature) found to be incorrect.
     #[cfg_attr(feature = "std", error("signature validation failed"))]
-    InvalidSignature,
+    Signature,
+    /// Upon validation, the [Frame::incompat_flags](crate::Frame::incompat_flags) do not match the
+    /// required flag set.
+    #[cfg_attr(feature = "std", error("invalid incompat flags: {0:?}"))]
+    Incompatible(IncompatFlagsError),
+}
+
+/// Invalid MAVLink version.
+///
+/// Can be converted to [`FrameError::Version`].
+#[derive(Copy, Clone, Debug)]
+pub struct VersionError {
+    /// Expected protocol version.
+    pub expected: MavLinkVersion,
+    /// Actual protocol version.
+    pub actual: MavLinkVersion,
+}
+
+/// Invalid frame checksum.
+///
+/// Can be converted to [`FrameError::Checksum`].
+pub struct ChecksumError;
+
+/// Invalid frame signature.
+///
+/// Can be converted to [`FrameError::Signature`].
+pub struct SignatureError;
+
+/// Invalid incompatibility flags.
+///
+/// Can be converted to [`FrameError::Incompatible`].
+#[derive(Copy, Clone, Debug)]
+pub struct IncompatFlagsError {
+    /// Expected flag set.
+    pub expected: IncompatFlags,
+    /// Actual flag set.
+    pub actual: IncompatFlags,
+}
+
+impl From<VersionError> for FrameError {
+    /// Converts [`VersionError`] into [`FrameError::Version`].
+    fn from(value: VersionError) -> Self {
+        Self::Version(value)
+    }
+}
+
+impl From<VersionError> for Error {
+    /// Converts [`VersionError`] into [`FrameError::Version`]  variant of [`Error::Frame`].
+    fn from(value: VersionError) -> Self {
+        FrameError::from(value).into()
+    }
+}
+
+impl From<ChecksumError> for FrameError {
+    /// Converts [`ChecksumError`] into [`FrameError::Checksum`].
+    fn from(_: ChecksumError) -> Self {
+        Self::Checksum
+    }
+}
+
+impl From<ChecksumError> for Error {
+    /// Converts [`ChecksumError`] into [`FrameError::Checksum`] variant of [`Error::Frame`].
+    fn from(value: ChecksumError) -> Self {
+        FrameError::from(value).into()
+    }
+}
+
+impl From<SignatureError> for FrameError {
+    /// Converts [`SignatureError`] into [`FrameError::Signature`].
+    fn from(_: SignatureError) -> Self {
+        Self::Signature
+    }
+}
+
+impl From<SignatureError> for Error {
+    /// Converts [`SignatureError`] into [`FrameError::Signature`] variant of [`Error::Frame`].
+    fn from(value: SignatureError) -> Self {
+        FrameError::from(value).into()
+    }
+}
+
+impl From<IncompatFlagsError> for FrameError {
+    /// Converts [`IncompatFlagsError`] into [`FrameError::Incompatible`].
+    fn from(value: IncompatFlagsError) -> Self {
+        Self::Incompatible(value)
+    }
+}
+
+impl From<IncompatFlagsError> for Error {
+    /// Converts [`IncompatFlagsError`] into [`FrameError::Incompatible`] variant of [`Error::Frame`].
+    fn from(value: IncompatFlagsError) -> Self {
+        FrameError::from(value).into()
+    }
 }
 
 #[cfg(feature = "std")]

@@ -29,13 +29,14 @@
 
 /// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
 #[doc(inline)]
-pub use mavspec::rust::spec::types::{CrcExtra, MessageId};
+pub use mavspec::rust::spec::types::{CrcExtra, DialectId, DialectVersion, MessageId};
 /// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
 #[doc(inline)]
 pub use mavspec::rust::spec::{
-    Dialect, IntoPayload, MavLinkVersion, Message, MessageSpec, Payload,
+    Dialect, DialectSpec, IntoPayload, MavLinkVersion, Message, MessageSpec, Payload,
 };
 
+mod compat;
 mod endpoint;
 pub(super) mod flags;
 pub(super) mod frame;
@@ -49,6 +50,7 @@ pub(super) mod signature;
 pub(crate) mod stx;
 pub(super) mod types;
 
+pub use compat::{CompatProcessor, CompatProcessorBuilder, CompatStrategy, IntoCompatProcessor};
 pub use endpoint::{Endpoint, MavLinkId};
 pub use flags::{CompatFlags, IncompatFlags};
 pub use frame::Frame;
