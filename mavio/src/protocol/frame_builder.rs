@@ -184,7 +184,7 @@ impl<
     ///
     /// This won't compile:
     ///
-    /// ```ignore
+    /// ```rust,compile_fail
     /// use mavio::prelude::*;
     ///
     /// let frame = Frame::builder()
@@ -302,7 +302,7 @@ impl<
     /// This method can be called only once. When MAVLink protocol version is set, it can't be
     /// changed:
     ///
-    /// ```ignore
+    /// ```rust,compile_fail
     /// use mavio::protocol::{FrameBuilder, V1, V2};
     ///
     /// FrameBuilder::new()
@@ -350,7 +350,7 @@ impl<
     ///
     /// While this won't compile:
     ///
-    /// ```ignore
+    /// ```rust,compile_fail
     /// # use mavio::protocol::{FrameBuilder, IncompatFlags};
     /// FrameBuilder::new()
     ///     .system_id(10)
@@ -385,7 +385,7 @@ impl<
     ///
     /// While this won't compile:
     ///
-    /// ```ignore
+    /// ```rust,compile_fail
     /// # use mavio::protocol::{CompatFlags, FrameBuilder};
     /// FrameBuilder::new()
     ///     .system_id(10)
@@ -427,7 +427,7 @@ impl<
     ///
     /// While this won't compile:
     ///
-    /// ```ignore
+    /// ```rust,compile_fail
     /// # use mavio::protocol::{FrameBuilder, V2};
     /// FrameBuilder::new()
     ///     .system_id(10)

@@ -1,5 +1,5 @@
 use crate::error::IncompatFlagsError;
-use crate::protocol::{CompatFlags, IncompatFlags};
+use crate::protocol::{CompatFlags, CrcExtra, DialectSpec, IncompatFlags};
 
 use crate::prelude::*;
 
@@ -10,7 +10,12 @@ use crate::prelude::*;
 ///
 /// # Usage
 ///
+/// Create compatibility processor and process outgoing frame according to the provided list
+/// of dialect specifications:
+///
 /// ```rust
+/// # #[cfg(feature = "minimal")] {
+/// use mavio::dialects::Minimal;
 /// use mavio::protocol::{CompatFlags, CompatProcessor, IncompatFlags, CompatStrategy};
 /// use mavio::prelude::*;
 ///
@@ -39,9 +44,10 @@ use crate::prelude::*;
 /// #    .crc_extra(0)
 ///     .build();
 ///
-/// processor.process_outgoing(&mut frame).unwrap();
+/// processor.process_outgoing(&mut frame, &[Minimal::spec()]).unwrap();
 ///
 /// assert!(frame.incompat_flags().contains(IncompatFlags::BIT_4 | IncompatFlags::BIT_5));
+/// # }
 /// ```
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -138,35 +144,106 @@ impl CompatProcessor {
         self.ignore_signature
     }
 
-    /// Takes incoming frame and processes it according to a [`Self::incoming`] strategy.
+    /// Takes incoming frame and processes it according to a [`Self::incoming`] strategy and
+    /// the provided list of dialect specifications.
+    ///
+    /// # Errors
+    ///
+    /// * Returns [`FrameError::NotInDialect`] if frame message `ID` is not in the dialect list.
+    /// * Returns [`FrameError::Incompatible`] if frame has incompatible flags.
     #[inline(always)]
     pub fn process_incoming<V: MaybeVersioned>(
         &self,
         frame: &mut Frame<V>,
-    ) -> core::result::Result<(), IncompatFlagsError> {
-        self.process_for_strategy(frame, self.incoming)
+        dialects: &[DialectSpec],
+    ) -> core::result::Result<(), FrameError> {
+        self.process_for_strategy(frame, self.incoming, dialects)
     }
 
-    /// Takes outgoing frame and processes it according to a [`Self::outgoing`] strategy.
+    /// Takes incoming frame and processes it according to a [`Self::incoming`] strategy and
+    /// provided `CRC_EXTRA`.
+    ///
+    /// # Errors
+    ///
+    /// * Returns [`IncompatFlagsError`] if frame has incompatible flags.
+    #[inline(always)]
+    pub fn process_incoming_with_crc_extra<V: MaybeVersioned>(
+        &self,
+        frame: &mut Frame<V>,
+        crc_extra: CrcExtra,
+    ) -> core::result::Result<(), IncompatFlagsError> {
+        self.process_for_strategy_with_crc_extra(frame, self.incoming, crc_extra)
+    }
+
+    /// Takes incoming frame and processes it according to a [`Self::outgoing`] strategy and
+    /// the provided list of dialect specifications.
+    ///
+    /// # Errors
+    ///
+    /// * Returns [`FrameError::NotInDialect`] if frame message `ID` is not in the dialect list.
+    /// * Returns [`FrameError::Incompatible`] if frame has incompatible flags.
     #[inline(always)]
     pub fn process_outgoing<V: MaybeVersioned>(
         &self,
         frame: &mut Frame<V>,
-    ) -> core::result::Result<(), IncompatFlagsError> {
-        self.process_for_strategy(frame, self.outgoing)
+        dialects: &[DialectSpec],
+    ) -> core::result::Result<(), FrameError> {
+        self.process_for_strategy(frame, self.outgoing, dialects)
     }
 
-    /// Processes a [`Frame`] given the provided strategy.
+    /// Takes outgoing frame and processes it according to a [`Self::outgoing`] strategy and
+    /// provided `CRC_EXTRA`.
+    ///
+    /// # Errors
+    ///
+    /// * Returns [`IncompatFlagsError`] if frame has incompatible flags.
+    #[inline(always)]
+    pub fn process_outgoing_with_crc_extra<V: MaybeVersioned>(
+        &self,
+        frame: &mut Frame<V>,
+        crc_extra: CrcExtra,
+    ) -> core::result::Result<(), IncompatFlagsError> {
+        self.process_for_strategy_with_crc_extra(frame, self.outgoing, crc_extra)
+    }
+
+    /// Processes a [`Frame`] given the provided list of dialect specifications.
+    ///
+    /// # Errors
+    ///
+    /// * Returns [`FrameError::NotInDialect`] if frame message `ID` is not in the dialect list.
+    /// * Returns [`FrameError::Incompatible`] if frame has incompatible flags.
     pub fn process_for_strategy<V: MaybeVersioned>(
         &self,
         frame: &mut Frame<V>,
         strategy: CompatStrategy,
+        dialects: &[DialectSpec],
+    ) -> core::result::Result<(), FrameError> {
+        for dialect in dialects {
+            if let Ok(info) = dialect.message_info(frame.message_id()) {
+                self.process_for_strategy_with_crc_extra(frame, strategy, info.crc_extra())?;
+                return Ok(());
+            }
+        }
+        Err(FrameError::NotInDialect(frame.message_id()))
+    }
+
+    /// Processes a [`Frame`] given the provided strategy and `CRC_EXTRA`.
+    ///
+    /// # Errors
+    ///
+    /// * Returns [`IncompatFlagsError`] if frame has incompatible flags.
+    pub fn process_for_strategy_with_crc_extra<V: MaybeVersioned>(
+        &self,
+        frame: &mut Frame<V>,
+        strategy: CompatStrategy,
+        crc_extra: CrcExtra,
     ) -> core::result::Result<(), IncompatFlagsError> {
         if frame.matches_version(V2) {
             if let Some(compat_flags) = self.compat_flags {
                 match strategy {
                     CompatStrategy::Enforce | CompatStrategy::RejectSet => {
                         frame.header.compat_flags = compat_flags;
+                        frame.checksum = frame.calculate_crc(crc_extra);
                     }
                     _ => {}
                 }
@@ -188,6 +265,7 @@ impl CompatProcessor {
                     }
                     CompatStrategy::Enforce | CompatStrategy::EnforceProxy => {
                         frame.header.incompat_flags = incompat_flags;
+                        frame.checksum = frame.calculate_crc(crc_extra);
                     }
                     _ => {}
                 }
@@ -271,5 +349,47 @@ impl IntoCompatProcessor for CompatProcessorBuilder {
     /// Builds [`CompatProcessor`] from [`CompatProcessorBuilder`].
     fn into_compat_processor(self) -> CompatProcessor {
         self.build()
+    }
+}
+
+#[cfg(test)]
+#[cfg(feature = "minimal")]
+mod tests {
+    use super::*;
+    use crate::dialects::Minimal;
+
+    #[test]
+    fn compat_workflow() {
+        let processor = CompatProcessor::builder()
+            // Set compatibility flags
+            .compat_flags(CompatFlags::BIT_1 | CompatFlags::BIT_2)
+            // Set incompatibility flags
+            .incompat_flags(IncompatFlags::BIT_4 | IncompatFlags::BIT_5)
+            // Set these flags for all outgoing messages
+            .outgoing(CompatStrategy::Enforce)
+            // Reject messages which do not comply with these flags
+            .incoming(CompatStrategy::Reject)
+            // Ignore message signing incompatibility flag
+            .ignore_signature(true)
+            // Build the manager
+            .build();
+
+        let mut frame = Frame::builder()
+            .version(V2)
+            .sequence(0)
+            .system_id(0)
+            .component_id(0)
+            .message_id(0)
+            .payload(&[0; 0])
+            .crc_extra(0)
+            .build();
+
+        processor
+            .process_outgoing(&mut frame, &[Minimal::spec()])
+            .unwrap();
+
+        assert!(frame
+            .incompat_flags()
+            .contains(IncompatFlags::BIT_4 | IncompatFlags::BIT_5));
     }
 }

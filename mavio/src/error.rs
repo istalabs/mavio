@@ -13,11 +13,22 @@ use tbytes::errors::TBytesError;
 #[cfg(feature = "std")]
 use std::sync::Arc;
 
-use crate::protocol::{IncompatFlags, MavLinkVersion};
+use crate::protocol::{IncompatFlags, MavLinkVersion, MessageId};
 
-// Re-export `mavspec::rust::spec` errors.
-#[doc(no_inline)]
-pub use mavspec::rust::spec::{PayloadError, SpecError};
+/// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
+#[doc(inline)]
+pub use mavspec::rust::spec::PayloadError;
+
+/// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
+/// Errors related to MAVLink message specification.
+///
+/// Upon conversion into Mavio [`Error`], this error will be wrapped by [`Error::Spec`], except
+/// [`SpecError::NotInDialect`], that will be converted into [`FrameError::NotInDialect`] and
+/// wrapped by [`Error::Frame`].
+///
+/// ---
+#[doc(inline)]
+pub use mavspec::rust::spec::SpecError;
 
 /// Common result type returned by `mavio` functions and methods.
 pub type Result<T> = core::result::Result<T, Error>;
@@ -77,6 +88,9 @@ pub enum FrameError {
     /// required flag set.
     #[cfg_attr(feature = "std", error("invalid incompat flags: {0:?}"))]
     Incompatible(IncompatFlagsError),
+    /// MAVLink message with specified ID is not in dialect.
+    #[cfg_attr(feature = "std", error("message with ID {0:?} is not in dialect"))]
+    NotInDialect(MessageId),
 }
 
 /// Invalid MAVLink version.
@@ -194,7 +208,14 @@ impl From<FrameError> for Error {
 
 impl From<SpecError> for Error {
     /// Converts [`SpecError`] into [`Error::Spec`].
+    ///
+    /// There is a special case for [`SpecError::NotInDialect`], that will be converted to
+    /// [`FrameError::NotInDialect`] variant of [`Error::Frame`].
     fn from(value: SpecError) -> Self {
-        Self::Spec(value)
+        if let SpecError::NotInDialect(id) = value {
+            Error::Frame(FrameError::NotInDialect(id))
+        } else {
+            Self::Spec(value)
+        }
     }
 }

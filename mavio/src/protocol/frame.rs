@@ -15,7 +15,7 @@ use crate::protocol::marker::{
 use crate::protocol::signature::{Sign, Signature, Signer, SigningConf};
 use crate::protocol::{
     Checksum, CompatFlags, ComponentId, CrcExtra, FrameBuilder, IncompatFlags, MavLinkVersion,
-    MavTimestamp, MessageId, Payload, PayloadLength, SecretKey, Sequence, SignatureBytes,
+    MavTimestamp, MessageId, Payload, PayloadLength, Scramble, SecretKey, Sequence, SignatureBytes,
     SignedLinkId, SystemId,
 };
 
@@ -435,6 +435,38 @@ impl<V: MaybeVersioned> Frame<V> {
         Ok(message)
     }
 
+    /// Upgrades a frame in-place to `MAVLink 2` protocol version using provided `CRC_EXTRA`.
+    ///
+    /// The opposite is not possible since we need to know exact payload length.
+    pub fn upgrade_with_crc_extra(&mut self, crc_extra: CrcExtra) {
+        self.payload.upgrade();
+        self.header.payload_length = self.payload.length();
+        self.checksum = self.calculate_crc(crc_extra);
+    }
+
+    /// Scrambles (or unscrambles) frame data.
+    ///
+    /// If `scrambler` adds a signature, then `MAVLink 2` frame will be considered signed (and vice
+    /// versa). For `MAVLink 1` frames adding signature won't have any effect on a frame.
+    ///
+    /// **⚠** This method generally corrupts [`Frame::checksum`]. Make sure, that whatever you do
+    /// with a frame, you'll undo before further frame manipulations.
+    pub fn scramble(&mut self, scrambler: &mut dyn Scramble<V>) {
+        scrambler.scramble(
+            self.header.clone(),
+            self.payload.bytes_mut(),
+            &mut self.checksum,
+            &mut self.signature,
+        );
+
+        match self.version() {
+            MavLinkVersion::V1 => self.signature = None,
+            MavLinkVersion::V2 => {
+                self.header.set_is_signed(self.signature.is_some());
+            }
+        }
+    }
+
     pub(crate) fn recv<R: Read>(reader: &mut R) -> Result<Frame<V>> {
         let header = Header::<V>::recv(reader)?;
         let body_length = header.body_length();
@@ -692,6 +724,7 @@ mod tests {
 
     use crc_any::CRCu16;
 
+    #[allow(unused_imports)]
     use crate::protocol::{V1, V2};
 
     #[test]
