@@ -6,7 +6,7 @@ use crc_any::CRCu16;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::consts::{CHECKSUM_SIZE, SIGNATURE_LENGTH};
-use crate::errors::{ChecksumError, SignatureError, VersionError};
+use crate::error::{ChecksumError, SignatureError, VersionError};
 use crate::io::{Read, Write};
 use crate::protocol::header::Header;
 use crate::protocol::marker::{

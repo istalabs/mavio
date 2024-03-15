@@ -13,7 +13,7 @@ use crate::consts::{
     CHECKSUM_SIZE, HEADER_MAX_SIZE, HEADER_MIN_SIZE, HEADER_V1_SIZE, HEADER_V2_SIZE,
     SIGNATURE_LENGTH,
 };
-use crate::errors::VersionError;
+use crate::error::VersionError;
 use crate::io::{Read, Write};
 use crate::protocol::marker::{HasCompId, HasMsgId, HasPayloadLen, HasSysId, Sequenced, Unset};
 use crate::protocol::{

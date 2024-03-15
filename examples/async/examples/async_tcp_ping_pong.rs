@@ -26,7 +26,7 @@ async fn listen<R: AsyncRead + Unpin>(
     reader: R,
     whoami: String,
     n_iter: usize,
-) -> mavio::errors::Result<()> {
+) -> mavio::error::Result<()> {
     // Use a versioned `AsyncReceiver` that will accept only messages of a specified MAVLink version
     let mut receiver = AsyncReceiver::versioned(reader, V2);
 
@@ -72,7 +72,7 @@ async fn send_heartbeats<W: AsyncWrite + Unpin>(
     writer: W,
     whoami: String,
     n_iter: usize,
-) -> mavio::errors::Result<()> {
+) -> mavio::error::Result<()> {
     // MAVLink connection settings
     let mavlink_version = V2;
     let system_id = 15;
@@ -110,7 +110,7 @@ async fn send_heartbeats<W: AsyncWrite + Unpin>(
 }
 
 /// Connect to server, listen to incoming messages, send `n_iter` heartbeats.
-async fn client(address: String, whoami: String, n_iter: usize) -> mavio::errors::Result<String> {
+async fn client(address: String, whoami: String, n_iter: usize) -> mavio::error::Result<String> {
     let client = TcpStream::connect(address).await?;
     handle_stream(client, whoami.clone(), n_iter).await?;
 
@@ -122,7 +122,7 @@ async fn handle_stream(
     stream: TcpStream,
     whoami: String,
     n_iter: usize,
-) -> mavio::errors::Result<()> {
+) -> mavio::error::Result<()> {
     // Tokio provides `into_split` instead of `try_clone` in `std::net` counterpart.
     let (reader, writer) = stream.into_split();
 
@@ -137,7 +137,7 @@ async fn handle_stream(
 
 /// Starts server, reports via [`mpsc`] once bound to address, listens to incoming connections,
 /// sends `n_iter` heartbeats to each.   
-async fn server(address: String, tx: oneshot::Sender<mavio::errors::Result<()>>, n_iter: usize) {
+async fn server(address: String, tx: oneshot::Sender<mavio::error::Result<()>>, n_iter: usize) {
     // Bind to address and report (or fail)
     let listener = match TcpListener::bind(address).await {
         Ok(listener) => listener,
@@ -167,7 +167,7 @@ async fn server(address: String, tx: oneshot::Sender<mavio::errors::Result<()>>,
 }
 
 /// Start server and wait until it binds to address.
-async fn start_server(address: String, n_iter: usize) -> mavio::errors::Result<()> {
+async fn start_server(address: String, n_iter: usize) -> mavio::error::Result<()> {
     let (tx, rx) = oneshot::channel();
     tokio::spawn(async move { server(address, tx, n_iter).await });
     rx.await.unwrap()

@@ -34,7 +34,7 @@
 //! # #[cfg(not(all(feature = "minimal", feature = "std")))]
 //! # fn main() {}
 //! # #[cfg(all(feature = "minimal", feature = "std"))]
-//! # fn main() -> mavio::errors::Result<()> {
+//! # fn main() -> mavio::error::Result<()> {
 //! use std::net::TcpStream;
 //! use mavio::prelude::*;
 //! use mavio::dialects::minimal as dialect;
@@ -73,7 +73,7 @@
 //! # #[cfg(not(all(feature = "minimal", feature = "std")))]
 //! # fn main() {}
 //! # #[cfg(all(feature = "minimal", feature = "std"))]
-//! # fn main() -> mavio::errors::Result<()> {
+//! # fn main() -> mavio::error::Result<()> {
 //! use std::net::TcpStream;
 //! use mavio::prelude::*;
 //! use mavio::dialects::minimal as dialect;
@@ -189,7 +189,7 @@ extern crate alloc;
 extern crate core;
 
 pub mod consts;
-pub mod errors;
+pub mod error;
 pub mod io;
 pub mod prelude;
 pub mod protocol;
@@ -201,7 +201,7 @@ pub use crate::io::{AsyncReceiver, AsyncSender};
 #[doc(inline)]
 pub use crate::io::{Receiver, Sender};
 #[doc(inline)]
-pub use errors::Result;
+pub use error::Result;
 #[doc(inline)]
 pub use protocol::{Dialect, Endpoint, Frame, MavFrame, MavLinkId, Message};
 

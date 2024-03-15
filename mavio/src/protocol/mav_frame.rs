@@ -1,4 +1,4 @@
-use crate::errors::{ChecksumError, VersionError};
+use crate::error::{ChecksumError, VersionError};
 use crate::prelude::*;
 
 use crate::protocol::{

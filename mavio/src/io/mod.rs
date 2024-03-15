@@ -12,7 +12,7 @@
 //! For `no_std` [`mavio`](crate) uses custom `Read` and `Write` traits:
 //!
 //! ```rust
-//! use mavio::errors::Result;
+//! use mavio::error::Result;
 //!
 //! trait Read {
 //!     fn read(&mut self, buf: &mut [u8]) -> Result<usize>;
@@ -47,7 +47,7 @@
 //! }
 //! ```
 //!
-//! This error will be wrapped with `no_std` version of [`Error`](crate::errors::Error).
+//! This error will be wrapped with `no_std` version of [`Error`](crate::error::Error).
 
 #[cfg(not(feature = "std"))]
 pub(crate) mod no_std;

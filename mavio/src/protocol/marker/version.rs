@@ -259,7 +259,7 @@ mod is_magic_byte {
         }
     }
 }
-use crate::errors::VersionError;
+use crate::error::VersionError;
 pub(crate) use is_magic_byte::IsMagicByte;
 
 #[cfg(test)]

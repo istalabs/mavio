@@ -1,4 +1,4 @@
-use crate::errors::IncompatFlagsError;
+use crate::error::IncompatFlagsError;
 use crate::protocol::{CompatFlags, IncompatFlags};
 
 use crate::prelude::*;

@@ -74,7 +74,7 @@ impl<'a> Read for SliceReader<'a> {
     ///
     /// Returns [`IoError::UnexpectedEof`](no_std::IoError::UnexpectedEof) if buffer does not ave
     /// enough content.
-    fn read_exact(&mut self, buf: &mut [u8]) -> crate::errors::Result<()> {
+    fn read_exact(&mut self, buf: &mut [u8]) -> crate::error::Result<()> {
         // Return error if the remaining data in internal buffer are not enough to fill the provided one
         if self.num_remaining_bytes() < buf.len() {
             return Err(crate::io::no_std::IoError::UnexpectedEof.into());
@@ -180,7 +180,7 @@ impl<'a> Write for SliceWriter<'a> {
     ///
     /// Returns [`ErrorKind::UnexpectedEof`](std::io::ErrorKind::UnexpectedEof) if internal slice does not
     /// have enough content.
-    fn write(&mut self, buf: &[u8]) -> crate::errors::Result<usize> {
+    fn write(&mut self, buf: &[u8]) -> crate::error::Result<usize> {
         self.write_all(buf)?;
 
         Ok(buf.len())

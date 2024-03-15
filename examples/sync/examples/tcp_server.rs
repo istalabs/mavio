@@ -16,7 +16,7 @@ const ADDRESS: &str = ":::56001";
 const SEND_INTERVAL: Duration = Duration::from_millis(500);
 
 /// Listen to `n_iter` incoming frames and decode `HEARTBEAT` message.
-fn listen<R: Read>(reader: R, whoami: String) -> mavio::errors::Result<()> {
+fn listen<R: Read>(reader: R, whoami: String) -> mavio::error::Result<()> {
     let mut receiver = Receiver::versionless(reader);
 
     loop {
@@ -55,7 +55,7 @@ fn listen<R: Read>(reader: R, whoami: String) -> mavio::errors::Result<()> {
 }
 
 /// Sends heartbeat messages.
-fn send_heartbeats<W: Write>(writer: W, whoami: String) -> mavio::errors::Result<()> {
+fn send_heartbeats<W: Write>(writer: W, whoami: String) -> mavio::error::Result<()> {
     // Use a versionless sender that accepts both `MAVLink 1` and `MAVLink 2` frames.
     let mut sender = Sender::versionless(writer);
 
@@ -95,19 +95,19 @@ fn send_heartbeats<W: Write>(writer: W, whoami: String) -> mavio::errors::Result
 }
 
 /// Takes stream, sends `n` heartbeat messages, listens for incoming messages.
-fn handle_stream(stream: TcpStream, whoami: String) -> mavio::errors::Result<()> {
+fn handle_stream(stream: TcpStream, whoami: String) -> mavio::error::Result<()> {
     let reader = stream.try_clone()?;
     let recv_name = format!("{} receiver", &whoami);
     let send_name = format!("{} sender", &whoami);
 
     // Spawn a thread that will listen to incoming messages
-    thread::spawn(move || -> mavio::errors::Result<()> { listen(reader, recv_name) });
+    thread::spawn(move || -> mavio::error::Result<()> { listen(reader, recv_name) });
     // Send heartbeats
     send_heartbeats(stream, send_name)
 }
 
 /// Start server and wait until it binds to address.
-fn server(address: String) -> mavio::errors::Result<()> {
+fn server(address: String) -> mavio::error::Result<()> {
     // Bind to address and report (or fail)
     let listener = TcpListener::bind(address)?;
 

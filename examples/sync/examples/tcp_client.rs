@@ -21,7 +21,7 @@ const N_ITER: usize = 10;
 const N_CLIENTS: usize = 5;
 
 /// Listen to `n_iter` incoming frames and decode `HEARTBEAT` message.
-fn listen<R: Read>(reader: R, whoami: String, n_iter: usize) -> mavio::errors::Result<()> {
+fn listen<R: Read>(reader: R, whoami: String, n_iter: usize) -> mavio::error::Result<()> {
     let mut receiver = Receiver::versionless(reader);
 
     for _ in 0..n_iter {
@@ -62,11 +62,7 @@ fn listen<R: Read>(reader: R, whoami: String, n_iter: usize) -> mavio::errors::R
 }
 
 /// Send `n_iter` heartbeat messages, then stops.
-fn send_heartbeats<W: Write>(
-    writer: W,
-    whoami: String,
-    n_iter: usize,
-) -> mavio::errors::Result<()> {
+fn send_heartbeats<W: Write>(writer: W, whoami: String, n_iter: usize) -> mavio::error::Result<()> {
     // Use a versionless sender that accepts both `MAVLink 1` and `MAVLink 2` frames.
     let mut sender = Sender::versionless(writer);
 
@@ -112,7 +108,7 @@ fn send_heartbeats<W: Write>(
 }
 
 /// Connect to server, listen to incoming messages, send `n_iter` heartbeats.
-fn client(address: String, whoami: String, n_iter: usize) -> mavio::errors::Result<String> {
+fn client(address: String, whoami: String, n_iter: usize) -> mavio::error::Result<String> {
     let client = TcpStream::connect(address)?;
     handle_stream(client, whoami.clone(), n_iter)?;
 
@@ -120,13 +116,13 @@ fn client(address: String, whoami: String, n_iter: usize) -> mavio::errors::Resu
 }
 
 /// Takes stream, sends `n` heartbeat messages, listens for incoming messages.
-fn handle_stream(stream: TcpStream, whoami: String, n_iter: usize) -> mavio::errors::Result<()> {
+fn handle_stream(stream: TcpStream, whoami: String, n_iter: usize) -> mavio::error::Result<()> {
     let reader = stream.try_clone()?;
     let recv_name = format!("{} receiver", &whoami);
     let send_name = format!("{} sender", &whoami);
 
     // Spawn a thread that will listen to incoming messages
-    thread::spawn(move || -> mavio::errors::Result<()> { listen(reader, recv_name, n_iter) });
+    thread::spawn(move || -> mavio::error::Result<()> { listen(reader, recv_name, n_iter) });
     // Send heartbeats
     send_heartbeats(stream, send_name, n_iter)
 }
