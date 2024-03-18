@@ -1,7 +1,7 @@
 [package]
 name = "mavio"
 description = "Minimalistic MAVLink client that supports `no-std` and `no-alloc` targets."
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["Mykhailo Ziatin <ziatin@mathwithoutend.org>"]
 repository = "https://gitlab.com/mavka/libs/mavio"
@@ -81,8 +81,8 @@ sha2 = ["dep:sha2"]
 ## Enable serde support.
 serde = [
     "dep:serde",
-    "mavspec/serde",
     "dep:serde_arrays",
+    "mavspec/serde",
     "bitflags/serde",
 ]
 ## Enable tokio (async) support
@@ -143,4 +143,4 @@ all = [
 ###########################################################
 [package.metadata.docs.rs]
 # Features to include into `docs.rs` documentation
-features = ["serde", "all", "unstable", "unsafe", "extras"]
+features = ["serde", "all", "unstable", "unsafe", "extras", "std", "async", "sha2"]
