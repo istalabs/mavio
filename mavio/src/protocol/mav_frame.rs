@@ -1,9 +1,9 @@
 use crate::error::{ChecksumError, VersionError};
-use crate::prelude::*;
-
 use crate::protocol::{
     Checksum, CrcExtra, MessageId, Payload, PayloadLength, Sequence, Signature, SystemId,
 };
+
+use crate::prelude::*;
 
 /// Version-agnostic MAVLink frame, that can be matched according to its protocol version.
 ///
@@ -16,6 +16,8 @@ use crate::protocol::{
 /// first.
 ///
 /// # Examples
+///
+/// Create [`MavFrame`] from an instance of [`Frame`] and then turn back into a versionless frame:
 ///
 /// ```rust
 /// # use mavio::dialects::minimal::messages::Heartbeat;
@@ -32,6 +34,23 @@ use crate::protocol::{
 /// }
 ///
 /// let frame: Frame<Versionless> = mav_frame.into_versionless();
+/// ```
+///
+/// Update existing instance of [`Frame`] with a protocol version compatible [`MavFrame`] (available
+/// only when `unsafe` feature is enabled):
+///
+/// ```rust
+/// # #[cfg(feature = "unsafe")] {
+/// # use mavio::dialects::minimal::messages::Heartbeat;
+/// use mavio::prelude::*;
+///
+/// let mut frame: Frame<_> = // ... obtain a frame
+/// # Frame::builder().version(V2).sequence(1).system_id(1).component_id(1).message(&Heartbeat::default()).unwrap().build();
+///
+/// let mav_frame = MavFrame::new(frame.clone());
+///
+/// frame.try_update_from(&mav_frame).unwrap();
+/// # }
 /// ```
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -262,6 +281,41 @@ impl MavFrame {
         match self {
             MavFrame::V1(frame) => frame.try_into_versioned::<V>(),
             MavFrame::V2(frame) => frame.try_into_versioned::<V>(),
+        }
+    }
+}
+
+#[cfg(feature = "unsafe")]
+impl<V: MaybeVersioned> TryUpdateFrom<&MavFrame> for Frame<V> {
+    type Error = VersionError;
+
+    fn check_try_update_from(&self, value: &&MavFrame) -> std::result::Result<(), Self::Error> {
+        V::expect(value.version())
+    }
+
+    unsafe fn update_from_unchecked(&mut self, value: &MavFrame) {
+        match value {
+            MavFrame::V1(inner) => {
+                self.header.payload_length = inner.header.payload_length;
+                self.header.sequence = inner.header.sequence;
+                self.header.system_id = inner.header.system_id;
+                self.header.component_id = inner.header.component_id;
+                self.header.message_id = inner.header.message_id;
+                self.payload = inner.payload.clone();
+                self.checksum = inner.checksum;
+            }
+            MavFrame::V2(inner) => {
+                self.header.payload_length = inner.header.payload_length;
+                self.header.sequence = inner.header.sequence;
+                self.header.system_id = inner.header.system_id;
+                self.header.component_id = inner.header.component_id;
+                self.header.message_id = inner.header.message_id;
+                self.payload = inner.payload.clone();
+                self.checksum = inner.checksum;
+                self.payload = inner.payload.clone();
+                self.checksum = inner.checksum;
+                self.signature = inner.signature.clone();
+            }
         }
     }
 }

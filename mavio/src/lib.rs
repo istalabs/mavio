@@ -175,6 +175,17 @@
 //!   `asluav`, `avssuas`, `csairlink`, `cubepilot`, `development`, `icarous`, `matrixpilot`,
 //!   `paparazzi`, `ualberta`, `uavionix`. These do not include `python_array_test` and `test`
 //!   dialects which should be either generated manually or as a part of `all` meta-dialect.
+//!
+//! ## Unsafe Features
+//!
+//! This library does not use unsafe Rust, however, certain manipulations on MAVLink frames, if not
+//! performed carefully, could lead to data corruption and undefined behavior. All such operations
+//! are covered by `unsafe` cargo features and marked with <sup>`⚠`</sup> in the documentation.
+//!
+//! Most of the unsafe operations are related to updating existing frames in-place. In general,
+//! situations when you need mutable access to frames are rare. If your use-case does not strictly
+//! require such manipulations, we suggest to refrain from using functionality hidden under the
+//! `unsafe` feature flags.
 
 #![warn(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]

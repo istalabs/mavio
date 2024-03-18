@@ -15,7 +15,7 @@ use crate::protocol::marker::{
 use crate::protocol::signature::{Sign, Signature, Signer, SigningConf};
 use crate::protocol::{
     Checksum, CompatFlags, ComponentId, CrcExtra, FrameBuilder, IncompatFlags, MavLinkVersion,
-    MavTimestamp, MessageId, Payload, PayloadLength, Scramble, SecretKey, Sequence, SignatureBytes,
+    MavTimestamp, MessageId, Payload, PayloadLength, SecretKey, Sequence, SignatureBytes,
     SignedLinkId, SystemId,
 };
 
@@ -444,29 +444,6 @@ impl<V: MaybeVersioned> Frame<V> {
         self.checksum = self.calculate_crc(crc_extra);
     }
 
-    /// Scrambles (or unscrambles) frame data.
-    ///
-    /// If `scrambler` adds a signature, then `MAVLink 2` frame will be considered signed (and vice
-    /// versa). For `MAVLink 1` frames adding signature won't have any effect on a frame.
-    ///
-    /// **⚠** This method generally corrupts [`Frame::checksum`]. Make sure, that whatever you do
-    /// with a frame, you'll undo before further frame manipulations.
-    pub fn scramble(&mut self, scrambler: &mut dyn Scramble<V>) {
-        scrambler.scramble(
-            self.header.clone(),
-            self.payload.bytes_mut(),
-            &mut self.checksum,
-            &mut self.signature,
-        );
-
-        match self.version() {
-            MavLinkVersion::V1 => self.signature = None,
-            MavLinkVersion::V2 => {
-                self.header.set_is_signed(self.signature.is_some());
-            }
-        }
-    }
-
     pub(crate) fn recv<R: Read>(reader: &mut R) -> Result<Frame<V>> {
         let header = Header::<V>::recv(reader)?;
         let body_length = header.body_length();
@@ -711,6 +688,46 @@ impl Frame<V2> {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(feature = "unsafe")]
+impl<V: MaybeVersioned> TryUpdateFrom<&dyn Message> for Frame<V> {
+    type Error = SpecError;
+
+    /// <sup>`⚠`</sup>
+    /// Updates a frame with the data from the provided message.
+    ///
+    /// Replaces the following fields, that are guaranteed to be correct:
+    ///
+    /// * [`Frame::message_id`]
+    /// * [`Frame::payload_length`]
+    /// * [`Frame::payload`]
+    /// * [`Frame::checksum`]
+    ///
+    /// **⚠** This method will strip [`Frame::signature`]. Make sure, that you know, how to sign
+    /// the updated frame afterward.
+    fn try_update_from(&mut self, value: &dyn Message) -> std::result::Result<(), Self::Error> {
+        self.check_try_update_from(&value)?;
+        unsafe { self.update_from_unchecked(value) }
+        Ok(())
+    }
+
+    fn check_try_update_from(&self, value: &&dyn Message) -> std::result::Result<(), Self::Error> {
+        value.encode(self.version())?;
+        Ok(())
+    }
+
+    unsafe fn update_from_unchecked(&mut self, value: &dyn Message) {
+        let payload = value.encode(self.version()).unwrap();
+        let crc_extra = value.crc_extra();
+
+        self.header.message_id = payload.id();
+        self.header.payload_length = payload.length();
+        self.payload = payload;
+        self.checksum = self.calculate_crc(crc_extra);
+
+        self.remove_signature();
     }
 }
 

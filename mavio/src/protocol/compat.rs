@@ -149,13 +149,15 @@ impl CompatProcessor {
     ///
     /// # Errors
     ///
+    /// The following errors will be returned in the exact order:
+    ///
     /// * Returns [`FrameError::NotInDialect`] if frame message `ID` is not in the dialect list.
     /// * Returns [`FrameError::Incompatible`] if frame has incompatible flags.
     #[inline(always)]
     pub fn process_incoming<V: MaybeVersioned>(
         &self,
         frame: &mut Frame<V>,
-        dialects: &[DialectSpec],
+        dialects: &[&DialectSpec],
     ) -> core::result::Result<(), FrameError> {
         self.process_for_strategy(frame, self.incoming, dialects)
     }
@@ -180,13 +182,15 @@ impl CompatProcessor {
     ///
     /// # Errors
     ///
+    /// The following errors will be returned in the exact order:
+    ///
     /// * Returns [`FrameError::NotInDialect`] if frame message `ID` is not in the dialect list.
     /// * Returns [`FrameError::Incompatible`] if frame has incompatible flags.
     #[inline(always)]
     pub fn process_outgoing<V: MaybeVersioned>(
         &self,
         frame: &mut Frame<V>,
-        dialects: &[DialectSpec],
+        dialects: &[&DialectSpec],
     ) -> core::result::Result<(), FrameError> {
         self.process_for_strategy(frame, self.outgoing, dialects)
     }
@@ -210,13 +214,15 @@ impl CompatProcessor {
     ///
     /// # Errors
     ///
+    /// The following errors will be returned in the exact order:
+    ///
     /// * Returns [`FrameError::NotInDialect`] if frame message `ID` is not in the dialect list.
     /// * Returns [`FrameError::Incompatible`] if frame has incompatible flags.
     pub fn process_for_strategy<V: MaybeVersioned>(
         &self,
         frame: &mut Frame<V>,
         strategy: CompatStrategy,
-        dialects: &[DialectSpec],
+        dialects: &[&DialectSpec],
     ) -> core::result::Result<(), FrameError> {
         for dialect in dialects {
             if let Ok(info) = dialect.message_info(frame.message_id()) {

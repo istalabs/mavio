@@ -7,8 +7,12 @@ pub(crate) mod sealed;
 mod signer;
 #[cfg(feature = "extras")]
 mod slice_rw;
+#[cfg(feature = "unsafe")]
+mod update;
 
 #[cfg(feature = "sha2")]
 pub use signer::MavSha256;
 #[cfg(feature = "extras")]
 pub use slice_rw::{SliceReader, SliceWriter};
+#[cfg(feature = "unsafe")]
+pub use update::TryUpdateFrom;

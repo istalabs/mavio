@@ -33,7 +33,7 @@ pub use mavspec::rust::spec::types::{CrcExtra, DialectId, DialectVersion, Messag
 /// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
 #[doc(inline)]
 pub use mavspec::rust::spec::{
-    Dialect, DialectSpec, IntoPayload, MavLinkVersion, Message, MessageSpec, Payload,
+    Dialect, DialectSpec, IntoPayload, MavLinkVersion, Message, MessageInfo, MessageSpec, Payload,
 };
 
 mod compat;
@@ -45,11 +45,12 @@ pub(super) mod header;
 pub(super) mod header_builder;
 pub(super) mod marker;
 mod mav_frame;
-mod scramble;
 mod sequencer;
 pub(super) mod signature;
 pub(crate) mod stx;
 pub(super) mod types;
+#[cfg(feature = "unsafe")]
+mod update;
 
 pub use compat::{CompatProcessor, CompatProcessorBuilder, CompatStrategy, IntoCompatProcessor};
 pub use endpoint::{Endpoint, MavLinkId};
@@ -60,7 +61,6 @@ pub use header::{Header, HeaderBytes};
 pub use header_builder::HeaderBuilder;
 pub use marker::{MaybeVersioned, Unset, Versioned, Versionless, V1, V2};
 pub use mav_frame::MavFrame;
-pub use scramble::Scramble;
 pub use sequencer::{IntoSequencer, Sequencer};
 pub use signature::{MavTimestamp, SecretKey, Sign, Signature, Signer, SigningConf};
 pub use stx::MavSTX;
@@ -68,3 +68,6 @@ pub use types::{
     Behold, Checksum, ComponentId, HeaderV1Bytes, HeaderV2Bytes, PayloadLength, Sequence,
     SignatureBytes, SignatureTimestampBytes, SignatureValue, SignedLinkId, SystemId,
 };
+
+#[cfg(feature = "unsafe")]
+pub use update::{UpdateFrame, UpdateFrameUnsafe};

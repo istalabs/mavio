@@ -5,6 +5,8 @@ pub use crate::protocol::{
     Dialect, Endpoint, Frame, MavFrame, MavLinkId, MavLinkVersion, MaybeVersioned, Message,
     Versioned, Versionless, V1, V2,
 };
+#[cfg(feature = "unsafe")]
+pub use crate::utils::TryUpdateFrom;
 
 #[cfg(feature = "async")]
 pub use crate::io::{AsyncReceiver, AsyncSender};
