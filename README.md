@@ -200,7 +200,7 @@ into MAVLink messages. Frames can be routed, signed, or forwarded to another sys
 > **Note!**
 >
 > MAVLink checksum validation requires [`CRC_EXTRA`](https://mavlink.io/en/guide/serialization.html#crc_extra)
-> byte which its turn depends on a dialect specification. That means, if you are performing dialect-agnostic routing
+> byte which in its turn depends on a dialect specification. That means, if you are performing dialect-agnostic routing
 > from a noisy source or from devices which implement outdated message specifications, you may forward junk messages.
 > In case of high-latency channels you might want to enforce compliance with a particular dialect to filter
 > incompatible messages.
@@ -270,7 +270,7 @@ Examples for custom dialect generation with filtered MAVLink entities can be fou
   ```shell
   cargo run --package mavio_examples_custom --example mavio_examples_custom_usage
   ```
-* [`custom_message.rs`](examples/custom/examples/custom_message.rs) crating and using a custom message:
+* [`custom_message.rs`](examples/custom/examples/custom_message.rs) creating and using a custom message:
   ```shell
   cargo run --package mavio_examples_custom --example custom_message
   ```

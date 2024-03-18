@@ -358,7 +358,7 @@ dependencies = [
 
 [[package]]
 name = "mavio"
-version = "0.2.0-rc2"
+version = "0.2.0"
 dependencies = [
  "bitflags",
  "crc-any",
