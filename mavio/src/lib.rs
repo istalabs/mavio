@@ -69,7 +69,7 @@
 //! Connect to TCP port and send 10 [HEARTBEAT](https://mavlink.io/en/messages/common.html#HEARTBEAT) messages using
 //! `MAVLink 2` protocol.
 //!
-//! ```no_run
+//! ```rust,no_run
 //! # #[cfg(not(all(feature = "minimal", feature = "std")))]
 //! # fn main() {}
 //! # #[cfg(all(feature = "minimal", feature = "std"))]
@@ -84,19 +84,20 @@
 //! // Create an endpoint that represents a MAVLink device speaking `MAVLink 2` protocol
 //! let endpoint = Endpoint::v2(MavLinkId::new(15, 42));
 //!
-//! for i in 0..10 {
-//!     let message = dialect::messages::Heartbeat {
-//!         type_: MavType::FixedWing,
-//!         autopilot: MavAutopilot::Generic,
-//!         base_mode: MavModeFlag::TEST_ENABLED
-//!             & MavModeFlag::CUSTOM_MODE_ENABLED,
-//!         custom_mode: 0,
-//!         system_status: MavState::Active,
-//!         mavlink_version: 3,
-//!     };
-//!     println!("MESSAGE #{}: {:#?}", i, message);
+//! // Create a message
+//! let message = dialect::messages::Heartbeat {
+//!     type_: MavType::FixedWing,
+//!     autopilot: MavAutopilot::Generic,
+//!     base_mode: MavModeFlag::TEST_ENABLED & MavModeFlag::CUSTOM_MODE_ENABLED,
+//!     custom_mode: 0,
+//!     system_status: MavState::Active,
+//!     mavlink_version: dialect::Minimal::version().unwrap(),
+//! };
+//! println!("MESSAGE: {message:?}");
 //!
-//!     // Build a frame for this endpoint
+//! for i in 0..10 {
+//!     // Build the next frame for this endpoint.
+//!     // All required fields will be populated, including frame sequence counter.
 //!     let frame = endpoint.next_frame(&message)?;
 //!
 //!     sender.send(&frame)?;

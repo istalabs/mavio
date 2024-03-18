@@ -50,7 +50,8 @@ At the same time, Mavio is flexible and tries to dictate as few as possible. In 
 
 * It supports [custom dialects](#custom-dialects) or may work with no dialect at all (for intermediate decoding). The
   latter is useful if you want to simply route or sign messages.
-* Can read and write messages to anything that implements [`std::io::Read`](https://doc.rust-lang.org/std/io/trait.Read.html)
+* Can read and write messages to anything that
+  implements [`std::io::Read`](https://doc.rust-lang.org/std/io/trait.Read.html)
   and [`std::io::Write`](https://doc.rust-lang.org/std/io/trait.Write.html) traits.
 * Compatible with `no_std` targets. For such cases the library provides simplified versions of `Read` and `Write`
   traits.
@@ -103,12 +104,12 @@ fn main() -> mavio::errors::Result<()> {
     for i in 0..10 {
         let frame = receiver.recv_frame()?;
 
-        if let Err(err) = frame.validate_checksum(dialect::spec()) {
+        if let Err(err) = frame.validate_checksum::<Minimal>() {
             eprintln!("Invalid checksum: {:?}", err);
             continue;
         }
 
-        if let Ok(Minimal::Heartbeat(msg)) = dialect::decode(frame.payload()) {
+        if let Ok(Minimal::Heartbeat(msg)) = frame::decode() {
             println!(
                 "HEARTBEAT #{}: mavlink_version={:#?}",
                 frame.sequence(),
@@ -129,40 +130,37 @@ to any connected client using MAVLink 2 protocol, then disconnect a client.
 ```rust
 use std::net::TcpStream;
 
-use mavio::{Frame, Sender};
-use mavio::protocol::V2;
 use mavio::dialects::minimal as dialect;
 use dialect::enums::{MavAutopilot, MavModeFlag, MavState, MavType};
 
-fn main() -> mavio::errors::Result<()> {
+use mavio::prelude::*;
+
+fn main() -> Result<()> {
     let mut sender = Sender::new(TcpStream::connect("0.0.0.0:5600")?);
 
-    let mavlink_version = V2;
-    let system_id = 15;
-    let component_id = 42;
+    // Create a TCP client sender
+    let mut sender = Sender::new(TcpStream::connect("0.0.0.0:5600")?);
+    // Create an endpoint that represents a MAVLink device speaking `MAVLink 2` protocol
+    let endpoint = Endpoint::v2(MavLinkId::new(15, 42));
 
-    for sequence in 0..10 {
-        let message = dialect::messages::Heartbeat {
-            type_: MavType::FixedWing,
-            autopilot: MavAutopilot::Generic,
-            base_mode: MavModeFlag::TEST_ENABLED
-                & MavModeFlag::CUSTOM_MODE_ENABLED,
-            custom_mode: 0,
-            system_status: MavState::Active,
-            mavlink_version: 3,
-        };
-        println!("MESSAGE #{}: {:#?}", sequence, message);
+    // Create a message
+    let message = dialect::messages::Heartbeat {
+        type_: MavType::FixedWing,
+        autopilot: MavAutopilot::Generic,
+        base_mode: MavModeFlag::TEST_ENABLED & MavModeFlag::CUSTOM_MODE_ENABLED,
+        custom_mode: 0,
+        system_status: MavState::Active,
+        mavlink_version: 3,
+    };
+    println!("MESSAGE: {message:?}");
 
-        let frame = Frame::builder()
-            .sequence(sequence)
-            .system_id(system_id)
-            .component_id(component_id)
-            .message(&message)
-            .mavlink_version(mavlink_version)
-            .build();
+    for i in 0..10 {
+        // Build the next frame for this endpoint.
+        // All required fields will be populated, including frame sequence counter.
+        let frame = endpoint.next_frame(&message)?;
 
         sender.send_frame(&frame)?;
-        println!("FRAME #{} sent: {:#?}", sequence, frame);
+        println!("FRAME #{} sent: {:#?}", i, frame);
     }
 }
 ```
@@ -200,7 +198,7 @@ Upon receiving, MAVLink [`Frame`](https://docs.rs/mavio/latest/mavio/struct.Fram
 into MAVLink messages. Frames can be routed, signed, or forwarded to another system/component ID without decoding.
 
 > **Note!**
-> 
+>
 > MAVLink checksum validation requires [`CRC_EXTRA`](https://mavlink.io/en/guide/serialization.html#crc_extra)
 > byte which its turn depends on a dialect specification. That means, if you are performing dialect-agnostic routing
 > from a noisy source or from devices which implement outdated message specifications, you may forward junk messages.
@@ -223,7 +221,8 @@ feature flags:
 * [`all`](https://mavlink.io/en/messages/all.html) — meta-dialect which includes all other standard dialects
   including these which were created for testing purposes. It is guaranteed that namespaces of the dialects in `all`
   family do not collide.
-* Other dialects from MAVLink XML [definitions](https://github.com/mavlink/mavlink/tree/master/message_definitions/v1.0):
+* Other dialects from MAVLink
+  XML [definitions](https://github.com/mavlink/mavlink/tree/master/message_definitions/v1.0):
   `asluav`, `avssuas`, `csairlink`, `cubepilot`, `development`, `icarous`, `matrixpilot`, `paparazzi`, `ualberta`,
   `uavionix`. These do not include `python_array_test` and `test` dialects which should be either generated manually
   or as a part of `all` meta-dialect.
