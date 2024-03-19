@@ -16,7 +16,7 @@ use crate::protocol::Frame;
 /// [`MaybeVersioned::matches`] to compare MAVLink version. The blanket implementation of
 /// [`MaybeVersioned`] assumes that everything is compatible by
 /// [vacuous truth](https://en.wikipedia.org/wiki/Vacuous_truth).
-pub trait MaybeVersioned: IsMagicByte + Clone + Debug + Sync + Send + Sealed {
+pub trait MaybeVersioned: IsMagicByte + Clone + Debug + Sync + Send + Sealed + 'static {
     /// Validates that provided frame matches MAVLink protocol version.
     ///
     /// The blanket implementation will always return [`Ok`] meaning that everything is compatible.
