@@ -319,7 +319,9 @@ impl<V: MaybeVersioned> Header<V> {
                 if !header_start.is_complete() {
                     reader.read_exact(header_start.remaining_bytes_mut())?;
                 }
-                return unsafe { Header::<V>::try_from_slice(header_start.header_bytes()) };
+                return Ok(unsafe {
+                    Header::<V>::try_from_slice_unchecked(header_start.header_bytes())
+                });
             } else {
                 continue;
             }
@@ -338,24 +340,27 @@ impl<V: MaybeVersioned> Header<V> {
                         .read_exact(header_start.remaining_bytes_mut())
                         .await?;
                 }
-                return unsafe { Header::<V>::try_from_slice(header_start.header_bytes()) };
+                return Ok(unsafe {
+                    Header::<V>::try_from_slice_unchecked(header_start.header_bytes())
+                });
             } else {
                 continue;
             }
         }
     }
 
-    // This function does not use unsafe Rust but may panic if first byte is not STX.
-    unsafe fn try_from_slice(bytes: &[u8]) -> Result<Header<V>> {
+    // This function does not use unsafe Rust but may panic if first byte is not STX or provided
+    // slice has invalid size.
+    unsafe fn try_from_slice_unchecked(bytes: &[u8]) -> Header<V> {
         let reader = TBytesReader::from(bytes);
 
-        let magic: u8 = reader.read()?;
+        let magic: u8 = reader.read().unwrap();
         let mavlink_version: MavLinkVersion = MavSTX::from(magic).to_mavlink_version().unwrap();
-        let payload_length: u8 = reader.read()?;
+        let payload_length: u8 = reader.read().unwrap();
 
         let (incompat_flags, compat_flags) = if let MavLinkVersion::V2 = mavlink_version {
-            let incompat_flags = reader.read()?;
-            let compat_flags = reader.read()?;
+            let incompat_flags = reader.read().unwrap();
+            let compat_flags = reader.read().unwrap();
             (
                 IncompatFlags::from_bits_truncate(incompat_flags),
                 CompatFlags::from_bits_truncate(compat_flags),
@@ -364,17 +369,22 @@ impl<V: MaybeVersioned> Header<V> {
             (IncompatFlags::default(), CompatFlags::default())
         };
 
-        let sequence: u8 = reader.read()?;
-        let system_id: u8 = reader.read()?;
-        let component_id: u8 = reader.read()?;
+        let sequence: u8 = reader.read().unwrap();
+        let system_id: u8 = reader.read().unwrap();
+        let component_id: u8 = reader.read().unwrap();
 
         let message_id: MessageId = match mavlink_version {
             MavLinkVersion::V1 => {
-                let version: u8 = reader.read()?;
+                let version: u8 = reader.read().unwrap();
                 version as MessageId
             }
             MavLinkVersion::V2 => {
-                let version_byte: [u8; 4] = [reader.read()?, reader.read()?, reader.read()?, 0];
+                let version_byte: [u8; 4] = [
+                    reader.read().unwrap(),
+                    reader.read().unwrap(),
+                    reader.read().unwrap(),
+                    0,
+                ];
                 MessageId::from_le_bytes(version_byte)
             }
         };
@@ -382,7 +392,7 @@ impl<V: MaybeVersioned> Header<V> {
         let mut header_bytes = [0u8; HEADER_MAX_SIZE];
         header_bytes[0..bytes.len()].copy_from_slice(bytes);
 
-        Ok(Header {
+        Header {
             version: mavlink_version,
             payload_length,
             incompat_flags,
@@ -392,7 +402,7 @@ impl<V: MaybeVersioned> Header<V> {
             component_id,
             message_id,
             _marker_version: PhantomData,
-        })
+        }
     }
 }
 

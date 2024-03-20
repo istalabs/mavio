@@ -8,16 +8,10 @@
 //! We also re-export errors from [`mavspec::rust::spec`](https://docs.rs/mavspec/latest/mavspec/rust/spec/)
 //! to provide a full specification of MAVLink-related errors.
 
-use tbytes::errors::TBytesError;
-
 #[cfg(feature = "std")]
 use std::sync::Arc;
 
 use crate::protocol::{IncompatFlags, MavLinkVersion, MessageId};
-
-/// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
-#[doc(inline)]
-pub use mavspec::rust::spec::PayloadError;
 
 /// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
 /// Errors related to MAVLink message specification.
@@ -58,15 +52,6 @@ pub enum Error {
     /// MAVLink specification errors. A wrapper for [`SpecError`] re-exported from MAVSpec.
     #[cfg_attr(feature = "std", error("frame decoding/encoding error: {0:?}"))]
     Spec(SpecError),
-
-    /// Buffer error.
-    ///
-    /// This error is internal to Mavio and potentially indicates a bug in implementation. You
-    /// should not rely on this error since later versions may fix the implementation in a way that
-    /// such error may not occur at all.
-    #[deprecated]
-    #[cfg_attr(feature = "std", error("MAVLink 2 signature is too small"))]
-    Buffer(TBytesError),
 }
 
 /// Errors related to MAVLink frame validation.
@@ -188,14 +173,6 @@ impl From<std::io::Error> for Error {
     /// Note that [`Error::Io`] wraps IO error with [`Arc`] to make [`Error`] compatible with [`Clone`] trait.
     fn from(value: std::io::Error) -> Self {
         Error::Io(Arc::new(value))
-    }
-}
-
-#[allow(deprecated)]
-impl From<TBytesError> for Error {
-    /// Converts [`TBytesError`] into [`Error::Buffer`].
-    fn from(value: TBytesError) -> Self {
-        Self::Buffer(value)
     }
 }
 
