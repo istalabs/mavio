@@ -64,7 +64,7 @@ as:
 * [MAVInspect](https://gitlab.com/mavka/libs/mavinspect) that responsible for MAVLink XML definitions parsing.
 * [MAVSpec](https://gitlab.com/mavka/libs/mavinspect) that focused on code generation. Mavio uses this library to
   generate MAVLink dialects.
-* [Maviola](https://gitlab.com/mavka/libs/maviola) (WIP), is a MAVLink communication library based on `Mavio` that
+* [Maviola](https://gitlab.com/mavka/libs/maviola), is a MAVLink communication library based on `Mavio` that
   provides a high-level interface for MAVLink messaging and takes care about **stateful** features of the protocol:
   sequencing, message time-stamping, automatic heartbeats, simplifies message signing, and so on.
 
