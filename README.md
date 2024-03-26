@@ -11,9 +11,9 @@ Minimalistic library for transport-agnostic [MAVLink](https://mavlink.io/en/) co
 [![`docs.rs`](https://img.shields.io/docsrs/mavio.svg?label=docs)](https://docs.rs/mavio/latest/mavio/)
 [![`issues`](https://img.shields.io/gitlab/issues/open/mavka/libs/mavio.svg)](https://gitlab.com/mavka/libs/mavio/-/issues/)
 
-> <details>
-> <summary>Repositories</summary>
->
+<details>
+<summary><em>Repositories</em></summary>
+
 > Currently, we use [GitLab](https://gitlab.com/mavka/libs/mavio) as the main project repository and
 [GitHub](https://github.com/istalabs/mavio) as official mirror.
 >
@@ -23,7 +23,8 @@ Minimalistic library for transport-agnostic [MAVLink](https://mavlink.io/en/) co
 >
 > The [mirror](https://github.com/istalabs/mavio) will always contain latest release tags and is kept up to date
 > automatically.
-> </details>
+
+</details>
 
 Mavio is a building block for more sophisticated tools. It is entirely focused on one thing: to include absolute minimum
 of functionality required for correct communication with everything that speaks MAVLink protocol.
