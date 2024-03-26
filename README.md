@@ -26,6 +26,9 @@ Minimalistic library for transport-agnostic [MAVLink](https://mavlink.io/en/) co
 
 </details>
 
+Intro
+-----
+
 Mavio is a building block for more sophisticated tools. It is entirely focused on one thing: to include absolute minimum
 of functionality required for correct communication with everything that speaks MAVLink protocol.
 
