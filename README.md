@@ -5,29 +5,25 @@ Minimalistic library for transport-agnostic [MAVLink](https://mavlink.io/en/) co
 (and `no-alloc`) targets.
 
 <span style="font-size:24px">[🇺🇦](https://mavka.gitlab.io/home/a_note_on_the_war_in_ukraine/)</span>
-[![`repository`](https://img.shields.io/gitlab/pipeline-status/mavka/libs/mavio.svg?branch=main&label=repository)](https://gitlab.com/mavka/libs/mavio)
+[![`repository`](https://img.shields.io/gitlab/pipeline-status/mavka/libs/mavio.svg?logo=gitlab&branch=main&label=repository)](https://gitlab.com/mavka/libs/mavio)
+[![`mirror`](https://img.shields.io/badge/-gray?logo=github)](https://github.com/istalabs/mavio)
 [![`crates.io`](https://img.shields.io/crates/v/mavio.svg)](https://crates.io/crates/mavio)
-[![`docs.rs`](https://img.shields.io/docsrs/mavio.svg?label=docs.rs)](https://docs.rs/mavio/latest/mavio/)
+[![`docs.rs`](https://img.shields.io/docsrs/mavio.svg?label=docs)](https://docs.rs/mavio/latest/mavio/)
 [![`issues`](https://img.shields.io/gitlab/issues/open/mavka/libs/mavio.svg)](https://gitlab.com/mavka/libs/mavio/-/issues/)
 
-<details>
-<summary>
-More on MAVLink
-</summary>
-
-MAVLink is a lightweight open protocol for communicating between drones, onboard components and ground control stations.
-It is used by such autopilots like [PX4](https://px4.io) or [ArduPilot](https://ardupilot.org/#). MAVLink has simple and
-compact serialization model. The basic abstraction is `message` which can be sent through a link (UDP, TCP, UNIX
-socket, UART, whatever) and deserialized into a struct with fields of primitive types or arrays of primitive types.
-Such fields can be additionally restricted by `enum` variants, annotated with metadata like units of measurements,
-default or invalid values.
-
-There are several MAVLink dialects. Official dialect definitions are
-[XML files](https://mavlink.io/en/guide/xml_schema.html) that can be found in the MAVlink
-[repository](https://github.com/mavlink/mavlink/tree/master/message_definitions/v1.0). Based on `message` abstractions,
-MAVLink defines so-called [`microservices`](https://mavlink.io/en/services/) that specify how clients should respond on
-a particular message under certain conditions or how they should initiate a particular action.
-</details>
+> <details>
+> <summary>Repositories</summary>
+>
+> Currently, we use [GitLab](https://gitlab.com/mavka/libs/mavio) as the main project repository and
+[GitHub](https://github.com/istalabs/mavio) as official mirror.
+>
+> We accept [issues](https://gitlab.com/mavka/libs/mavio/-/issues) and
+[pull-requests](https://gitlab.com/mavka/libs/mavio/-/merge_requests) only at GitLab but will do our best
+> to keep GitHub [discussions](https://github.com/istalabs/mavio/discussions) as alive as possible.
+>
+> The [mirror](https://github.com/istalabs/mavio) will always contain latest release tags and is kept up to date
+> automatically.
+> </details>
 
 Mavio is a building block for more sophisticated tools. It is entirely focused on one thing: to include absolute minimum
 of functionality required for correct communication with everything that speaks MAVLink protocol.
