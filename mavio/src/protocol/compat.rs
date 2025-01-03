@@ -50,6 +50,7 @@ use crate::prelude::*;
 /// # }
 /// ```
 #[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CompatProcessor {
     incompat_flags: Option<IncompatFlags>,
@@ -61,6 +62,7 @@ pub struct CompatProcessor {
 
 /// Defines, how to process compatibility and incompatibility flags.
 #[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum CompatStrategy {
     /// Reject messages, that are not compatible with the incompatibility flags, keep compatibility

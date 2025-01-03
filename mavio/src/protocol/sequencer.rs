@@ -46,6 +46,7 @@ pub trait IntoSequencer {
 /// assert_eq!(seq.next(), 4, "should be updated");
 /// assert_eq!(forked.next(), 4, "forked sequence is still independent");
 /// ```
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 pub struct Sequencer(_Sequencer);
 
 impl Sequencer {
@@ -271,6 +272,7 @@ mod standard {
     use crate::protocol::Sequence;
 
     #[derive(Clone)]
+    #[cfg_attr(feature = "specta", derive(specta::Type))]
     pub struct _Sequencer(pub(super) Arc<AtomicU8>);
 
     impl _Sequencer {
@@ -287,6 +289,7 @@ mod no_std {
 
     use crate::protocol::Sequence;
 
+    #[cfg_attr(feature = "specta", derive(specta::Type))]
     pub struct _Sequencer(pub(super) AtomicU8);
 
     impl _Sequencer {

@@ -55,6 +55,7 @@ use crate::prelude::*;
 ///     .build();
 /// ```
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FrameBuilder<
     V: MaybeVersioned,

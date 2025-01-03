@@ -19,6 +19,7 @@ use crate::protocol::{
 ///
 /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Signature {
     /// `ID` of link on which packet is sent.
@@ -39,6 +40,7 @@ pub struct Signature {
 /// * [Timestamp handling](https://mavlink.io/en/guide/message_signing.html#timestamp) in MAVLink documentation.
 /// * [`Signature`] is a section of MAVLink packet where timestamp is stored.
 #[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MavTimestamp {
     raw: u64,
@@ -85,6 +87,7 @@ pub struct Signer<'a>(&'a mut dyn Sign);
 /// * [`Sign`] trait defines signing algorithm protocol.
 /// * [Signature specification](https://mavlink.io/en/guide/message_signing.html#signature) in MAVLink docs.
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SigningConf {
     /// Defines [`Signature::link_id`] that will be appended to MAVLink packet upon signing.
@@ -207,6 +210,7 @@ impl SigningConf {
 ///  * [`Sign`] is a trait which `sha256_48` algorithms should implement.
 ///  * `signature` field in [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
 #[derive(Clone, Default)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SecretKey([u8; SIGNATURE_SECRET_KEY_LENGTH]);
 
