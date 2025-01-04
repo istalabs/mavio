@@ -334,8 +334,6 @@ dependencies = [
  "serde",
  "serde_arrays",
  "sha2",
- "specta",
- "specta-util",
  "tbytes",
  "thiserror 2.0.9",
  "tokio",

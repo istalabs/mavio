@@ -22,7 +22,6 @@ use crate::protocol::MavLinkVersion;
 /// * [MAVLink 1 Packet Format](https://mavlink.io/en/guide/serialization.html#v1_packet_format).
 /// * [MAVLink 2 Packet Format](https://mavlink.io/en/guide/serialization.html#mavlink2_packet_format).
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum MavSTX {
     /// Designates `MAVLink 1` protocol, equals to [`STX_V1`].

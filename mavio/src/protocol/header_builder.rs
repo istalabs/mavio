@@ -15,7 +15,6 @@ use crate::protocol::{
 /// Implements [builder](https://rust-unofficial.github.io/patterns/patterns/creational/builder.html)
 /// pattern for [`Header`].
 #[derive(Clone, Copy, Debug, Default)]
-#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct HeaderBuilder<
     V: MaybeVersioned,

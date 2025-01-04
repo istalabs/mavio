@@ -37,8 +37,6 @@ crc-any = { version = "2.4.4", default-features = false }
 mavspec = { version = "0.4.3", default-features = false, features = ["rust"] }
 serde = { version = "1.0.197", default-features = false, features = ["derive"], optional = true }
 serde_arrays = { version = "0.1.0", default-features = false, optional = true }
-specta = { version = "2.0.0-rc.20", features = ["derive"], optional = true }
-specta-util = { version = "0.0.7", features = ["export"], optional = true }
 sha2 = { version = "0.10.8", default-features = false, optional = true }
 tbytes = { version = "0.1.0", default-features = false }
 thiserror = { version = "2.0.9", optional = true }
@@ -89,8 +87,6 @@ serde = [
 ]
 ## Enable serde support.
 specta = [
-    "dep:specta",
-    "dep:specta-util",
     "mavspec/specta",
 ]
 

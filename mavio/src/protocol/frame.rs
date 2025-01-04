@@ -53,7 +53,6 @@ use crate::prelude::*;
 /// Use [`Frame::builder`] to create new frames via builder and [`Frame::add_signature`] (for
 /// [`Frame<V2>`] only) to sign frames.
 #[derive(Clone, Debug)]
-#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Frame<V: MaybeVersioned> {
     pub(super) header: Header<V>,

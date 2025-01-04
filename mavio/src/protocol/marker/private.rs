@@ -20,7 +20,6 @@ mod payload_len {
 
     impl IsPayloadLen for Unset {}
     #[derive(Clone, Debug, Default)]
-    #[cfg_attr(feature = "specta", derive(specta::Type))]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     pub struct HasPayloadLen(pub(crate) PayloadLength);
     impl IsPayloadLen for HasPayloadLen {}
@@ -33,7 +32,6 @@ mod sequenced {
 
     impl IsSequenced for Unset {}
     #[derive(Clone, Debug, Default)]
-    #[cfg_attr(feature = "specta", derive(specta::Type))]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     pub struct Sequenced(pub(crate) Sequence);
     impl IsSequenced for Sequenced {}
@@ -46,7 +44,6 @@ mod sys_id {
 
     impl IsSysId for Unset {}
     #[derive(Clone, Debug, Default)]
-    #[cfg_attr(feature = "specta", derive(specta::Type))]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     pub struct HasSysId(pub(crate) SystemId);
     impl IsSysId for HasSysId {}
@@ -59,7 +56,6 @@ mod comp_id {
 
     impl IsCompId for Unset {}
     #[derive(Clone, Debug, Default)]
-    #[cfg_attr(feature = "specta", derive(specta::Type))]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     pub struct HasCompId(pub(crate) ComponentId);
     impl IsCompId for HasCompId {}
@@ -72,7 +68,6 @@ mod msg_id {
 
     impl IsMsgId for Unset {}
     #[derive(Clone, Debug, Default)]
-    #[cfg_attr(feature = "specta", derive(specta::Type))]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     pub struct HasMsgId(pub(crate) MessageId);
     impl IsMsgId for HasMsgId {}
@@ -85,7 +80,6 @@ mod payload {
 
     impl IsPayload for Unset {}
     #[derive(Clone, Debug, Default)]
-    #[cfg_attr(feature = "specta", derive(specta::Type))]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     pub struct HasPayload(pub(crate) Payload);
     impl IsPayload for HasPayload {}
@@ -98,7 +92,6 @@ mod crc {
 
     impl IsCrcExtra for Unset {}
     #[derive(Clone, Debug, Default)]
-    #[cfg_attr(feature = "specta", derive(specta::Type))]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     pub struct HasCrcExtra(pub(crate) CrcExtra);
     impl IsCrcExtra for HasCrcExtra {}
@@ -115,7 +108,6 @@ mod signed {
         }
     }
     #[derive(Clone, Debug)]
-    #[cfg_attr(feature = "specta", derive(specta::Type))]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     pub struct HasSignature(pub(crate) Signature);
     impl IsSigned for HasSignature {

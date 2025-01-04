@@ -36,6 +36,5 @@
 /// }
 /// ```
 #[derive(Clone, Copy, Debug, Default, Hash, Ord, PartialOrd, Eq, PartialEq)]
-#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Unset;
