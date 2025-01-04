@@ -181,6 +181,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ctor"
+version = "0.2.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "32a2785755761f3ddc1492979ce1e48d2c00d09311c39e4466429188f3dd6501"
+dependencies = [
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -316,7 +326,7 @@ dependencies = [
 
 [[package]]
 name = "mavio"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "bitflags",
  "crc-any",
@@ -364,9 +374,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a97a354020d6ce851f6c4ed38de4e0401b75af35eb74912b9ed23b1f3c0285f"
+checksum = "e1b2b54a1c6117fd36f61b6b6520445f81e172014bb03b3746fb256adb09e447"
 dependencies = [
  "mavspec_rust_derive",
  "mavspec_rust_gen",
@@ -375,9 +385,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_derive"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be57d79a2c8369cd181c1b7ef877f75bb3f86489f5e67def21c9abf26980aa34"
+checksum = "3e7a719aa557458e53bbd2b9ea6aa09e582f182d6f7c51773e353d54b33aeecf"
 dependencies = [
  "crc-any",
  "heck",
@@ -389,9 +399,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_gen"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f64d7d3ab3300b4fb80b50120a9a3d8d01c655f96dd660db50a6bfcffb0ce79"
+checksum = "e2f5dc41f5ffd55fdfdcba0c1658c46a63857e0de3296ec0a98165d79940a3f1"
 dependencies = [
  "base64",
  "cargo-manifest",
@@ -409,9 +419,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_spec"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe87d58c6aa41ac143c4256f3d232d6dd9224587039ab795fdcc02b4c4d05703"
+checksum = "0c42ffd8ffb2a0264c5b4873dced14da614cc45f51a071926f8241c3fdb6252d"
 dependencies = [
  "bitflags",
  "serde",
@@ -686,8 +696,10 @@ version = "0.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8113d65b58a6de3184b01d6df9e50b6d4bbe7f724251f576d84f23228824456"
 dependencies = [
+ "ctor",
  "serde",
  "specta",
+ "specta-macros",
 ]
 
 [[package]]
