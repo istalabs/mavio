@@ -290,7 +290,7 @@ impl<V: MaybeVersioned> Frame<V> {
     ///
     /// # Errors
     ///
-    /// * Returns [`Error::Spec`] if message discovery failed.  
+    /// * Returns [`Error::Spec`] if message discovery failed.
     /// * Returns [`FrameError::Checksum`] (wrapped by [`Error`]) if checksum
     ///   validation failed.
     ///
@@ -510,7 +510,9 @@ impl<V: MaybeVersioned> Frame<V> {
     fn fill_body_buffer(&self, buf: &mut [u8]) {
         let payload_length = self.payload_length() as usize;
 
-        buf[0..payload_length].copy_from_slice(self.payload.bytes());
+        let payload_bytes = self.payload.bytes();
+        let bytes_to_copy = core::cmp::min(buf.len(), payload_bytes.len());
+        buf[0..bytes_to_copy].copy_from_slice(&payload_bytes[0..bytes_to_copy]);
 
         let checksum_bytes: [u8; 2] = self.checksum.to_le_bytes();
         buf[payload_length..payload_length + 2].copy_from_slice(&checksum_bytes);
@@ -821,6 +823,56 @@ mod tests {
         assert_eq!(frame.sequence(), seq);
         assert_eq!(frame.system_id(), 10);
         assert_eq!(frame.component_id(), 255);
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn test_oversized_v2_payload() {
+        use crate::consts::STX_V2;
+        use crate::protocol::{Frame, Versionless};
+
+        let payload_length = 1;
+        let junk_bytes = 3;
+        let in_buffer = vec![
+            12,             // \
+            24,             //  |Junk bytes
+            240,            // /
+            STX_V2,         // magic byte
+            payload_length, // payload_length (INVALID since it should be zero)
+            0,              // incompatibility flags
+            0,              // compatibility flags
+            1,              // sequence
+            10,             // system ID
+            255,            // component ID
+            74,             // \
+            0,              //  | message ID
+            0,              // /
+            0,              //  | payload (INVALID since it should be empty)
+            25,             // \
+            25,             // / checksum
+        ];
+        let expected_frame_size = in_buffer.len() - 3; // no junk
+        let valid_bytes = in_buffer[junk_bytes..].to_vec();
+
+        // Read frame
+        let frame = Frame::<Versionless>::recv(&mut Cursor::new(in_buffer)).unwrap();
+
+        // We should preserve payload length for compatibility
+        assert_eq!(frame.payload_length(), payload_length);
+        // Still, payload length should be zero
+        assert_eq!(frame.payload.bytes().len(), 0);
+
+        // Send frame
+        let mut out_buffer = Cursor::new(vec![]);
+        let bytes_sent = frame.send(&mut out_buffer).unwrap();
+
+        assert_eq!(bytes_sent, expected_frame_size);
+
+        // Check that we send exactly what we received
+        let mut out_bytes = vec![0u8; expected_frame_size];
+        out_buffer.set_position(0);
+        std::io::Read::read_exact(&mut out_buffer, out_bytes.as_mut_slice()).unwrap();
+        assert_eq!(out_bytes, valid_bytes);
     }
 
     #[cfg(feature = "minimal")]
