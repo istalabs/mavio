@@ -111,6 +111,7 @@ pub enum Error {
 ///     error: String,
 /// }
 /// ```
+#[cfg(feature = "std")]
 #[derive(Clone)]
 pub struct IoError {
     inner: Arc<std::io::Error>,
