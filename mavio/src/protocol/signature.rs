@@ -19,6 +19,7 @@ use crate::protocol::{
 ///
 /// * [MAVLink 2 message signing](https://mavlink.io/en/guide/message_signing.html).
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Signature {
     /// `ID` of link on which packet is sent.
@@ -39,6 +40,7 @@ pub struct Signature {
 /// * [Timestamp handling](https://mavlink.io/en/guide/message_signing.html#timestamp) in MAVLink documentation.
 /// * [`Signature`] is a section of MAVLink packet where timestamp is stored.
 #[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MavTimestamp {
     raw: u64,

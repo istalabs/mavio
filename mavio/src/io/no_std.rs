@@ -21,6 +21,7 @@ use crate::prelude::*;
 ///  * [`Error::Io`].
 ///  * [`std::result::Result`].
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum IoError {
     /// Unexpected end-of-file.
     ///

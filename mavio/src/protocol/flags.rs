@@ -10,6 +10,7 @@ mod incompat_flags {
     ///
     /// Other bit flags are named according to powers of 2 in little endian.
     #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+    #[cfg_attr(feature = "specta", derive(specta::Type))]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     pub struct IncompatFlags(u8);
     bitflags! {
@@ -45,6 +46,7 @@ mod compat_flags {
     ///
     /// Bit flags are named according to powers of 2 in little endian.
     #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+    #[cfg_attr(feature = "specta", derive(specta::Type))]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     pub struct CompatFlags(u8);
     bitflags! {

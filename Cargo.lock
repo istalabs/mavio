@@ -334,6 +334,8 @@ dependencies = [
  "serde",
  "serde_arrays",
  "sha2",
+ "specta",
+ "specta-util",
  "tbytes",
  "thiserror 2.0.9",
  "tokio",
@@ -372,9 +374,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec"
-version = "0.4.3"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1b2b54a1c6117fd36f61b6b6520445f81e172014bb03b3746fb256adb09e447"
+checksum = "e0799040d56aeef168e5d40564b8015301f2e0903c57f22d165be4f7c879bd5e"
 dependencies = [
  "mavspec_rust_derive",
  "mavspec_rust_gen",
@@ -383,9 +385,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_derive"
-version = "0.4.3"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e7a719aa557458e53bbd2b9ea6aa09e582f182d6f7c51773e353d54b33aeecf"
+checksum = "783bf336d4a28d55a94c67bc6a91ea25c0d97db9f8a0209c902d90bdb657137b"
 dependencies = [
  "crc-any",
  "heck",
@@ -397,9 +399,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_gen"
-version = "0.4.3"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2f5dc41f5ffd55fdfdcba0c1658c46a63857e0de3296ec0a98165d79940a3f1"
+checksum = "01f2fb8a2e5244c02de671e81bf0a4fdf8cfa5237dccb20473ae30f83a563a1b"
 dependencies = [
  "base64",
  "cargo-manifest",
@@ -417,9 +419,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_spec"
-version = "0.4.3"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c42ffd8ffb2a0264c5b4873dced14da614cc45f51a071926f8241c3fdb6252d"
+checksum = "c49ff7d78760fdf2f14ce6066471722f64f3e2d7009f0ccca0fd39c6c02e5a02"
 dependencies = [
  "bitflags",
  "serde",
@@ -702,9 +704,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.94"
+version = "2.0.95"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "987bc0be1cdea8b10216bd06e2ca407d40b9543468fafd3ddfb02f36e77f71f3"
+checksum = "46f71c0377baf4ef1cc3e3402ded576dccc315800fbc62dfc7fe04b009773b4a"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -43,10 +43,18 @@ pub trait MaybeVersioned: IsMagicByte + Clone + Debug + Sync + Send + Sealed + '
 /// [`Frame<Versionless>`](Frame<Versionless>) which then can be converted to their
 /// version-specific form by [`Frame::try_versioned`](Frame::try_into_versioned).
 #[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Versionless;
 impl Sealed for Versionless {}
 impl IsMagicByte for Versionless {}
+
+#[cfg(feature = "specta")]
+impl Sealed for () {}
+#[cfg(feature = "specta")]
+impl IsMagicByte for () {}
+#[cfg(feature = "specta")]
+impl MaybeVersioned for () {}
 
 impl MaybeVersioned for Versionless {}
 
@@ -167,6 +175,7 @@ pub trait Versioned: MaybeVersioned {
 
 /// Marks entities which are strictly `MAVLink 1` protocol compliant.
 #[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct V1;
 impl Sealed for V1 {}
@@ -204,6 +213,7 @@ impl Versioned for V1 {
 
 /// Marks entities which are strictly `MAVLink 2` protocol compliant.
 #[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct V2;
 impl Sealed for V2 {}

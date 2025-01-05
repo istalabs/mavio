@@ -53,6 +53,7 @@ use crate::prelude::*;
 /// Use [`Frame::builder`] to create new frames via builder and [`Frame::add_signature`] (for
 /// [`Frame<V2>`] only) to sign frames.
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Frame<V: MaybeVersioned> {
     pub(super) header: Header<V>,
@@ -830,14 +831,14 @@ mod tests {
         use crate::consts::STX_V2;
         use crate::protocol::{Frame, Versionless};
 
-        let payload_length = 1;
+        let payload_length = 3;
         let junk_bytes = 3;
         let in_buffer = vec![
             12,             // \
             24,             //  |Junk bytes
             240,            // /
             STX_V2,         // magic byte
-            payload_length, // payload_length (INVALID since it should be zero)
+            payload_length, // payload_length (INVALID since it should be 1)
             0,              // incompatibility flags
             0,              // compatibility flags
             1,              // sequence
@@ -846,7 +847,9 @@ mod tests {
             74,             // \
             0,              //  | message ID
             0,              // /
-            0,              //  | payload (INVALID since it should be empty)
+            0,              // \            (first byte is always present)
+            0,              //  | payload   (INVALID) \
+            0,              // /            (INVALID) / should not be present
             25,             // \
             25,             // / checksum
         ];
@@ -858,8 +861,8 @@ mod tests {
 
         // We should preserve payload length for compatibility
         assert_eq!(frame.payload_length(), payload_length);
-        // Still, payload length should be zero
-        assert_eq!(frame.payload.bytes().len(), 0);
+        // Still, payload length should be one
+        assert_eq!(frame.payload.bytes().len(), 1);
 
         // Send frame
         let mut out_buffer = Cursor::new(vec![]);
@@ -904,20 +907,29 @@ mod tests {
             }
         }
 
-        pub(super) fn default_v1_heartbeat_frame() -> Frame<V1> {
-            let message = default_heartbeat_message();
+        pub(super) fn all_zero_heartbeat_message() -> Heartbeat {
+            Heartbeat {
+                type_: MavType::Generic,          // 0
+                autopilot: MavAutopilot::Generic, // 0
+                base_mode: MavModeFlag::empty(),  // 0
+                custom_mode: 0,
+                system_status: MavState::Uninit, // 0
+                mavlink_version: 0,
+            }
+        }
+
+        pub(super) fn v1_frame(message: &dyn Message) -> Frame<V1> {
             Frame::builder()
                 .sequence(7)
                 .system_id(22)
                 .component_id(17)
                 .version(V1)
-                .message(&message)
+                .message(message)
                 .unwrap()
                 .build()
         }
 
-        pub(super) fn default_v2_heartbeat_frame() -> Frame<V2> {
-            let message = default_heartbeat_message();
+        pub(super) fn v2_frame(message: &dyn Message) -> Frame<V2> {
             Frame::builder()
                 .sequence(7)
                 .system_id(22)
@@ -925,13 +937,35 @@ mod tests {
                 .version(V2)
                 .incompat_flags(default_incompat_flags())
                 .compat_flags(default_compat_flags())
-                .message(&message)
+                .message(message)
                 .unwrap()
                 .build()
+        }
+
+        pub(super) fn default_v1_heartbeat_frame() -> Frame<V1> {
+            let message = default_heartbeat_message();
+            v1_frame(&message)
+        }
+
+        pub(super) fn default_v2_heartbeat_frame() -> Frame<V2> {
+            let message = default_heartbeat_message();
+            v2_frame(&message)
         }
     }
     #[cfg(feature = "minimal")]
     use dialect_utils::*;
+
+    #[test]
+    #[cfg(feature = "minimal")]
+    #[cfg(feature = "std")]
+    fn test_v2_payload_truncation() {
+        let message = all_zero_heartbeat_message();
+        let frame = v2_frame(&message);
+
+        assert_eq!(frame.payload_length(), 1);
+        assert_eq!(frame.payload.bytes().len(), 1);
+        assert_eq!(frame.payload.bytes(), &[0]);
+    }
 
     #[test]
     #[cfg(feature = "minimal")]

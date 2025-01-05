@@ -41,6 +41,7 @@ use crate::prelude::*;
 ///  * [MAVLink 1 packet format](https://mavlink.io/en/guide/serialization.html#v1_packet_format).
 ///  * [MAVLink 2 packet format](https://mavlink.io/en/guide/serialization.html#mavlink2_packet_format).
 #[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Header<V: MaybeVersioned> {
     pub(super) version: MavLinkVersion,

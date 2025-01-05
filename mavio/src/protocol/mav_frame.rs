@@ -53,6 +53,7 @@ use crate::prelude::*;
 /// # }
 /// ```
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum MavFrame {
     /// `MAVLink 1` frame.

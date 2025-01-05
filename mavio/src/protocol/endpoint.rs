@@ -6,6 +6,7 @@ use crate::prelude::*;
 
 /// MAVLink device `ID`.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "specta", derive(specta::Type))]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct MavLinkId {
     /// System `ID`.

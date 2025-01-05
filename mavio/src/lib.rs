@@ -187,6 +187,10 @@
 //! situations when you need mutable access to frames are rare. If your use-case does not strictly
 //! require such manipulations, we suggest to refrain from using functionality hidden under the
 //! `unsafe` feature flags.
+//!
+//! ## Incompatible Features
+//!
+//! - [Specta](https://crates.io/crates/specta) requires `std` feature to be enabled.
 
 #![warn(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]
@@ -221,3 +225,6 @@ mod mavlink {
     include!(concat!(env!("OUT_DIR"), "/mavlink/mod.rs"));
 }
 pub use mavlink::dialects;
+
+#[cfg(all(feature = "specta", not(feature = "std")))]
+compile_error!("Specta support is currently available only for `std` targets! Add `std` feature.");

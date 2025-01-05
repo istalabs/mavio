@@ -39,11 +39,13 @@ fn main() {
     let sources = [manifest_dir.join("message_definitions")];
     let destination = Path::new(&var("OUT_DIR").unwrap()).join("mavlink");
     let serde_feature_enabled = var("CARGO_FEATURE_SERDE").is_ok();
+    let specta_feature_enabled = var("CARGO_FEATURE_SPECTA").is_ok();
 
     BuildHelper::builder(destination)
         .set_sources(&sources)
         .set_include_dialects(&included_dialects)
         .set_serde(serde_feature_enabled)
+        .set_specta(specta_feature_enabled)
         .generate()
         .unwrap();
 }
