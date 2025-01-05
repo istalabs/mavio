@@ -98,8 +98,8 @@ pub enum Error {
 ///
 /// ### Serde
 ///
-/// We provide a simplified serialization sufficient to display an error. The deserialized error is
-/// always equals to [`std::io::ErrorKind::Other`]. In future version the behavior may change.
+/// We provide a simplified serialization sufficient to display an error. The deserialized error
+/// always has a kind of [`std::io::ErrorKind::Other`]. In future version the behavior may change.
 ///
 /// ### Specta
 ///
