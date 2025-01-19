@@ -710,13 +710,13 @@ impl<V: MaybeVersioned> TryUpdateFrom<&dyn Message> for Frame<V> {
     ///
     /// **⚠** This method will strip [`Frame::signature`]. Make sure, that you know, how to sign
     /// the updated frame afterward.
-    fn try_update_from(&mut self, value: &dyn Message) -> std::result::Result<(), Self::Error> {
+    fn try_update_from(&mut self, value: &dyn Message) -> core::result::Result<(), Self::Error> {
         self.check_try_update_from(&value)?;
         unsafe { self.update_from_unchecked(value) }
         Ok(())
     }
 
-    fn check_try_update_from(&self, value: &&dyn Message) -> std::result::Result<(), Self::Error> {
+    fn check_try_update_from(&self, value: &&dyn Message) -> core::result::Result<(), Self::Error> {
         value.encode(self.version())?;
         Ok(())
     }
