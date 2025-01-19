@@ -34,18 +34,18 @@ path = "src/lib.rs"
 [dependencies]
 bitflags = { version = "2.5.0", default-features = false }
 crc-any = { version = "2.4.4", default-features = false }
-mavspec = { version = "0.4.5", default-features = false, features = ["rust"] }
+mavspec = { version = "0.4.6", default-features = false, features = ["rust"] }
 serde = { version = "1.0.197", default-features = false, features = ["derive"], optional = true }
 serde_arrays = { version = "0.1.0", default-features = false, optional = true }
-specta = { version = "2.0.0-rc.20", features = ["derive"], optional = true }
-specta-util = { version = "0.0.7", features = ["export"], optional = true }
+specta = { version = "=2.0.0-rc.22", features = ["derive"], optional = true }
+specta-util = { version = "0.0.9", optional = true }
 sha2 = { version = "0.10.8", default-features = false, optional = true }
 tbytes = { version = "0.1.0", default-features = false }
 thiserror = { version = "2.0.9", optional = true }
 tokio = { version = "1.36.0", features = ["io-util"], optional = true }
 
 [build-dependencies]
-mavspec = { version = "0.4.5", default-features = false, features = ["rust_gen", "fingerprints"] }
+mavspec = { version = "0.4.6", default-features = false, features = ["rust_gen", "fingerprints"] }
 
 ###########################################################
 # Features
