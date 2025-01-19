@@ -1,7 +1,7 @@
 [package]
 name = "mavio"
 description = "Minimalistic MAVLink client that supports `no-std` and `no-alloc` targets."
-version = "0.3.5"
+version = "0.3.6"
 edition = "2021"
 authors = ["Mykhailo Ziatin <ziatin@mathwithoutend.org>"]
 repository = "https://gitlab.com/mavka/libs/mavio"
@@ -94,8 +94,11 @@ specta = [
     "mavspec/specta",
 ]
 
-## Enable tokio (async) support
-async = ["dep:tokio", "std"]
+## Enable async support
+async = [
+    "dep:tokio",
+    "std",
+]
 
 ###########################################################
 # Dialects
