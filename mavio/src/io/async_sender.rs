@@ -2,8 +2,7 @@
 
 use core::marker::PhantomData;
 
-use tokio::io::{AsyncWrite, AsyncWriteExt};
-
+use crate::io::AsyncWrite;
 use crate::protocol::{Frame, MaybeVersioned, Versioned, Versionless};
 
 use crate::prelude::*;
@@ -12,16 +11,18 @@ use crate::prelude::*;
 ///
 /// Sends MAVLink frames to an instance of [`AsyncWrite`].  
 #[derive(Clone, Debug)]
-pub struct AsyncSender<W: AsyncWrite + Unpin, V: MaybeVersioned> {
+pub struct AsyncSender<E: Into<Error>, W: AsyncWrite<E> + Unpin, V: MaybeVersioned> {
     writer: W,
+    _error_marker: PhantomData<E>,
     _marker_version: PhantomData<V>,
 }
 
-impl<W: AsyncWrite + Unpin> AsyncSender<W, Versionless> {
+impl<E: Into<Error>, W: AsyncWrite<E> + Unpin> AsyncSender<E, W, Versionless> {
     /// Default constructor.
-    pub fn new<V: MaybeVersioned>(writer: W) -> AsyncSender<W, V> {
+    pub fn new<V: MaybeVersioned>(writer: W) -> AsyncSender<E, W, V> {
         AsyncSender {
             writer,
+            _error_marker: PhantomData,
             _marker_version: PhantomData,
         }
     }
@@ -47,12 +48,12 @@ impl<W: AsyncWrite + Unpin> AsyncSender<W, Versionless> {
     pub fn versioned<Version: Versioned>(
         writer: W,
         #[allow(unused_variables)] version: Version,
-    ) -> AsyncSender<W, Version> {
+    ) -> AsyncSender<E, W, Version> {
         AsyncSender::new(writer)
     }
 }
 
-impl<W: AsyncWrite + Unpin, V: MaybeVersioned> AsyncSender<W, V> {
+impl<E: Into<Error>, W: AsyncWrite<E> + Unpin, V: MaybeVersioned> AsyncSender<E, W, V> {
     /// Send MAVLink [`Frame`] asynchronously.
     ///
     /// [`Versioned`] sender accepts only frames of a specific MAVLink protocol version.
@@ -61,15 +62,17 @@ impl<W: AsyncWrite + Unpin, V: MaybeVersioned> AsyncSender<W, V> {
     /// [`Frame<Versionless>`].
     ///
     /// Returns the number of bytes sent.
+    #[inline(always)]
     pub async fn send(&mut self, frame: &Frame<V>) -> Result<usize> {
         V::expect(frame.version())?;
-        frame.send_async(&mut self.writer).await
+        frame.send_async(&mut self.writer).await.map_err(E::into)
     }
 
     /// Flushes all buffers.
     ///
     /// Certain writers require flush to be called on tear down in order to write all contents.
+    #[inline]
     pub async fn flush(&mut self) -> Result<()> {
-        self.writer.flush().await.map_err(Error::from)
+        self.writer.flush().await.map_err(E::into)
     }
 }

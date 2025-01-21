@@ -1,0 +1,75 @@
+[package]
+name = "mavio_tests"
+description = "Mavio asynchronous examples."
+version = "0.0.0"
+edition = "2021"
+authors = ["Mykhailo Ziatin <ziatin@mathwithoutend.org>"]
+repository = "https://gitlab.com/mavka/libs/mavio"
+resolver = "2"
+publish = false
+
+[lib]
+name = "mavio_tests"
+path = "src/lib.rs"
+
+###########################################################
+# Dependencies
+###########################################################
+[dependencies]
+mavio = { path = "../mavio", features = ["minimal"], default-features = false }
+tokio = { version = "1.36.0", features = ["io-util"], optional = true }
+futures = { version = "0.3.31", optional = true }
+embedded-io = { version = "0.6.1", optional = true }
+embedded-io-async = { version = "0.6.1", optional = true }
+serde_json = { version = "1.0.137", default-features = false, optional = true }
+
+###########################################################
+# Features
+###########################################################
+[features]
+## Default features.
+default = []
+## Enable unstable API features.
+unstable = ["mavio/unstable"]
+## Additional auxilary tools.
+extras = ["mavio/extras"]
+## Unsafe features, that allow access to internal state of the entities.
+unsafe = ["mavio/unsafe"]
+
+## Enable memory allocation support.
+alloc = [
+    "dep:serde_json",
+    "serde_json/alloc",
+]
+## Enable Rust std library.
+std = [
+    "alloc",
+    "serde_json/std",
+    "mavio/std",
+]
+
+## Enable serde support.
+serde = ["mavio/serde"]
+## Enable specta support.
+specta = ["mavio/specta"]
+
+## Enable async support via futures-rs
+futures = [
+    "mavio/futures",
+    "dep:futures",
+]
+## Enable async support via Tokio
+tokio = [
+    "mavio/tokio",
+    "dep:tokio",
+]
+## Enable synchronous I/O support from embedded HAL
+embedded-io = [
+    "mavio/embedded-io",
+    "dep:embedded-io",
+]
+## Enable asynchronous I/O support from embedded HAL
+embedded-io-async = [
+    "mavio/embedded-io-async",
+    "dep:embedded-io-async",
+]

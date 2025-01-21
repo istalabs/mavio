@@ -20,6 +20,10 @@ pub struct MavLinkId {
 /// # Examples
 ///
 /// ```no_run
+/// #[cfg(not(feature = "minimal"))]
+/// # fn main() {}
+/// #[cfg(feature = "minimal")]
+/// # fn main() {
 /// use mavio::dialects::minimal::messages::Heartbeat;
 /// use mavio::prelude::*;
 ///
@@ -33,6 +37,7 @@ pub struct MavLinkId {
 /// assert_eq!(frame.sequence(), 3, "should be correct sequence number");
 /// assert_eq!(frame.system_id(), 17, "should be the defined system `ID`");
 /// assert_eq!(frame.component_id(), 42, "should be the defined component `ID`");
+/// }
 /// ```
 #[derive(Debug)]
 pub struct Endpoint<V: MaybeVersioned> {

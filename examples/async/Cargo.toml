@@ -14,7 +14,7 @@ publish = false
 [dependencies]
 env_logger = "0.11.0"
 log = "0.4.20"
-mavio = { path = "../../mavio", features = ["std", "minimal", "async"] }
+mavio = { path = "../../mavio", features = ["std", "minimal", "tokio"] }
 portpicker = "0.1.1"
 tokio = { version = "1.35.1", features = ["macros", "sync", "rt", "net", "time"] }
 

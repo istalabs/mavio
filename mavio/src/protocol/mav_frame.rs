@@ -20,6 +20,10 @@ use crate::prelude::*;
 /// Create [`MavFrame`] from an instance of [`Frame`] and then turn back into a versionless frame:
 ///
 /// ```rust
+/// #[cfg(not(feature = "minimal"))]
+/// # fn main() {}
+/// #[cfg(feature = "minimal")]
+/// # fn main() {
 /// # use mavio::dialects::minimal::messages::Heartbeat;
 /// use mavio::prelude::*;
 ///
@@ -34,6 +38,7 @@ use crate::prelude::*;
 /// }
 ///
 /// let frame: Frame<Versionless> = mav_frame.into_versionless();
+/// # }
 /// ```
 ///
 /// Update existing instance of [`Frame`] with a protocol version compatible [`MavFrame`] (available

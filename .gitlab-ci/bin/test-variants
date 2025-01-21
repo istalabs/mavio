@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+#
+# Go over all significant build variants
+#
+
+set -o errexit -o nounset -o pipefail
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+PROJECT_DIR=$(realpath "${SCRIPT_DIR}/../../")
+
+HL='\033[0;35m'
+NC='\033[0m'
+
+function print() {
+  echo -e "$HL$1$NC"
+}
+
+declare -a commands=(
+  "cargo test --package mavio --no-default-features"
+  "cargo test --package mavio --no-default-features --features std"
+  "cargo test --package mavio --no-default-features --features std,serde,unstable"
+  "cargo test --package mavio --no-default-features --features embedded-io,embedded-io-async"
+  "cargo test --package mavio --no-default-features --features embedded-io,embedded-io-async,serde,unstable"
+  "cargo test --package mavio --no-default-features --features embedded-io,embedded-io-async,alloc,serde,unstable"
+  "cargo test --package mavio --no-default-features --features embedded-io,embedded-io-async,std"
+  "cargo test --package mavio --no-default-features --features embedded-io,embedded-io-async,std,serde,unstable"
+  "cargo test --package mavio --no-default-features --features embedded-io,embedded-io-async,std,tokio,futures,minimal,serde,specta,unstable"
+  "cargo test --package mavio --all-features"
+)
+
+pushd "${PROJECT_DIR}"
+  for command in "${commands[@]}"
+  do
+     print "$command"
+     $command
+  done
+popd

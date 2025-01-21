@@ -23,6 +23,10 @@ use crate::prelude::*;
 /// Create a new frame from a heartbeat message using parameters of existing endpoint:
 ///
 /// ```no_run
+/// #[cfg(not(feature = "minimal"))]
+/// # fn main() {}
+/// #[cfg(feature = "minimal")]
+/// # fn main() {
 /// use mavio::dialects::minimal::messages::Heartbeat;
 /// use mavio::prelude::*;
 ///
@@ -32,11 +36,16 @@ use crate::prelude::*;
 ///     .endpoint(&endpoint)
 ///     .message(&Heartbeat::default()).unwrap()
 ///     .build();
+/// # }
 /// ```
 ///
 /// Create a new frame manually:
 ///
 /// ```no_run
+/// #[cfg(not(feature = "minimal"))]
+/// # fn main() {}
+/// #[cfg(feature = "minimal")]
+/// # fn main() {
 /// use mavio::dialects::minimal::messages::Heartbeat;
 /// use mavio::protocol::{IntoPayload};
 /// use mavio::prelude::*;
@@ -53,6 +62,7 @@ use crate::prelude::*;
 ///     .payload(payload.bytes())
 ///     .crc_extra(Heartbeat::spec().crc_extra())
 ///     .build();
+/// # }
 /// ```
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

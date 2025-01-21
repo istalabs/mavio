@@ -2,8 +2,7 @@
 
 use core::marker::PhantomData;
 
-use tokio::io::AsyncRead;
-
+use crate::io::AsyncRead;
 use crate::protocol::{Frame, MaybeVersioned, Versioned, Versionless};
 
 use crate::prelude::*;
@@ -12,16 +11,18 @@ use crate::prelude::*;
 ///
 /// Receives MAVLink frames from an instance of [`AsyncRead`].
 #[derive(Clone, Debug)]
-pub struct AsyncReceiver<R: AsyncRead + Unpin, V: MaybeVersioned> {
+pub struct AsyncReceiver<E: Into<Error>, R: AsyncRead<E> + Unpin, V: MaybeVersioned> {
     reader: R,
+    _error_marker: PhantomData<E>,
     _marker_version: PhantomData<V>,
 }
 
-impl<R: AsyncRead + Unpin> AsyncReceiver<R, Versionless> {
+impl<E: Into<Error>, R: AsyncRead<E> + Unpin> AsyncReceiver<E, R, Versionless> {
     /// Default constructor.
-    pub fn new<V: MaybeVersioned>(reader: R) -> AsyncReceiver<R, V> {
+    pub fn new<V: MaybeVersioned>(reader: R) -> AsyncReceiver<E, R, V> {
         AsyncReceiver {
             reader,
+            _error_marker: PhantomData,
             _marker_version: PhantomData,
         }
     }
@@ -35,7 +36,7 @@ impl<R: AsyncRead + Unpin> AsyncReceiver<R, Versionless> {
     /// [`AsyncReceiver::versioned`].
     ///
     /// If you want to instantiate a generic receiver, use [`AsyncReceiver::new`].
-    pub fn versionless(reader: R) -> AsyncReceiver<R, Versionless> {
+    pub fn versionless(reader: R) -> Self {
         AsyncReceiver::new(reader)
     }
 
@@ -52,12 +53,12 @@ impl<R: AsyncRead + Unpin> AsyncReceiver<R, Versionless> {
     pub fn versioned<Version: Versioned>(
         reader: R,
         #[allow(unused_variables)] version: Version,
-    ) -> AsyncReceiver<R, Version> {
+    ) -> AsyncReceiver<E, R, Version> {
         AsyncReceiver::new(reader)
     }
 }
 
-impl<R: AsyncRead + Unpin, V: MaybeVersioned> AsyncReceiver<R, V> {
+impl<E: Into<Error>, R: AsyncRead<E> + Unpin, V: MaybeVersioned> AsyncReceiver<E, R, V> {
     /// Receives MAVLink [`Frame`].
     ///
     /// Blocks until a valid MAVLink frame received.
@@ -66,6 +67,8 @@ impl<R: AsyncRead + Unpin, V: MaybeVersioned> AsyncReceiver<R, V> {
     ///
     /// [`Versionless`] receiver accepts both `MAVLink 1` and `MAVLink 2` frames.
     pub async fn recv(&mut self) -> Result<Frame<V>> {
-        Frame::<V>::recv_async(&mut self.reader).await
+        Frame::<V>::recv_async(&mut self.reader)
+            .await
+            .map_err(E::into)
     }
 }

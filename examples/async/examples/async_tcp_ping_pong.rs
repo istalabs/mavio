@@ -6,6 +6,7 @@ use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 
 use mavio::dialects::minimal as dialect;
+use mavio::io::{TokioReader, TokioWriter};
 use mavio::protocol::{Dialect, V2};
 use mavio::{AsyncReceiver, AsyncSender, Endpoint, MavLinkId};
 
@@ -28,7 +29,7 @@ async fn listen<R: AsyncRead + Unpin>(
     n_iter: usize,
 ) -> mavio::error::Result<()> {
     // Use a versioned `AsyncReceiver` that will accept only messages of a specified MAVLink version
-    let mut receiver = AsyncReceiver::versioned(reader, V2);
+    let mut receiver = AsyncReceiver::versioned(TokioReader::new(reader), V2);
 
     for _ in 0..n_iter {
         // Decode the entire frame
@@ -79,7 +80,7 @@ async fn send_heartbeats<W: AsyncWrite + Unpin>(
     let component_id = 42;
 
     // Use a versioned `AsyncSender` that will accept only messages of a specified MAVLink version
-    let mut sender = AsyncSender::versioned(writer, mavlink_version);
+    let mut sender = AsyncSender::versioned(TokioWriter::new(writer), mavlink_version);
     // Create an endpoint that will track frame sequence
     let endpoint = Endpoint::v2(MavLinkId::new(system_id, component_id));
 

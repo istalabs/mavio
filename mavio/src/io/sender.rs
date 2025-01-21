@@ -9,18 +9,23 @@ use crate::prelude::*;
 
 /// Sends MAVLink frames.
 ///
-/// Sends MAVLink frames to an instance of [`Write`].  
+/// Sends MAVLink frames to an instance of [`Write`].
+///
+/// Instead of relying on a particular definition of write trait, we allow users to use any library
+/// with I/O capabilities. See [`Write`] for details.
 #[derive(Clone, Debug)]
-pub struct Sender<W: Write, V: MaybeVersioned> {
+pub struct Sender<E: Into<Error>, W: Write<E>, V: MaybeVersioned> {
     writer: W,
+    _error_marker: PhantomData<E>,
     _marker_version: PhantomData<V>,
 }
 
-impl<W: Write> Sender<W, Versionless> {
+impl<E: Into<Error>, W: Write<E>> Sender<E, W, Versionless> {
     /// Default constructor.
-    pub fn new<V: MaybeVersioned>(writer: W) -> Sender<W, V> {
+    pub fn new<V: MaybeVersioned>(writer: W) -> Sender<E, W, V> {
         Sender {
             writer,
+            _error_marker: PhantomData,
             _marker_version: PhantomData,
         }
     }
@@ -46,12 +51,12 @@ impl<W: Write> Sender<W, Versionless> {
     pub fn versioned<Version: Versioned>(
         writer: W,
         #[allow(unused_variables)] version: Version,
-    ) -> Sender<W, Version> {
+    ) -> Sender<E, W, Version> {
         Sender::new(writer)
     }
 }
 
-impl<W: Write, V: MaybeVersioned> Sender<W, V> {
+impl<E: Into<Error>, W: Write<E>, V: MaybeVersioned> Sender<E, W, V> {
     /// Sends MAVLink [`Frame`].
     ///
     /// Blocks until all bytes written and returns the number of bytes sent.
@@ -60,15 +65,17 @@ impl<W: Write, V: MaybeVersioned> Sender<W, V> {
     ///
     /// [`Versionless`] sender accepts both `MAVLink 1` and `MAVLink 2` frames as
     /// [`Frame<Versionless>`].
+    #[inline(always)]
     pub fn send(&mut self, frame: &Frame<V>) -> Result<usize> {
         V::expect(frame.version())?;
-        frame.send(&mut self.writer)
+        frame.send(&mut self.writer).map_err(E::into)
     }
 
     /// Flushes all buffers.
     ///
     /// Certain writers require flush to be called on tear down in order to write all contents.
+    #[inline]
     pub fn flush(&mut self) -> Result<()> {
-        self.writer.flush().map_err(Error::from)
+        self.writer.flush().map_err(E::into)
     }
 }

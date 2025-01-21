@@ -49,26 +49,36 @@
 //!
 //! This error will be wrapped with `no_std` version of [`Error`](crate::error::Error).
 
-#[cfg(not(feature = "std"))]
-pub(crate) mod no_std;
-#[cfg(not(feature = "std"))]
-pub use no_std::{Read, Write};
-#[cfg(feature = "std")]
-#[doc(hidden)]
-pub use std::io::{Read, Write};
+mod read_write;
+pub use read_write::{Read, Write};
+mod async_read_write;
+pub use async_read_write::{AsyncRead, AsyncWrite};
 
-pub(crate) mod receiver;
+pub mod adapters;
+#[cfg(feature = "embedded-io-async")]
+#[doc(inline)]
+pub use adapters::{EmbeddedIoAsyncReader, EmbeddedIoAsyncWriter};
+#[cfg(feature = "embedded-io")]
+#[doc(inline)]
+pub use adapters::{EmbeddedIoReader, EmbeddedIoWriter};
+#[cfg(feature = "futures")]
+#[doc(inline)]
+pub use adapters::{FuturesReader, FuturesWriter};
+#[cfg(feature = "std")]
+#[doc(inline)]
+pub use adapters::{StdIoReader, StdIoWriter};
+#[cfg(feature = "tokio")]
+#[doc(inline)]
+pub use adapters::{TokioReader, TokioWriter};
+
+mod receiver;
 pub use receiver::Receiver;
 
-pub(crate) mod sender;
+mod sender;
 pub use sender::Sender;
 
-#[cfg(feature = "async")]
 mod async_receiver;
-#[cfg(feature = "async")]
 pub use async_receiver::AsyncReceiver;
 
-#[cfg(feature = "async")]
 mod async_sender;
-#[cfg(feature = "async")]
 pub use async_sender::AsyncSender;

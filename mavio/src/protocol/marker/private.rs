@@ -109,7 +109,7 @@ mod signed {
     }
     #[derive(Clone, Debug)]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-    pub struct HasSignature(pub(crate) Signature);
+    pub struct HasSignature(#[allow(dead_code)] pub(crate) Signature);
     impl IsSigned for HasSignature {
         fn is_signed(&self) -> bool {
             true

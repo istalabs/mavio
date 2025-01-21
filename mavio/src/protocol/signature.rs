@@ -240,15 +240,15 @@ impl From<&str> for SecretKey {
 }
 
 #[cfg(feature = "alloc")]
-impl From<String> for SecretKey {
-    fn from(value: String) -> Self {
+impl From<alloc::string::String> for SecretKey {
+    fn from(value: alloc::string::String) -> Self {
         value.as_str().into()
     }
 }
 
 #[cfg(feature = "alloc")]
-impl From<&String> for SecretKey {
-    fn from(value: &String) -> Self {
+impl From<&alloc::string::String> for SecretKey {
+    fn from(value: &alloc::string::String) -> Self {
         value.as_str().into()
     }
 }
@@ -651,7 +651,7 @@ mod tests {
             expected
         };
 
-        let key_str = "abcdef".to_string();
+        let key_str = alloc::string::String::from("abcdef");
 
         let key = SecretKey::from(key_str.as_str());
         assert_eq!(key.value(), expected);

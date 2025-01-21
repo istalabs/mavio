@@ -2,12 +2,9 @@
 
 use crc_any::CRCu16;
 
-#[cfg(feature = "async")]
-use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
-
 use crate::consts::{CHECKSUM_SIZE, SIGNATURE_LENGTH};
 use crate::error::{ChecksumError, SignatureError, VersionError};
-use crate::io::{Read, Write};
+use crate::io::{AsyncRead, AsyncWrite, Read, Write};
 use crate::protocol::header::Header;
 use crate::protocol::marker::{
     HasCompId, HasMsgId, HasPayload, HasPayloadLen, HasSysId, Sequenced, Unset,
@@ -445,7 +442,9 @@ impl<V: MaybeVersioned> Frame<V> {
         self.checksum = self.calculate_crc(crc_extra);
     }
 
-    pub(crate) fn recv<R: Read>(reader: &mut R) -> Result<Frame<V>> {
+    pub(crate) fn recv<E: Into<Error>, R: Read<E>>(
+        reader: &mut R,
+    ) -> core::result::Result<Frame<V>, E> {
         let header = Header::<V>::recv(reader)?;
         let body_length = header.body_length();
 
@@ -456,13 +455,14 @@ impl<V: MaybeVersioned> Frame<V> {
         let body_bytes = &mut body_buf[0..body_length];
 
         reader.read_exact(body_bytes)?;
-        let frame = Self::try_from_raw_body(header, body_bytes)?;
+        let frame = Self::from_raw_body(header, body_bytes);
 
         Ok(frame)
     }
 
-    #[cfg(feature = "async")]
-    pub(crate) async fn recv_async<R: AsyncRead + Unpin>(reader: &mut R) -> Result<Frame<V>> {
+    pub(crate) async fn recv_async<E: Into<Error>, R: AsyncRead<E> + Unpin>(
+        reader: &mut R,
+    ) -> core::result::Result<Frame<V>, E> {
         let header = Header::<V>::recv_async(reader).await?;
         let body_length = header.body_length();
 
@@ -473,12 +473,15 @@ impl<V: MaybeVersioned> Frame<V> {
         let body_bytes = &mut body_buf[0..body_length];
 
         reader.read_exact(body_bytes).await?;
-        let frame = Self::try_from_raw_body(header, body_bytes)?;
+        let frame = Self::from_raw_body(header, body_bytes);
 
         Ok(frame)
     }
 
-    pub(crate) fn send<W: Write>(&self, writer: &mut W) -> Result<usize> {
+    pub(crate) fn send<E: Into<Error>, W: Write<E>>(
+        &self,
+        writer: &mut W,
+    ) -> core::result::Result<usize, E> {
         let header_bytes_sent = self.header.send(writer)?;
 
         #[cfg(not(feature = "alloc"))]
@@ -492,14 +495,16 @@ impl<V: MaybeVersioned> Frame<V> {
         Ok(header_bytes_sent + self.body_length())
     }
 
-    #[cfg(feature = "async")]
-    pub(crate) async fn send_async<W: AsyncWrite + Unpin>(&self, writer: &mut W) -> Result<usize> {
+    pub(crate) async fn send_async<E: Into<Error>, W: AsyncWrite<E> + Unpin>(
+        &self,
+        writer: &mut W,
+    ) -> core::result::Result<usize, E> {
         let header_bytes_sent = self.header.send_async(writer).await?;
 
         #[cfg(not(feature = "alloc"))]
         let mut buf = [0u8; crate::consts::PAYLOAD_MAX_SIZE + SIGNATURE_LENGTH];
         #[cfg(feature = "alloc")]
-        let mut buf = vec![0u8; self.body_length()];
+        let mut buf = alloc::vec![0u8; self.body_length()];
 
         self.fill_body_buffer(&mut buf);
         writer.write_all(buf.as_slice()).await?;
@@ -525,7 +530,7 @@ impl<V: MaybeVersioned> Frame<V> {
     }
 
     #[inline]
-    fn try_from_raw_body(header: Header<V>, body_bytes: &[u8]) -> Result<Frame<V>> {
+    fn from_raw_body(header: Header<V>, body_bytes: &[u8]) -> Frame<V> {
         let payload_bytes = &body_bytes[0..header.payload_length() as usize];
         let payload = Payload::new(header.message_id(), payload_bytes, header.version());
 
@@ -541,12 +546,12 @@ impl<V: MaybeVersioned> Frame<V> {
             None
         };
 
-        Ok(Frame {
+        Frame {
             header,
             payload,
             checksum,
             signature,
-        })
+        }
     }
 }
 
@@ -744,6 +749,9 @@ mod tests {
 
     use crc_any::CRCu16;
 
+    #[cfg(feature = "std")]
+    use crate::io::{StdIoReader, StdIoWriter};
+
     #[allow(unused_imports)]
     use crate::protocol::{V1, V2};
 
@@ -785,7 +793,7 @@ mod tests {
             0, 0, // Checksum (fake)
         ]);
 
-        let mut receiver = crate::Receiver::new::<V1>(reader);
+        let mut receiver = crate::Receiver::new::<V1>(StdIoReader::new(reader));
         let frame = receiver.recv().unwrap();
 
         assert_eq!(frame.payload_length(), 8);
@@ -816,7 +824,7 @@ mod tests {
             0, 0, // Checksum (fake)
         ]);
 
-        let mut receiver = crate::Receiver::new::<V2>(reader);
+        let mut receiver = crate::Receiver::new::<V2>(StdIoReader::new(reader));
         let frame = receiver.recv().unwrap();
 
         assert_eq!(frame.payload_length(), 8);
@@ -855,9 +863,10 @@ mod tests {
         ];
         let expected_frame_size = in_buffer.len() - 3; // no junk
         let valid_bytes = in_buffer[junk_bytes..].to_vec();
+        let mut reader = StdIoReader::new(Cursor::new(in_buffer));
 
         // Read frame
-        let frame = Frame::<Versionless>::recv(&mut Cursor::new(in_buffer)).unwrap();
+        let frame = Frame::<Versionless>::recv(&mut reader).unwrap();
 
         // We should preserve payload length for compatibility
         assert_eq!(frame.payload_length(), payload_length);
@@ -865,13 +874,14 @@ mod tests {
         assert_eq!(frame.payload.bytes().len(), 1);
 
         // Send frame
-        let mut out_buffer = Cursor::new(vec![]);
+        let mut out_buffer = StdIoWriter::new(Cursor::new(vec![]));
         let bytes_sent = frame.send(&mut out_buffer).unwrap();
 
         assert_eq!(bytes_sent, expected_frame_size);
 
         // Check that we send exactly what we received
         let mut out_bytes = vec![0u8; expected_frame_size];
+        let mut out_buffer = out_buffer.extract();
         out_buffer.set_position(0);
         std::io::Read::read_exact(&mut out_buffer, out_bytes.as_mut_slice()).unwrap();
         assert_eq!(out_bytes, valid_bytes);

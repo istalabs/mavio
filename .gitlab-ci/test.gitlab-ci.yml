@@ -6,7 +6,7 @@ include:
 #             [TEST] Validate project rules
 # ---------------------------------------------------------
 .test:validate:upstream: # on upstream changes
-# ---------------------------------------------------------
+  # ---------------------------------------------------------
   extends: .executor:rust  # from local: "/.gitlab-ci/executors.gitlab-ci.yml"
   script:
     # Check that package version is not less than the latest tag
@@ -17,7 +17,7 @@ include:
     - schedules
 # ---------------------------------------------------------
 .test:validate:tags: # on pushing new tags
-# ---------------------------------------------------------
+  # ---------------------------------------------------------
   extends: .executor:rust  # from local: "/.gitlab-ci/executors.gitlab-ci.yml"
   script:
     # Check that new tag strictly equals to package version
@@ -54,6 +54,7 @@ include:
     matrix:
       - FEATURES:
           - "--no-default-features"
+          - "embedded-io,embedded-io-async"
           - ""
           - "--all-features"
 

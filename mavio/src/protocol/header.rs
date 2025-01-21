@@ -6,15 +6,12 @@
 use core::marker::PhantomData;
 use tbytes::{TBytesReader, TBytesReaderFor};
 
-#[cfg(feature = "async")]
-use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
-
 use crate::consts::{
     CHECKSUM_SIZE, HEADER_MAX_SIZE, HEADER_MIN_SIZE, HEADER_V1_SIZE, HEADER_V2_SIZE,
     SIGNATURE_LENGTH,
 };
 use crate::error::VersionError;
-use crate::io::{Read, Write};
+use crate::io::{AsyncRead, AsyncWrite, Read, Write};
 use crate::protocol::marker::{HasCompId, HasMsgId, HasPayloadLen, HasSysId, Sequenced, Unset};
 use crate::protocol::{
     CompatFlags, ComponentId, HeaderBuilder, IncompatFlags, MavSTX, MaybeVersioned, PayloadLength,
@@ -269,13 +266,18 @@ impl<V: MaybeVersioned> Header<V> {
         self.clone().into_versionless()
     }
 
-    pub(super) fn send<W: Write>(&self, writer: &mut W) -> Result<usize> {
+    pub(super) fn send<E: Into<Error>, W: Write<E>>(
+        &self,
+        writer: &mut W,
+    ) -> core::result::Result<usize, E> {
         writer.write_all(self.decode().as_slice())?;
         Ok(self.size())
     }
 
-    #[cfg(feature = "async")]
-    pub(super) async fn send_async<W: AsyncWrite + Unpin>(&self, writer: &mut W) -> Result<usize> {
+    pub(super) async fn send_async<E: Into<Error>, W: AsyncWrite<E> + Unpin>(
+        &self,
+        writer: &mut W,
+    ) -> core::result::Result<usize, E> {
         writer.write_all(self.decode().as_slice()).await?;
         Ok(self.size())
     }
@@ -311,7 +313,9 @@ impl<V: MaybeVersioned> Header<V> {
 }
 
 impl<V: MaybeVersioned> Header<V> {
-    pub(super) fn recv<R: Read>(reader: &mut R) -> Result<Header<V>> {
+    pub(super) fn recv<E: Into<Error>, R: Read<E>>(
+        reader: &mut R,
+    ) -> core::result::Result<Header<V>, E> {
         loop {
             let mut buffer = [0u8; HEADER_MIN_SIZE];
             reader.read_exact(&mut buffer)?;
@@ -329,8 +333,9 @@ impl<V: MaybeVersioned> Header<V> {
         }
     }
 
-    #[cfg(feature = "async")]
-    pub(super) async fn recv_async<R: AsyncRead + Unpin>(reader: &mut R) -> Result<Header<V>> {
+    pub(super) async fn recv_async<E: Into<Error>, R: AsyncRead<E> + Unpin>(
+        reader: &mut R,
+    ) -> core::result::Result<Header<V>, E> {
         loop {
             let mut buffer = [0u8; HEADER_MIN_SIZE];
             reader.read_exact(&mut buffer).await?;
@@ -555,6 +560,8 @@ mod header_tests {
 
     #[cfg(feature = "std")]
     use crate::consts::{STX_V1, STX_V2};
+    #[cfg(feature = "std")]
+    use crate::io::StdIoReader;
 
     use crate::protocol::V1;
 
@@ -563,7 +570,7 @@ mod header_tests {
     #[test]
     #[cfg(feature = "std")]
     fn read_v1_header() {
-        let mut buffer = Cursor::new(vec![
+        let buffer = vec![
             12,     // \
             24,     //  | Junk bytes
             240,    // /
@@ -573,9 +580,10 @@ mod header_tests {
             10,     // system ID
             255,    // component ID
             0,      // message ID
-        ]);
+        ];
+        let mut reader = StdIoReader::new(Cursor::new(buffer));
 
-        let header = Header::<V1>::recv(&mut buffer).unwrap();
+        let header = Header::<V1>::recv(&mut reader).unwrap();
         let header = header.try_into_versioned::<V1>().unwrap();
 
         assert!(header.try_into_versioned::<V2>().is_err());
@@ -591,7 +599,7 @@ mod header_tests {
     #[test]
     #[cfg(feature = "std")]
     fn read_v2_header() {
-        let mut reader = Cursor::new(vec![
+        let buffer = vec![
             12,     // \
             24,     //  |Junk bytes
             240,    // /
@@ -605,7 +613,8 @@ mod header_tests {
             0,      // \
             0,      //  | message ID
             0,      // /
-        ]);
+        ];
+        let mut reader = StdIoReader::new(Cursor::new(buffer));
 
         let header = Header::<Versionless>::recv(&mut reader).unwrap();
         let header = header.try_into_versioned::<V2>().unwrap();
@@ -625,7 +634,7 @@ mod header_tests {
     #[test]
     #[cfg(feature = "std")]
     fn read_v2_header_magic_bytes_in_sequence() {
-        let mut reader = Cursor::new(vec![
+        let buffer = vec![
             12,     // \
             24,     //  |Junk bytes
             240,    // /
@@ -639,7 +648,8 @@ mod header_tests {
             0,      // \
             0,      //  | message ID
             0,      // /
-        ]);
+        ];
+        let mut reader = StdIoReader::new(Cursor::new(buffer));
 
         let header = Header::<V2>::recv(&mut reader).unwrap();
 

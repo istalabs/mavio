@@ -10,17 +10,22 @@ use crate::prelude::*;
 /// Receives MAVLink frames.
 ///
 /// Receives MAVLink frames from an instance of [`Read`].
+///
+/// Instead of relying on a particular definition of read trait, we allow users to use any library
+/// with I/O capabilities. See [`Read`] for details.
 #[derive(Clone, Debug)]
-pub struct Receiver<R: Read, V: MaybeVersioned> {
+pub struct Receiver<E: Into<Error>, R: Read<E>, V: MaybeVersioned> {
     reader: R,
+    _error_marker: PhantomData<E>,
     _marker_version: PhantomData<V>,
 }
 
-impl<R: Read> Receiver<R, Versionless> {
+impl<E: Into<Error>, R: Read<E>> Receiver<E, R, Versionless> {
     /// Default constructor.
-    pub fn new<V: MaybeVersioned>(reader: R) -> Receiver<R, V> {
+    pub fn new<V: MaybeVersioned>(reader: R) -> Receiver<E, R, V> {
         Receiver {
             reader,
+            _error_marker: PhantomData,
             _marker_version: PhantomData,
         }
     }
@@ -34,7 +39,7 @@ impl<R: Read> Receiver<R, Versionless> {
     /// [`Receiver::versioned`].
     ///
     /// If you want to instantiate a generic receiver, use [`Receiver::new`].
-    pub fn versionless(reader: R) -> Receiver<R, Versionless> {
+    pub fn versionless(reader: R) -> Self {
         Receiver::new(reader)
     }
 
@@ -51,12 +56,12 @@ impl<R: Read> Receiver<R, Versionless> {
     pub fn versioned<Version: Versioned>(
         reader: R,
         #[allow(unused_variables)] version: Version,
-    ) -> Receiver<R, Version> {
+    ) -> Receiver<E, R, Version> {
         Receiver::new(reader)
     }
 }
 
-impl<R: Read, V: MaybeVersioned> Receiver<R, V> {
+impl<E: Into<Error>, R: Read<E>, V: MaybeVersioned> Receiver<E, R, V> {
     /// Receives MAVLink [`Frame`].
     ///
     /// Blocks until a valid MAVLink frame received.
@@ -64,7 +69,8 @@ impl<R: Read, V: MaybeVersioned> Receiver<R, V> {
     /// [`Versioned`] receiver accepts only frames of a specific MAVLink protocol version.
     ///
     /// [`Versionless`] receiver accepts both `MAVLink 1` and `MAVLink 2` frames.
+    #[inline(always)]
     pub fn recv(&mut self) -> Result<Frame<V>> {
-        Frame::<V>::recv(&mut self.reader)
+        Frame::<V>::recv(&mut self.reader).map_err(E::into)
     }
 }

@@ -55,19 +55,6 @@ impl<'a> SliceReader<'a> {
 
 #[cfg(not(feature = "std"))]
 impl<'a> Read for SliceReader<'a> {
-    /// Read some bytes to fill `buf`.
-    ///
-    /// Calls [`SliceReader::read_exact`] internally and thus reads all bytes.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`IoError::UnexpectedEof`](no_std::IoError::UnexpectedEof) if buffer does not ave
-    /// enough content.
-    fn read(&mut self, buf: &mut [u8]) -> crate::Result<usize> {
-        self.read_exact(buf)?;
-        Ok(buf.len())
-    }
-
     /// Read the exact number of bytes required to fill `buf`.
     ///
     /// # Errors
@@ -86,23 +73,7 @@ impl<'a> Read for SliceReader<'a> {
 }
 
 #[cfg(feature = "std")]
-impl<'a> Read for SliceReader<'a> {
-    /// Tries to fill `buf` with the remaining [`content`](Self::content).
-    ///
-    /// # Errors
-    ///
-    /// Returns [`ErrorKind::UnexpectedEof`](std::io::ErrorKind::UnexpectedEof) if internal slice does not
-    /// have enough content.
-    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        // Return error if the remaining data in internal buffer are not enough to fill the provided one
-        if self.num_remaining_bytes() < buf.len() {
-            return Err(make_err_eof(self.content.len() - self.pos, buf.len()));
-        }
-
-        let num_bytes = self.read_internal(buf);
-        Ok(num_bytes)
-    }
-
+impl<'a> Read<std::io::Error> for SliceReader<'a> {
     /// Read the exact number of bytes required to fill `buf`.
     ///
     /// # Errors
@@ -172,20 +143,6 @@ impl<'a> SliceWriter<'a> {
 
 #[cfg(not(feature = "std"))]
 impl<'a> Write for SliceWriter<'a> {
-    /// Write a buffer into this writer, returning how many bytes were written.
-    ///
-    /// Calls [`SliceWriter::write_all`] internally and thus writes all bytes.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`ErrorKind::UnexpectedEof`](std::io::ErrorKind::UnexpectedEof) if internal slice does not
-    /// have enough content.
-    fn write(&mut self, buf: &[u8]) -> crate::error::Result<usize> {
-        self.write_all(buf)?;
-
-        Ok(buf.len())
-    }
-
     /// Attempts to write an entire buffer into this writer.
     ///
     /// # Errors
@@ -201,41 +158,28 @@ impl<'a> Write for SliceWriter<'a> {
         self.write_internal(buf);
         Ok(())
     }
-
-    fn flush(&mut self) -> crate::Result<()> {
-        Ok(())
-    }
 }
 
 #[cfg(feature = "std")]
-impl<'a> Write for SliceWriter<'a> {
+impl<'a> Write<std::io::Error> for SliceWriter<'a> {
     /// Write a buffer into this writer, returning how many bytes were written.
     ///
     /// # Errors
     ///
     /// Returns [`ErrorKind::UnexpectedEof`](std::io::ErrorKind::UnexpectedEof) if internal slice does not
     /// have enough content.
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+    fn write_all(&mut self, buf: &[u8]) -> Result<(), std::io::Error> {
         // Return error if internal buffer has insufficient size
         if self.num_remaining_bytes() < buf.len() {
             return Err(make_err_eof(self.content.len() - self.pos, buf.len()));
         }
 
-        Ok(self.write_internal(buf))
-    }
-
-    /// Flush this output stream, ensuring that all intermediately buffered contents reach their destination.
-    ///
-    /// Does nothing since [`SliceWriter`] does not have an internal buffer.
-    fn flush(&mut self) -> std::io::Result<()> {
+        self.write_internal(buf);
         Ok(())
     }
 
-    fn by_ref(&mut self) -> &mut Self
-    where
-        Self: Sized,
-    {
-        self
+    fn flush(&mut self) -> Result<(), std::io::Error> {
+        Ok(())
     }
 }
 
@@ -260,9 +204,8 @@ mod tests {
         let mut buffer = [0u8; 5];
 
         let mut reader = SliceReader::new(&content);
-        let res = reader.read(buffer.as_mut_slice()).unwrap();
+        reader.read_exact(buffer.as_mut_slice()).unwrap();
 
-        assert_eq!(res, 5);
         assert_eq!(&content[0..5], &buffer[0..5]);
         assert_eq!(reader.pos(), 5);
     }
@@ -284,9 +227,8 @@ mod tests {
         let mut buffer = [0u8; 10];
 
         let mut writer = SliceWriter::new(&mut buffer);
-        let num_bytes = writer.write(&content).unwrap();
+        writer.write_all(&content).unwrap();
 
-        assert_eq!(num_bytes, 5);
         assert_eq!(&content[0..5], &writer.content()[0..5]);
         assert_eq!(writer.pos(), 5);
     }

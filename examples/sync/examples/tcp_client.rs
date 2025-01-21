@@ -1,10 +1,11 @@
+use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
 
 use mavio::dialects::minimal as dialect;
-use mavio::io::{Read, Write};
+use mavio::io::{StdIoReader, StdIoWriter};
 use mavio::protocol::{Dialect, V2};
 use mavio::{Frame, Receiver, Sender};
 
@@ -22,7 +23,7 @@ const N_CLIENTS: usize = 5;
 
 /// Listen to `n_iter` incoming frames and decode `HEARTBEAT` message.
 fn listen<R: Read>(reader: R, whoami: String, n_iter: usize) -> mavio::error::Result<()> {
-    let mut receiver = Receiver::versionless(reader);
+    let mut receiver = Receiver::versionless(StdIoReader::new(reader));
 
     for _ in 0..n_iter {
         // Decode the entire frame
@@ -64,7 +65,7 @@ fn listen<R: Read>(reader: R, whoami: String, n_iter: usize) -> mavio::error::Re
 /// Send `n_iter` heartbeat messages, then stops.
 fn send_heartbeats<W: Write>(writer: W, whoami: String, n_iter: usize) -> mavio::error::Result<()> {
     // Use a versionless sender that accepts both `MAVLink 1` and `MAVLink 2` frames.
-    let mut sender = Sender::versionless(writer);
+    let mut sender = Sender::versionless(StdIoWriter::new(writer));
 
     // MAVLink connection settings
     let mavlink_version = V2;

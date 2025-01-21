@@ -8,10 +8,10 @@
 //! We also re-export errors from [`mavspec::rust::spec`](https://docs.rs/mavspec/latest/mavspec/rust/spec/)
 //! to provide a full specification of MAVLink-related errors.
 
-#[cfg(feature = "std")]
-use std::sync::Arc;
-
 use crate::protocol::{IncompatFlags, MavLinkVersion, MessageId};
+
+mod io_error;
+pub use io_error::{IoError, IoErrorKind};
 
 /// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
 /// Errors related to MAVLink message specification.
@@ -57,16 +57,9 @@ pub type Result<T> = core::result::Result<T, Error>;
 )]
 #[cfg_attr(feature = "std", derive(thiserror::Error))]
 pub enum Error {
-    /// [`std::io::Error`] wrapper.
-    #[cfg(feature = "std")]
+    /// I/O error wrapper. Check [`IoError`] for details.
     #[cfg_attr(feature = "std", error("I/O error: {0:?}"))]
     Io(IoError),
-
-    /// `no_std` I/O error.
-    ///
-    /// Wraps [`IoError`](crate::io::no_std::IoError).
-    #[cfg(not(feature = "std"))]
-    Io(crate::io::no_std::IoError),
 
     /// Frame validation errors.
     #[cfg_attr(feature = "std", error("frame decoding/encoding error: {0:?}"))]
@@ -75,46 +68,6 @@ pub enum Error {
     /// MAVLink specification errors. A wrapper for [`SpecError`] re-exported from MAVSpec.
     #[cfg_attr(feature = "std", error("frame decoding/encoding error: {0:?}"))]
     Spec(SpecError),
-}
-
-/// I/O errors.
-///
-/// Errors returned by [`mavio`](crate) I/O.
-///
-/// These errors will be wrapped with [`Error::Io`] upon
-/// returning to client.
-///
-/// See:
-///  * [`Error::Io`].
-///  * [`std::result::Result`].
-///
-/// ## Caveats
-///
-/// We provide a limited support for [Serde](https://serde.rs) and
-/// [Specta](https://crates.io/crates/specta). At the moment, the goal is simply to show something
-/// meaningful.
-///
-/// This part of the API is considered unstable. Breaking changes may be introduced at any time.
-///
-/// ### Serde
-///
-/// We provide a simplified serialization sufficient to display an error. The deserialized error
-/// always has a kind of [`std::io::ErrorKind::Other`]. In future version the behavior may change.
-///
-/// ### Specta
-///
-/// We provide a simplified type definition:
-///
-/// ```rust,no_run
-/// struct IoError {
-///     kind: String,
-///     error: String,
-/// }
-/// ```
-#[cfg(feature = "std")]
-#[derive(Clone)]
-pub struct IoError {
-    inner: Arc<std::io::Error>,
 }
 
 /// Errors related to MAVLink frame validation.
@@ -188,68 +141,6 @@ pub struct IncompatFlagsError {
     pub actual: IncompatFlags,
 }
 
-#[cfg(feature = "std")]
-impl AsRef<std::io::Error> for IoError {
-    fn as_ref(&self) -> &std::io::Error {
-        self.inner.as_ref()
-    }
-}
-
-#[cfg(feature = "std")]
-impl core::fmt::Debug for IoError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        self.as_ref().fmt(f)
-    }
-}
-
-#[cfg(all(feature = "serde", feature = "unstable"))]
-#[cfg(feature = "std")]
-impl serde::Serialize for IoError {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        let mut io_error = serializer.serialize_struct("IoError", 2)?;
-        io_error.serialize_field("kind", &format!("{:?}", self.as_ref().kind()))?;
-        io_error.serialize_field("error", &self.as_ref().to_string())?;
-        io_error.end()
-    }
-}
-
-#[cfg(all(feature = "serde", feature = "unstable"))]
-#[cfg(feature = "std")]
-impl<'de> serde::Deserialize<'de> for IoError {
-    fn deserialize<D>(_: D) -> std::result::Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        Ok(IoError {
-            inner: Arc::new(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "Foreign I/O error",
-            )),
-        })
-    }
-}
-
-#[cfg(all(feature = "specta", feature = "unstable"))]
-#[cfg(feature = "std")]
-#[derive(specta::Type)]
-#[allow(dead_code)]
-struct IoErrorStub {
-    kind: String,
-    error: String,
-}
-
-#[cfg(all(feature = "specta", feature = "unstable"))]
-#[cfg(feature = "std")]
-impl specta::Type for IoError {
-    fn inline(type_map: &mut specta::TypeMap, generics: specta::Generics) -> specta::DataType {
-        specta::DataType::from(IoErrorStub::inline(type_map, generics))
-    }
-}
-
 impl From<VersionError> for FrameError {
     /// Converts [`VersionError`] into [`FrameError::Version`].
     fn from(value: VersionError) -> Self {
@@ -303,34 +194,6 @@ impl From<IncompatFlagsError> for Error {
     /// Converts [`IncompatFlagsError`] into [`FrameError::Incompatible`] variant of [`Error::Frame`].
     fn from(value: IncompatFlagsError) -> Self {
         FrameError::from(value).into()
-    }
-}
-
-#[cfg(feature = "std")]
-impl From<std::io::Error> for IoError {
-    fn from(value: std::io::Error) -> Self {
-        Self {
-            inner: Arc::new(value),
-        }
-    }
-}
-
-#[cfg(feature = "std")]
-impl From<IoError> for Error {
-    fn from(value: IoError) -> Self {
-        Error::Io(value)
-    }
-}
-
-#[cfg(feature = "std")]
-impl From<std::io::Error> for Error {
-    /// Convert [`std::io::Error`] into [`Error::Io`].
-    ///
-    /// Note that [`Error::Io`] wraps IO error with [`Arc`] to make [`Error`] compatible with [`Clone`] trait.
-    fn from(value: std::io::Error) -> Self {
-        Error::Io(IoError {
-            inner: Arc::new(value),
-        })
     }
 }
 

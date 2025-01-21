@@ -11,6 +11,8 @@
 !/src/**
 !/mavio/
 !/mavio/**
+!/tests/
+!/tests/**
 !/examples/
 !/examples/**
 
