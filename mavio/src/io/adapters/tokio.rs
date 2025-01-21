@@ -1,6 +1,5 @@
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use crate::error::IoError;
 use crate::io::{AsyncRead, AsyncWrite};
 
 /// Adapter for [`tokio::io::AsyncRead`] that produces [`AsyncRead`].
@@ -28,10 +27,10 @@ impl<R: tokio::io::AsyncRead> From<R> for TokioReader<R> {
     }
 }
 
-impl<R: tokio::io::AsyncRead + Unpin> AsyncRead<IoError> for TokioReader<R> {
+impl<R: tokio::io::AsyncRead + Unpin> AsyncRead<std::io::Error> for TokioReader<R> {
     #[inline(always)]
-    async fn read_exact<'a>(&'a mut self, buf: &'a mut [u8]) -> Result<(), IoError> {
-        self.reader.read_exact(buf).await.map_err(IoError::from)?;
+    async fn read_exact<'a>(&'a mut self, buf: &'a mut [u8]) -> Result<(), std::io::Error> {
+        self.reader.read_exact(buf).await?;
         Ok(())
     }
 }
@@ -55,14 +54,14 @@ impl<W: tokio::io::AsyncWrite> TokioWriter<W> {
     }
 }
 
-impl<W: tokio::io::AsyncWrite + Unpin> AsyncWrite<IoError> for TokioWriter<W> {
+impl<W: tokio::io::AsyncWrite + Unpin> AsyncWrite<std::io::Error> for TokioWriter<W> {
     #[inline(always)]
-    async fn write_all<'a>(&'a mut self, buf: &'a [u8]) -> Result<(), IoError> {
-        self.writer.write_all(buf).await.map_err(IoError::from)
+    async fn write_all<'a>(&'a mut self, buf: &'a [u8]) -> Result<(), std::io::Error> {
+        self.writer.write_all(buf).await
     }
 
     #[inline]
-    async fn flush<'a>(&'a mut self) -> Result<(), IoError> {
-        self.writer.flush().await.map_err(IoError::from)
+    async fn flush<'a>(&'a mut self) -> Result<(), std::io::Error> {
+        self.writer.flush().await
     }
 }
