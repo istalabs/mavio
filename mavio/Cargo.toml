@@ -1,7 +1,7 @@
 [package]
 name = "mavio"
 description = "Minimalistic MAVLink client that supports `no-std` and `no-alloc` targets."
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 authors = ["Mykhailo Ziatin <ziatin@mathwithoutend.org>"]
 repository = "https://gitlab.com/mavka/libs/mavio"
