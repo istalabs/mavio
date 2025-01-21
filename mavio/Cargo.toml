@@ -68,6 +68,8 @@ alloc = [
     "mavspec/alloc",
     "serde/alloc",
     "tbytes/alloc",
+    "embedded-io/alloc",
+    "embedded-io-async/alloc"
 ]
 ## Enable Rust std library.
 std = [
@@ -78,6 +80,8 @@ std = [
     "tbytes/std",
     "thiserror",
     "bitflags/std",
+    "embedded-io/std",
+    "embedded-io-async/std"
 ]
 
 ## Enable sha2 backend for message signing
