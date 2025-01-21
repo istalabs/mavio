@@ -5,11 +5,13 @@ Minimalistic library for transport-agnostic [MAVLink](https://mavlink.io/en/) co
 (and `no-alloc`) targets.
 
 <span style="font-size:24px">[🇺🇦](https://mavka.gitlab.io/home/a_note_on_the_war_in_ukraine/)</span>
-[![`repository`](https://img.shields.io/gitlab/pipeline-status/mavka/libs/mavio.svg?logo=gitlab&branch=main&label=repository)](https://gitlab.com/mavka/libs/mavio)
+[![
+`repository`](https://img.shields.io/gitlab/pipeline-status/mavka/libs/mavio.svg?logo=gitlab&branch=main&label=repository)](https://gitlab.com/mavka/libs/mavio)
 [![`mirror`](https://img.shields.io/badge/-gray?logo=github)](https://github.com/istalabs/mavio)
 [![`crates.io`](https://img.shields.io/crates/v/mavio.svg)](https://crates.io/crates/mavio)
 [![`docs.rs`](https://img.shields.io/docsrs/mavio.svg?label=docs)](https://docs.rs/mavio/latest/mavio/)
-[![`issues`](https://img.shields.io/gitlab/issues/open/mavka/libs/mavio.svg)](https://gitlab.com/mavka/libs/mavio/-/issues/)
+[![
+`issues`](https://img.shields.io/gitlab/issues/open/mavka/libs/mavio.svg)](https://gitlab.com/mavka/libs/mavio/-/issues/)
 
 <details>
 <summary><em>Repositories</em></summary>
@@ -96,10 +98,11 @@ use std::net::TcpStream;
 
 use mavio::{Frame, Receiver};
 use mavio::dialects::minimal as dialect;
+use mavio::io::StdReader;
 use dialect::Minimal;
 
 fn main() -> mavio::errors::Result<()> {
-    let mut receiver = Receiver::new(TcpStream::connect("0.0.0.0:5600")?);
+    let mut receiver = Receiver::new(StdReader::new(TcpStream::connect("0.0.0.0:5600")?));
 
     for i in 0..10 {
         let frame = receiver.recv_frame()?;
@@ -131,15 +134,14 @@ to any connected client using MAVLink 2 protocol, then disconnect a client.
 use std::net::TcpStream;
 
 use mavio::dialects::minimal as dialect;
+use mavio::io::StdWriter;
 use dialect::enums::{MavAutopilot, MavModeFlag, MavState, MavType};
 
 use mavio::prelude::*;
 
 fn main() -> Result<()> {
-    let mut sender = Sender::new(TcpStream::connect("0.0.0.0:5600")?);
-
     // Create a TCP client sender
-    let mut sender = Sender::new(TcpStream::connect("0.0.0.0:5600")?);
+    let mut sender = Sender::new(StdWriter::new(TcpStream::connect("0.0.0.0:5600")?));
     // Create an endpoint that represents a MAVLink device speaking `MAVLink 2` protocol
     let endpoint = Endpoint::v2(MavLinkId::new(15, 42));
 
@@ -175,22 +177,23 @@ This section provides a general API overview. For further details, please check
 
 ### I/O
 
-Mavio provides two basic I/O primitives: [`Sender`](https://docs.rs/mavio/latest/mavio/struct.Sender.html) and
-[`Receiver`](https://docs.rs/mavio/latest/mavio/struct.Sender.html). These structs send and receive instances of
-[`Frame`](https://docs.rs/mavio/latest/mavio/struct.Frame.html).
+Mavio provides two basic I/O primitives: [`Sender`](https://docs.rs/mavio/latest/mavio/struct.Sender.html) /
+[`Receiver`](https://docs.rs/mavio/latest/mavio/struct.Sender.html) for synchronous and
+[`AsyncSender`](https://docs.rs/mavio/latest/mavio/struct.AsyncSender.html) /
+[`AsyncReceiver`](https://docs.rs/mavio/latest/mavio/struct.AsyncSender.html) for asynchronous I/O. These structs send
+and receive instances of [`Frame`](https://docs.rs/mavio/latest/mavio/struct.Frame.html).
 
-`Sender` and `Receiver` are generic over [`std::io::Write`](https://doc.rust-lang.org/std/io/trait.Write.html) and
-[`std::io::Read`](https://doc.rust-lang.org/std/io/trait.Read.html) accordingly. That means you can communicate MAVLink
-messages over various transports which implements these traits including UDP, TCP, Unix sockets, and files. It is also
-easy to implement custom transport.
+`Sender` and `Receiver` are generic over [`Write`](https://docs.rs/mavio/latest/mavio/io/trait.Write.html) and
+[`std::io::Read`](https://docs.rs/mavio/latest/mavio/io/trait.Read.html) accordingly. While `AsyncSender` and
+`AsyncReceiver` use [`AsyncWrite`](https://docs.rs/mavio/latest/mavio/io/trait.AsyncWrite.html) and
+[`std::io::AsyncRead`](https://docs.rs/mavio/latest/mavio/io/trait.AsyncRead.html). A set of I/O
+[adapters](https://docs.rs/mavio/latest/mavio/io/adapters/index.html) are available for
+[std::io](https://doc.rust-lang.org/std/io/), [Tokio](https://tokio.rs), and
+[`futures-rs`](https://docs.rs/futures/). That means you can communicate MAVLink messages over various transports
+including UDP, TCP, Unix sockets, and files. It is also easy to implement custom transport.
 
-For `no-std` targets Mavio provides custom implementations of `Read` and `Write` traits. You can implement them for
-hardware-specific communication (like serial ports).
-
-For asynchronous I/O Mavio provides [`AsyncSender`](https://docs.rs/mavio/latest/mavio/struct.AsyncSender.html) and
-[`AsyncReceiver`](https://docs.rs/mavio/latest/mavio/struct.AsyncReceiver.html) which work in the same fashion as their
-synchronous counterparts, except using [`Tokio`](https://tokio.rs). To enable asynchronous support, add `tokio` feature
-flag.
+For `no-std` targets Mavio provides adapters for [`embedded HAL`](https://github.com/rust-embedded/embedded-hal) I/O
+(both synchronous and asynchronous).
 
 ### Encoding/Decoding
 
