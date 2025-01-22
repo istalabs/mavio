@@ -94,7 +94,7 @@ pub enum IoErrorKind {
     Std(std::io::ErrorKind),
 
     /// The kind of [`embedded_io::Error`].
-    #[cfg(feature = "embedded-io")]
+    #[cfg(any(feature = "embedded-io", feature = "embedded-io-async"))]
     #[cfg_attr(
         all(feature = "serde", feature = "unstable"),
         serde(skip_deserializing)
@@ -123,7 +123,7 @@ impl IoError {
         self.error.as_ref().map(AsRef::as_ref)
     }
 
-    #[cfg(feature = "embedded-io")]
+    #[cfg(any(feature = "embedded-io", feature = "embedded-io-async"))]
     pub(crate) fn from_embedded_io_error(value: impl embedded_io::Error) -> Self {
         #[cfg(feature = "std")]
         return Self {
@@ -182,7 +182,7 @@ where
     seq.end()
 }
 
-#[cfg(feature = "embedded-io")]
+#[cfg(any(feature = "embedded-io", feature = "embedded-io-async"))]
 #[cfg(all(feature = "serde", feature = "unstable"))]
 fn embedded_io_err_kind_serializer<S>(
     value: &embedded_io::ErrorKind,
@@ -263,7 +263,7 @@ impl From<std::io::Error> for IoError {
     }
 }
 
-#[cfg(feature = "embedded-io")]
+#[cfg(any(feature = "embedded-io", feature = "embedded-io-async"))]
 impl From<embedded_io::ErrorKind> for IoError {
     #[inline(always)]
     fn from(value: embedded_io::ErrorKind) -> Self {

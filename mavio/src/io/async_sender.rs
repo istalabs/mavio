@@ -11,13 +11,13 @@ use crate::prelude::*;
 ///
 /// Sends MAVLink frames to an instance of [`AsyncWrite`].  
 #[derive(Clone, Debug)]
-pub struct AsyncSender<E: Into<Error>, W: AsyncWrite<E> + Unpin, V: MaybeVersioned> {
+pub struct AsyncSender<E: Into<Error>, W: AsyncWrite<E>, V: MaybeVersioned> {
     writer: W,
     _error_marker: PhantomData<E>,
     _marker_version: PhantomData<V>,
 }
 
-impl<E: Into<Error>, W: AsyncWrite<E> + Unpin> AsyncSender<E, W, Versionless> {
+impl<E: Into<Error>, W: AsyncWrite<E>> AsyncSender<E, W, Versionless> {
     /// Default constructor.
     pub fn new<V: MaybeVersioned>(writer: W) -> AsyncSender<E, W, V> {
         AsyncSender {
@@ -53,7 +53,7 @@ impl<E: Into<Error>, W: AsyncWrite<E> + Unpin> AsyncSender<E, W, Versionless> {
     }
 }
 
-impl<E: Into<Error>, W: AsyncWrite<E> + Unpin, V: MaybeVersioned> AsyncSender<E, W, V> {
+impl<E: Into<Error>, W: AsyncWrite<E>, V: MaybeVersioned> AsyncSender<E, W, V> {
     /// Send MAVLink [`Frame`] asynchronously.
     ///
     /// [`Versioned`] sender accepts only frames of a specific MAVLink protocol version.

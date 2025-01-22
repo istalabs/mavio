@@ -274,7 +274,7 @@ impl<V: MaybeVersioned> Header<V> {
         Ok(self.size())
     }
 
-    pub(super) async fn send_async<E: Into<Error>, W: AsyncWrite<E> + Unpin>(
+    pub(super) async fn send_async<E: Into<Error>, W: AsyncWrite<E>>(
         &self,
         writer: &mut W,
     ) -> core::result::Result<usize, E> {
@@ -333,7 +333,7 @@ impl<V: MaybeVersioned> Header<V> {
         }
     }
 
-    pub(super) async fn recv_async<E: Into<Error>, R: AsyncRead<E> + Unpin>(
+    pub(super) async fn recv_async<E: Into<Error>, R: AsyncRead<E>>(
         reader: &mut R,
     ) -> core::result::Result<Header<V>, E> {
         loop {

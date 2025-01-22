@@ -460,7 +460,7 @@ impl<V: MaybeVersioned> Frame<V> {
         Ok(frame)
     }
 
-    pub(crate) async fn recv_async<E: Into<Error>, R: AsyncRead<E> + Unpin>(
+    pub(crate) async fn recv_async<E: Into<Error>, R: AsyncRead<E>>(
         reader: &mut R,
     ) -> core::result::Result<Frame<V>, E> {
         let header = Header::<V>::recv_async(reader).await?;
@@ -495,7 +495,7 @@ impl<V: MaybeVersioned> Frame<V> {
         Ok(header_bytes_sent + self.body_length())
     }
 
-    pub(crate) async fn send_async<E: Into<Error>, W: AsyncWrite<E> + Unpin>(
+    pub(crate) async fn send_async<E: Into<Error>, W: AsyncWrite<E>>(
         &self,
         writer: &mut W,
     ) -> core::result::Result<usize, E> {

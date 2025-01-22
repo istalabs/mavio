@@ -11,13 +11,13 @@ use crate::prelude::*;
 ///
 /// Receives MAVLink frames from an instance of [`AsyncRead`].
 #[derive(Clone, Debug)]
-pub struct AsyncReceiver<E: Into<Error>, R: AsyncRead<E> + Unpin, V: MaybeVersioned> {
+pub struct AsyncReceiver<E: Into<Error>, R: AsyncRead<E>, V: MaybeVersioned> {
     reader: R,
     _error_marker: PhantomData<E>,
     _marker_version: PhantomData<V>,
 }
 
-impl<E: Into<Error>, R: AsyncRead<E> + Unpin> AsyncReceiver<E, R, Versionless> {
+impl<E: Into<Error>, R: AsyncRead<E>> AsyncReceiver<E, R, Versionless> {
     /// Default constructor.
     pub fn new<V: MaybeVersioned>(reader: R) -> AsyncReceiver<E, R, V> {
         AsyncReceiver {
@@ -58,7 +58,7 @@ impl<E: Into<Error>, R: AsyncRead<E> + Unpin> AsyncReceiver<E, R, Versionless> {
     }
 }
 
-impl<E: Into<Error>, R: AsyncRead<E> + Unpin, V: MaybeVersioned> AsyncReceiver<E, R, V> {
+impl<E: Into<Error>, R: AsyncRead<E>, V: MaybeVersioned> AsyncReceiver<E, R, V> {
     /// Receives MAVLink [`Frame`].
     ///
     /// Blocks until a valid MAVLink frame received.

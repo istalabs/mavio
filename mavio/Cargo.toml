@@ -112,7 +112,10 @@ tokio = [
 ## Enable synchronous I/O support from embedded HAL
 embedded-io = ["dep:embedded-io"]
 ## Enable asynchronous I/O support from embedded HAL
-embedded-io-async = ["dep:embedded-io-async"]
+embedded-io-async = [
+    "dep:embedded-io",
+    "dep:embedded-io-async",
+]
 
 ###########################################################
 # Dialects

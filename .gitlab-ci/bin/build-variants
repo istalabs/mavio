@@ -19,6 +19,8 @@ declare -a commands=(
   "cargo build --package mavio --no-default-features"
   "cargo build --package mavio --no-default-features --features std"
   "cargo build --package mavio --no-default-features --features std,serde,unstable"
+  "cargo build --package mavio --no-default-features --features embedded-io"
+  "cargo build --package mavio --no-default-features --features embedded-io-async"
   "cargo build --package mavio --no-default-features --features embedded-io,embedded-io-async"
   "cargo build --package mavio --no-default-features --features embedded-io,embedded-io-async,serde,unstable"
   "cargo build --package mavio --no-default-features --features embedded-io,embedded-io-async,alloc,serde,unstable"
