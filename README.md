@@ -120,6 +120,8 @@ fn main() -> mavio::errors::Result<()> {
             );
         }
     }
+
+    Ok(())
 }
 ```
 
@@ -164,6 +166,8 @@ fn main() -> Result<()> {
         sender.send_frame(&frame)?;
         println!("FRAME #{} sent: {:#?}", i, frame);
     }
+
+    Ok(())
 }
 ```
 
@@ -229,6 +233,59 @@ feature flags:
   `asluav`, `avssuas`, `csairlink`, `cubepilot`, `development`, `icarous`, `matrixpilot`, `paparazzi`, `ualberta`,
   `uavionix`. These do not include `python_array_test` and `test` dialects which should be either generated manually
   or as a part of `all` meta-dialect.
+
+For example:
+
+```rust
+use mavio::dialects::common as dialect;
+use dialect::{Common, messages::Heartbeat};
+use mavio::prelude::*;
+
+fn main() -> mavio::error::Result<()> {
+    let frame: Frame<V2> = Frame::builder()
+        .version(V2).system_id(1).component_id(0).sequence(0)
+        .message(&Heartbeat::default())?
+        .build();
+
+    // Decode MavLink frame into a dialect message:
+    match frame.decode()? {
+        Common::Heartbeat(msg) => {
+            /* process heartbeat */
+        }
+        _ => { unreachable!(); }
+    };
+
+    Ok(())
+}
+```
+
+For small applications that use only a small subset of messages, avoid using dialect enums as they contain all message
+variants. Instead, decode messages directly from frames:
+
+```rust
+use mavio::dialects::common as dialect;
+use dialect::messages::Heartbeat;
+use mavio::prelude::*;
+
+fn main() -> mavio::error::Result<()> {
+    let frame: Frame<V2> = Frame::builder()
+        .version(V2).system_id(1).component_id(0).sequence(0)
+        .message(&Heartbeat::default())?
+        .build();
+
+    // Use only specific messages:
+    match frame.message_id() {
+        Heartbeat::ID => {
+            let msg = Heartbeat::try_from(frame.payload())?;
+            /* process heartbeat */
+        }
+        /* process other messages */
+        _ => { unreachable!(); }
+    };
+
+    Ok(())
+}
+```
 
 ### Custom Dialects
 

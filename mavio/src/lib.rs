@@ -221,7 +221,7 @@
 //! #        .message(&Heartbeat::default())?
 //! #        .build();
 //!
-//! // Decode MavLink frame into dialect messages:
+//! // Decode MavLink frame into a dialect message:
 //! match frame.decode()? {
 //!     Common::Heartbeat(msg) => {
 //!         /* process heartbeat */
