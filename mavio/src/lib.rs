@@ -201,6 +201,38 @@
 //!   `paparazzi`, `ualberta`, `uavionix`. These do not include `python_array_test` and `test`
 //!   dialects which should be either generated manually or as a part of `all` meta-dialect.
 //!
+//! For example:
+//!
+//! ```rust
+//! # #[cfg(not(all(feature = "common", feature = "std")))]
+//! # fn main() {}
+//! # #[cfg(all(feature = "common", feature = "std"))]
+//! # fn main() -> mavio::error::Result<()> {
+//! use mavio::dialects::common as dialect;
+//! use dialect::{Common, messages::Heartbeat};
+//! use mavio::prelude::*;
+//!
+//! let frame: Frame<V2> = /* obtain a frame */
+//! #    Frame::builder()
+//! #        .version(V2)
+//! #        .system_id(1)
+//! #        .component_id(0)
+//! #        .sequence(0)
+//! #        .message(&Heartbeat::default())?
+//! #        .build();
+//!
+//! // Decode MavLink frame into dialect messages:
+//! match frame.decode()? {
+//!     Common::Heartbeat(msg) => {
+//!         /* process heartbeat */
+//!     }
+//!     /* process other messages */
+//!     # _ => { unreachable!(); }
+//! };
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! ## Unsafe Features
 //!
 //! This library does not use unsafe Rust, however, certain manipulations on MAVLink frames, if not
@@ -215,6 +247,44 @@
 //! ## Incompatible Features
 //!
 //! - [Specta](https://crates.io/crates/specta) requires `std` feature to be enabled.
+//!
+//! ## Binary Size
+//!
+//! For small applications that use only a small subset of messages, avoid using dialect enums as
+//! they contain all message variants. Instead, decode messages directly from frames:
+//!
+//! ```rust
+//! # #[cfg(not(all(feature = "common", feature = "std")))]
+//! # fn main() {}
+//! # #[cfg(all(feature = "common", feature = "std"))]
+//! # fn main() -> Result<(), mavio::error::SpecError> {
+//! use mavio::dialects::common as dialect;
+//! use dialect::messages::Heartbeat;
+//! use mavio::prelude::*;
+//!
+//! let frame: Frame<V2> = /* obtain a frame */
+//! #    Frame::builder()
+//! #        .version(V2)
+//! #        .system_id(1)
+//! #        .component_id(0)
+//! #        .sequence(0)
+//! #        .message(&Heartbeat::default()).unwrap()
+//! #        .build();
+//!
+//! // Use only specific messages:
+//! match frame.message_id() {
+//!     Heartbeat::ID => {
+//!         let msg = Heartbeat::try_from(frame.payload())?;
+//!         /* process heartbeat */
+//!     }
+//!     /* process other messages */
+//!     # _ => { unreachable!(); }
+//! };
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! This will help compiler to throw away unnecessary pieces of code.
 
 #![warn(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]
