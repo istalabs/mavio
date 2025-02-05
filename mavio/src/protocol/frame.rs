@@ -451,7 +451,8 @@ impl<V: MaybeVersioned> Frame<V> {
         #[cfg(feature = "std")]
         let mut body_buf = vec![0u8; body_length];
         #[cfg(not(feature = "std"))]
-        let mut body_buf = [0u8; crate::consts::PAYLOAD_MAX_SIZE + SIGNATURE_LENGTH];
+        let mut body_buf =
+            [0u8; crate::consts::PAYLOAD_MAX_SIZE + CHECKSUM_SIZE + SIGNATURE_LENGTH];
         let body_bytes = &mut body_buf[0..body_length];
 
         reader.read_exact(body_bytes)?;
@@ -469,7 +470,8 @@ impl<V: MaybeVersioned> Frame<V> {
         #[cfg(feature = "std")]
         let mut body_buf = vec![0u8; body_length];
         #[cfg(not(feature = "std"))]
-        let mut body_buf = [0u8; crate::consts::PAYLOAD_MAX_SIZE + SIGNATURE_LENGTH];
+        let mut body_buf =
+            [0u8; crate::consts::PAYLOAD_MAX_SIZE + CHECKSUM_SIZE + SIGNATURE_LENGTH];
         let body_bytes = &mut body_buf[0..body_length];
 
         reader.read_exact(body_bytes).await?;
