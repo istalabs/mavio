@@ -1,19 +1,16 @@
 //! Common types.
+//!
+//! Some of the types has been reexported from [MAVSpec](https://crates.io/crates/mavspec) for
+//! convenience.
 
 use crate::consts::{
     HEADER_V1_SIZE, HEADER_V2_SIZE, SIGNATURE_LENGTH, SIGNATURE_TIMESTAMP_LENGTH,
     SIGNATURE_VALUE_LENGTH,
 };
 
-/// MAVLink system `ID`.
-///
-/// `ID` of system (vehicle) sending the message.
-pub type SystemId = u8;
-
-/// MAVLink component `ID`.
-///
-/// `ID` of component sending the message.
-pub type ComponentId = u8;
+/// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
+#[doc(inline)]
+pub use mavspec::rust::spec::types::{ComponentId, MavLinkId, SystemId};
 
 /// Packet sequence number.
 pub type Sequence = u8;

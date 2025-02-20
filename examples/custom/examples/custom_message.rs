@@ -2,7 +2,7 @@ use mavio::protocol::V2;
 use mavio::Frame;
 use mavspec::rust::derive::Message;
 
-use dialect::enums::{MavFrame, MavType};
+use dialect::enums::{MavRoi, MavType};
 use mavio_examples_custom::dialects::common as dialect;
 
 const FIVE: usize = 5;
@@ -15,7 +15,7 @@ struct CustomMessage {
     array_field_u8: [u8; 10],
 
     #[base_type(u8)] // Type of field
-    mav_frame: MavFrame,
+    mav_roi: MavRoi,
 
     #[repr_type(u8)] // Base type of enum
     #[base_type(u16)] // Base type of field (can be larger than enum)
@@ -26,7 +26,7 @@ fn play_with_custom_message() {
     // Create message
     let message = {
         let mut message = CustomMessage {
-            mav_frame: MavFrame::BodyFrd,
+            mav_roi: MavRoi::Target,
             ..Default::default()
         };
 

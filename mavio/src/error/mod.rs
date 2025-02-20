@@ -24,6 +24,11 @@ pub use io_error::{IoError, IoErrorKind};
 #[doc(inline)]
 pub use mavspec::rust::spec::SpecError;
 
+/// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
+#[cfg(feature = "msrv-utils-mission")]
+#[doc(inline)]
+pub use mavspec::rust::microservices::mission::MissionError;
+
 /// Common result type returned by `mavio` functions and methods.
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -68,6 +73,11 @@ pub enum Error {
     /// MAVLink specification errors. A wrapper for [`SpecError`] re-exported from MAVSpec.
     #[cfg_attr(feature = "std", error("frame decoding/encoding error: {0:?}"))]
     Spec(SpecError),
+
+    /// <sup>`⍚`</sup> MAVLink mission-related errors.
+    #[cfg_attr(feature = "std", error("mission error: {0:?}"))]
+    #[cfg(feature = "msrv-utils-mission")]
+    Mission(MissionError),
 }
 
 /// Errors related to MAVLink frame validation.
@@ -143,6 +153,7 @@ pub struct IncompatFlagsError {
 
 impl From<VersionError> for FrameError {
     /// Converts [`VersionError`] into [`FrameError::Version`].
+    #[inline(always)]
     fn from(value: VersionError) -> Self {
         Self::Version(value)
     }
@@ -150,6 +161,7 @@ impl From<VersionError> for FrameError {
 
 impl From<VersionError> for Error {
     /// Converts [`VersionError`] into [`FrameError::Version`]  variant of [`Error::Frame`].
+    #[inline(always)]
     fn from(value: VersionError) -> Self {
         FrameError::from(value).into()
     }
@@ -157,6 +169,7 @@ impl From<VersionError> for Error {
 
 impl From<ChecksumError> for FrameError {
     /// Converts [`ChecksumError`] into [`FrameError::Checksum`].
+    #[inline(always)]
     fn from(_: ChecksumError) -> Self {
         Self::Checksum
     }
@@ -164,6 +177,7 @@ impl From<ChecksumError> for FrameError {
 
 impl From<ChecksumError> for Error {
     /// Converts [`ChecksumError`] into [`FrameError::Checksum`] variant of [`Error::Frame`].
+    #[inline(always)]
     fn from(value: ChecksumError) -> Self {
         FrameError::from(value).into()
     }
@@ -171,6 +185,7 @@ impl From<ChecksumError> for Error {
 
 impl From<SignatureError> for FrameError {
     /// Converts [`SignatureError`] into [`FrameError::Signature`].
+    #[inline(always)]
     fn from(_: SignatureError) -> Self {
         Self::Signature
     }
@@ -178,6 +193,7 @@ impl From<SignatureError> for FrameError {
 
 impl From<SignatureError> for Error {
     /// Converts [`SignatureError`] into [`FrameError::Signature`] variant of [`Error::Frame`].
+    #[inline(always)]
     fn from(value: SignatureError) -> Self {
         FrameError::from(value).into()
     }
@@ -185,6 +201,7 @@ impl From<SignatureError> for Error {
 
 impl From<IncompatFlagsError> for FrameError {
     /// Converts [`IncompatFlagsError`] into [`FrameError::Incompatible`].
+    #[inline(always)]
     fn from(value: IncompatFlagsError) -> Self {
         Self::Incompatible(value)
     }
@@ -192,6 +209,7 @@ impl From<IncompatFlagsError> for FrameError {
 
 impl From<IncompatFlagsError> for Error {
     /// Converts [`IncompatFlagsError`] into [`FrameError::Incompatible`] variant of [`Error::Frame`].
+    #[inline(always)]
     fn from(value: IncompatFlagsError) -> Self {
         FrameError::from(value).into()
     }
@@ -199,6 +217,7 @@ impl From<IncompatFlagsError> for Error {
 
 impl From<FrameError> for Error {
     /// Converts [`FrameError`] into [`Error::Frame`].
+    #[inline(always)]
     fn from(value: FrameError) -> Self {
         Self::Frame(value)
     }
@@ -215,5 +234,14 @@ impl From<SpecError> for Error {
         } else {
             Self::Spec(value)
         }
+    }
+}
+
+#[cfg(feature = "msrv-utils-mission")]
+impl From<MissionError> for Error {
+    /// Converts [`MissionError`] into [`Error::Mission`] variant of [`Error`].
+    #[inline(always)]
+    fn from(value: MissionError) -> Self {
+        Error::Mission(value)
     }
 }

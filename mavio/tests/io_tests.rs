@@ -1,4 +1,4 @@
-#[cfg(feature = "minimal")]
+#[cfg(feature = "dlct-minimal")]
 #[cfg(feature = "extras")]
 mod needs_dialect {
     use dialect::messages::Heartbeat;

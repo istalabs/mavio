@@ -14,7 +14,7 @@ use crate::prelude::*;
 /// of dialect specifications:
 ///
 /// ```rust
-/// # #[cfg(feature = "minimal")] {
+/// # #[cfg(feature = "dlct-minimal")] {
 /// use mavio::dialects::Minimal;
 /// use mavio::protocol::{CompatFlags, CompatProcessor, IncompatFlags, CompatStrategy};
 /// use mavio::prelude::*;
@@ -359,7 +359,7 @@ impl IntoCompatProcessor for CompatProcessorBuilder {
 }
 
 #[cfg(test)]
-#[cfg(feature = "minimal")]
+#[cfg(feature = "dlct-minimal")]
 mod tests {
     use super::*;
     use crate::dialects::Minimal;

@@ -390,7 +390,7 @@ impl<V: MaybeVersioned> Frame<V> {
     /// # Usage
     ///
     /// ```rust,no_run
-    /// # #[cfg(feature = "minimal")] {
+    /// # #[cfg(feature = "dlct-minimal")] {
     /// # use minimal::messages::Heartbeat;
     /// # use mavio::protocol::{V2};
     /// use mavio::dialects::minimal;
@@ -889,7 +889,7 @@ mod tests {
         assert_eq!(out_bytes, valid_bytes);
     }
 
-    #[cfg(feature = "minimal")]
+    #[cfg(feature = "dlct-minimal")]
     mod dialect_utils {
         pub(super) use crate::dialects::minimal as dialect;
         pub(super) use crate::dialects::minimal::enums::{
@@ -919,6 +919,7 @@ mod tests {
             }
         }
 
+        #[cfg(feature = "std")]
         pub(super) fn all_zero_heartbeat_message() -> Heartbeat {
             Heartbeat {
                 type_: MavType::Generic,          // 0
@@ -964,11 +965,11 @@ mod tests {
             v2_frame(&message)
         }
     }
-    #[cfg(feature = "minimal")]
+    #[cfg(feature = "dlct-minimal")]
     use dialect_utils::*;
 
     #[test]
-    #[cfg(feature = "minimal")]
+    #[cfg(feature = "dlct-minimal")]
     #[cfg(feature = "std")]
     fn test_v2_payload_truncation() {
         let message = all_zero_heartbeat_message();
@@ -980,7 +981,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "minimal")]
+    #[cfg(feature = "dlct-minimal")]
     #[cfg(feature = "std")]
     fn test_signing() {
         use crate::consts::SIGNATURE_SECRET_KEY_LENGTH;
@@ -1000,13 +1001,13 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "minimal")]
+    #[cfg(feature = "dlct-minimal")]
     fn test_decoding_to_message() {
         let _: dialect::Minimal = default_v2_heartbeat_frame().decode().unwrap();
     }
 
     #[test]
-    #[cfg(feature = "minimal")]
+    #[cfg(feature = "dlct-minimal")]
     #[cfg(feature = "std")]
     fn test_rebuild_frame() {
         use crate::consts::SIGNATURE_SECRET_KEY_LENGTH;
@@ -1043,7 +1044,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "minimal")]
+    #[cfg(feature = "dlct-minimal")]
     fn test_upgrade_frame() {
         let expected = default_v2_heartbeat_frame();
 
@@ -1061,7 +1062,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "minimal")]
+    #[cfg(feature = "dlct-minimal")]
     fn test_try_versioned() {
         let v1 = default_v1_heartbeat_frame();
         assert!(v1.clone().try_into_versioned::<V1>().is_ok());

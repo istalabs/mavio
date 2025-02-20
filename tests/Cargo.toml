@@ -16,7 +16,7 @@ path = "src/lib.rs"
 # Dependencies
 ###########################################################
 [dependencies]
-mavio = { path = "../mavio", features = ["minimal"], default-features = false }
+mavio = { path = "../mavio", features = ["dlct-minimal"], default-features = false }
 tokio = { version = "1.36.0", features = ["io-util"], optional = true }
 futures = { version = "0.3.31", optional = true }
 embedded-io = { version = "0.6.1", optional = true }

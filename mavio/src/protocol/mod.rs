@@ -53,7 +53,7 @@ pub(super) mod types;
 mod update;
 
 pub use compat::{CompatProcessor, CompatProcessorBuilder, CompatStrategy, IntoCompatProcessor};
-pub use endpoint::{Endpoint, MavLinkId};
+pub use endpoint::Endpoint;
 pub use flags::{CompatFlags, IncompatFlags};
 pub use frame::Frame;
 pub use frame_builder::FrameBuilder;
@@ -65,8 +65,8 @@ pub use sequencer::{IntoSequencer, Sequencer};
 pub use signature::{MavTimestamp, SecretKey, Sign, Signature, Signer, SigningConf};
 pub use stx::MavSTX;
 pub use types::{
-    Behold, Checksum, ComponentId, HeaderV1Bytes, HeaderV2Bytes, PayloadLength, Sequence,
-    SignatureBytes, SignatureTimestampBytes, SignatureValue, SignedLinkId, SystemId,
+    Behold, Checksum, ComponentId, HeaderV1Bytes, HeaderV2Bytes, MavLinkId, PayloadLength,
+    Sequence, SignatureBytes, SignatureTimestampBytes, SignatureValue, SignedLinkId, SystemId,
 };
 
 #[cfg(feature = "unsafe")]

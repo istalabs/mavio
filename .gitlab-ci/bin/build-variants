@@ -26,15 +26,17 @@ declare -a commands=(
   "cargo build --package mavio --no-default-features --features embedded-io,embedded-io-async,alloc,serde,unstable"
   "cargo build --package mavio --no-default-features --features embedded-io,embedded-io-async,std"
   "cargo build --package mavio --no-default-features --features embedded-io,embedded-io-async,std,serde,unstable"
-  "cargo build --package mavio --no-default-features --features embedded-io,embedded-io-async,std,minimal,serde,specta,unstable"
-  "cargo build --package mavio --no-default-features --features embedded-io,embedded-io-async,std,tokio,futures,minimal,serde,specta,unstable"
+  "cargo build --package mavio --no-default-features --features embedded-io,embedded-io-async,std,dlct-minimal,serde,specta,unstable"
+  "cargo build --package mavio --no-default-features --features embedded-io,embedded-io-async,std,tokio,futures,dlct-minimal,serde,specta,unstable"
+  "cargo build --package mavio --no-default-features --features msrv-utils-all,unstable"
+  "cargo build --package mavio --no-default-features --features msrv-utils-all,unstable,alloc"
   "cargo build --package mavio --all-features"
 )
 
 pushd "${PROJECT_DIR}"
   for command in "${commands[@]}"
   do
-     print "$command"
-     $command
+    print "$command"
+    time $command
   done
 popd

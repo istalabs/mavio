@@ -20,9 +20,9 @@ use crate::prelude::*;
 /// Create [`MavFrame`] from an instance of [`Frame`] and then turn back into a versionless frame:
 ///
 /// ```rust
-/// #[cfg(not(feature = "minimal"))]
+/// #[cfg(not(feature = "dlct-minimal"))]
 /// # fn main() {}
-/// #[cfg(feature = "minimal")]
+/// #[cfg(feature = "dlct-minimal")]
 /// # fn main() {
 /// # use mavio::dialects::minimal::messages::Heartbeat;
 /// use mavio::prelude::*;

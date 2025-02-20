@@ -23,9 +23,9 @@ use crate::prelude::*;
 /// Create a new frame from a heartbeat message using parameters of existing endpoint:
 ///
 /// ```no_run
-/// #[cfg(not(feature = "minimal"))]
+/// #[cfg(not(feature = "dlct-minimal"))]
 /// # fn main() {}
-/// #[cfg(feature = "minimal")]
+/// #[cfg(feature = "dlct-minimal")]
 /// # fn main() {
 /// use mavio::dialects::minimal::messages::Heartbeat;
 /// use mavio::prelude::*;
@@ -42,9 +42,9 @@ use crate::prelude::*;
 /// Create a new frame manually:
 ///
 /// ```no_run
-/// #[cfg(not(feature = "minimal"))]
+/// #[cfg(not(feature = "dlct-minimal"))]
 /// # fn main() {}
-/// #[cfg(feature = "minimal")]
+/// #[cfg(feature = "dlct-minimal")]
 /// # fn main() {
 /// use mavio::dialects::minimal::messages::Heartbeat;
 /// use mavio::protocol::{IntoPayload};
@@ -640,7 +640,7 @@ impl<V: Versioned, Sig: IsSigned>
 #[cfg(test)]
 mod frame_builder_tests {
     #[test]
-    #[cfg(feature = "minimal")]
+    #[cfg(feature = "dlct-minimal")]
     fn build_frame_v2() {
         use crate::dialects::minimal::messages::Heartbeat;
         use crate::protocol::{MavLinkVersion, V2};

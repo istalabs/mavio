@@ -9,6 +9,9 @@ pub use crate::protocol::{
 pub use crate::io::{AsyncReceiver, AsyncSender};
 pub use crate::io::{Receiver, Sender};
 
+#[cfg(feature = "dlct-minimal")]
+pub use crate::{default_dialect, DefaultDialect};
+
 #[cfg(feature = "std")]
 pub use crate::io::{StdIoReader, StdIoWriter};
 

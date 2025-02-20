@@ -1,28 +1,19 @@
 use core::marker::PhantomData;
 
-use crate::protocol::{Behold, ComponentId, Sequence, Sequencer, SystemId};
-
-use crate::prelude::*;
-
-/// MAVLink device `ID`.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-#[cfg_attr(feature = "specta", derive(specta::Type))]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct MavLinkId {
-    /// System `ID`.
-    pub system: SystemId,
-    /// Component `ID`.
-    pub component: ComponentId,
-}
+use crate::error::Result;
+use crate::protocol::{
+    Behold, ComponentId, Frame, MavLinkId, MaybeVersioned, Message, Sequence, Sequencer, SystemId,
+    Versioned, Versionless, V1, V2,
+};
 
 /// MAVLink device with defined `ID` and internal frame sequence counter.
 ///
 /// # Examples
 ///
 /// ```no_run
-/// #[cfg(not(feature = "minimal"))]
+/// #[cfg(not(feature = "dlct-minimal"))]
 /// # fn main() {}
-/// #[cfg(feature = "minimal")]
+/// #[cfg(feature = "dlct-minimal")]
 /// # fn main() {
 /// use mavio::dialects::minimal::messages::Heartbeat;
 /// use mavio::prelude::*;
@@ -44,13 +35,6 @@ pub struct Endpoint<V: MaybeVersioned> {
     id: MavLinkId,
     sequencer: Sequencer,
     _version: PhantomData<V>,
-}
-
-impl MavLinkId {
-    /// Creates a new `ID` from the combination of MAVLink system and component ids.
-    pub fn new(system: SystemId, component: ComponentId) -> Self {
-        Self { system, component }
-    }
 }
 
 impl Endpoint<Versionless> {
