@@ -33,7 +33,7 @@ include:
 .test:build:docs:
   extends: .executor:rust  # from local: "/.gitlab-ci/executors.gitlab-ci.yml"
   script:
-    - cargo doc --no-deps --features minimal,embedded-io,embedded-io-async,std,tokio,futures
+    - cargo doc --no-deps --all-features
 
 # ---------------------------------------------------------
 #    [TEST] Test project for various features
