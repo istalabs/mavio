@@ -514,25 +514,27 @@ checksum = "04cbf5b083de1c7e0222a7a51dbfdba1cbe1c6ab0b15e29fff3f6c077fd9cd9f"
 
 [[package]]
 name = "mavinspect"
-version = "0.6.0-rc.4"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1a6768b25bf515e0c193ccfe3fc8de95fa2fbbca3a437993e4a3faa15892fe1"
+checksum = "d2fec1acb27c85e9c76545b5f5129a87c0e1e3ac16ec5e007ce089a8e20b21f4"
 dependencies = [
  "base64",
  "bitflags",
  "crc-any",
+ "document-features",
  "heck",
  "log",
  "quick-xml",
  "regex",
  "serde",
  "serde_yml",
+ "textwrap",
  "thiserror 2.0.11",
 ]
 
 [[package]]
 name = "mavio"
-version = "0.5.0-rc.1"
+version = "0.5.0"
 dependencies = [
  "bitflags",
  "crc-any",
@@ -596,9 +598,9 @@ dependencies = [
 
 [[package]]
 name = "mavlink-dialects"
-version = "0.6.0-rc.5"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0bd589f14aa2950a4ebc9459f97d2d0946f64ec0662c59cf2dd772a372a18fe"
+checksum = "bb5ca3027dd6f584013dc838cf55da911322c8d42b3665388b3787a31c897a93"
 dependencies = [
  "document-features",
  "mavinspect",
@@ -614,9 +616,9 @@ dependencies = [
 
 [[package]]
 name = "mavlink-message-definitions"
-version = "0.6.0-rc.5"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0c30278578eaf52efccb027b3ee4041e072b2658de8b67fba4c48995b0224d7"
+checksum = "0fb2c12ad5400ce51c62be629cef04835bbe436a58b259e027721a3bf324ffcc"
 dependencies = [
  "document-features",
  "lazy_static",
@@ -627,9 +629,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec"
-version = "0.6.0-rc.5"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39d6433cd8499ec1e6b476592c9cb577fa870c87fa71dbe760f06f8eac23fe48"
+checksum = "e80e511ff3e04a048eb1403e9a507bb4c1dc9532db854caebc720522736cc3e7"
 dependencies = [
  "document-features",
  "format_no_std",
@@ -647,9 +649,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_derive"
-version = "0.6.0-rc.5"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05bf84a04b72e1c41bf04308ce67fbc057d97c6f85f8d605d82c9a0e40db27e4"
+checksum = "e95cc6d56f6168acee98f59a84facf3e9aa141423f8c96617894f159e59629d0"
 dependencies = [
  "crc-any",
  "heck",
@@ -661,9 +663,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_gen"
-version = "0.6.0-rc.5"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d036baa14ebb55a3a50516b36a83a1f9afcb64b4834bf6f085936abae8ef4d2f"
+checksum = "1da904c68924aa7b9e3bb1f09dd2018235a2dab30fc2ff39d30f4b754f855cf0"
 dependencies = [
  "cargo-manifest",
  "heck",
@@ -679,9 +681,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_spec"
-version = "0.6.0-rc.5"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62f5d7d08cea654537b7b51fb30a71b6390c4197256aa9af1a0209d771bfc368"
+checksum = "2aa9d08283ccd5baf64fe80710ef16d0f8c0ee14c116d5371c7904f034f2a9fe"
 dependencies = [
  "bitflags",
  "serde",
@@ -997,6 +999,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "smawk"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
+
+[[package]]
 name = "socket2"
 version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1071,6 +1079,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6db9d948e03cf2d8b332431588f65b8ef1bc0572f1c30434f96dd62241ffd074"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "textwrap"
+version = "0.16.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23d434d3f8967a09480fb04132ebe0a3e088c173e6d0ee7897abbdf4eab0f8b9"
+dependencies = [
+ "smawk",
+ "unicode-linebreak",
+ "unicode-width",
 ]
 
 [[package]]
@@ -1186,6 +1205,18 @@ name = "unicode-ident"
 version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a210d160f08b701c8721ba1c726c11662f877ea6b7094007e1ca9a1041945034"
+
+[[package]]
+name = "unicode-linebreak"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b09c83c3c29d37506a3e260c08c03743a6bb66a9cd432c6934ab501a190571f"
+
+[[package]]
+name = "unicode-width"
+version = "0.1.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
 
 [[package]]
 name = "utf8parse"
