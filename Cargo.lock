@@ -83,6 +83,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.96"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b964d184e89d9b6b67dd2715bc8e74cf3107fb2b529990c90cf517326150bf4"
+
+[[package]]
 name = "atomic-polyfill"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -475,6 +481,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5aba8db14291edd000dfcc4d620c7ebfb122c613afb886ca8803fa4e128a20a"
 
 [[package]]
+name = "libyml"
+version = "0.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3302702afa434ffa30847a83305f0a69d6abd74293b6554c18ec85c7ef30c980"
+dependencies = [
+ "anyhow",
+ "version_check",
+]
+
+[[package]]
 name = "litrs"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -498,9 +514,9 @@ checksum = "04cbf5b083de1c7e0222a7a51dbfdba1cbe1c6ab0b15e29fff3f6c077fd9cd9f"
 
 [[package]]
 name = "mavinspect"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "146fdba441b0ca1c2ccc968993ba5ce2b2ec46f753187b7b7df6d6a112f1b084"
+checksum = "c1a6768b25bf515e0c193ccfe3fc8de95fa2fbbca3a437993e4a3faa15892fe1"
 dependencies = [
  "base64",
  "bitflags",
@@ -510,6 +526,7 @@ dependencies = [
  "quick-xml",
  "regex",
  "serde",
+ "serde_yml",
  "thiserror 2.0.11",
 ]
 
@@ -579,9 +596,9 @@ dependencies = [
 
 [[package]]
 name = "mavlink-dialects"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21bfd9bee70334c40c857616a41350692bc6552f53312db0c544d5c0c5da81fc"
+checksum = "b0bd589f14aa2950a4ebc9459f97d2d0946f64ec0662c59cf2dd772a372a18fe"
 dependencies = [
  "document-features",
  "mavinspect",
@@ -597,9 +614,9 @@ dependencies = [
 
 [[package]]
 name = "mavlink-message-definitions"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "403a8d967fed5fea5a9f831d1fcb9b6ff361918a289b69380e78bc39f1de76dd"
+checksum = "f0c30278578eaf52efccb027b3ee4041e072b2658de8b67fba4c48995b0224d7"
 dependencies = [
  "document-features",
  "lazy_static",
@@ -610,9 +627,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94f9683faede87a7596503ce4280338dab1ba677cb3d9363fc518ccef0d4d5d7"
+checksum = "39d6433cd8499ec1e6b476592c9cb577fa870c87fa71dbe760f06f8eac23fe48"
 dependencies = [
  "document-features",
  "format_no_std",
@@ -630,9 +647,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_derive"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b04e6297d1608cf3c80034c9c63626384e853a7e52175096ed5470c09628f4d"
+checksum = "05bf84a04b72e1c41bf04308ce67fbc057d97c6f85f8d605d82c9a0e40db27e4"
 dependencies = [
  "crc-any",
  "heck",
@@ -644,9 +661,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_gen"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8d48e3051d67356b1974b87483fbb2977d43de6aa2eaa655c517d03b11cbee0"
+checksum = "d036baa14ebb55a3a50516b36a83a1f9afcb64b4834bf6f085936abae8ef4d2f"
 dependencies = [
  "cargo-manifest",
  "heck",
@@ -662,9 +679,9 @@ dependencies = [
 
 [[package]]
 name = "mavspec_rust_spec"
-version = "0.6.0-rc.1"
+version = "0.6.0-rc.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d35778fbc0fccaf603629323165dbf5ddef5463c6255e6184c55dfa86944bb41"
+checksum = "62f5d7d08cea654537b7b51fb30a71b6390c4197256aa9af1a0209d771bfc368"
 dependencies = [
  "bitflags",
  "serde",
@@ -942,6 +959,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "87607cb1398ed59d48732e575a4c28a7a8ebf2454b964fe3f224f2afc07909e1"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "serde_yml"
+version = "0.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59e2dd588bf1597a252c3b920e0143eb99b0f76e4e082f4c92ce34fbc9e71ddd"
+dependencies = [
+ "indexmap",
+ "itoa",
+ "libyml",
+ "memchr",
+ "ryu",
+ "serde",
+ "version_check",
 ]
 
 [[package]]

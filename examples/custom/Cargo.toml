@@ -19,10 +19,10 @@ path = "src/lib.rs"
 env_logger = "0.11.0"
 log = "0.4.20"
 mavio = { path = "../../mavio", features = ["std", "extras", "specta"] }
-mavspec = { version = "0.6.0-rc.1", default-features = false, features = ["rust", "specta", "std"] }
+mavspec = { version = "0.6.0-rc.5", default-features = false, features = ["rust", "specta", "std"] }
 
 [build-dependencies]
-mavspec = { version = "0.6.0-rc.1", default-features = false, features = ["rust_gen", "fingerprints"] }
+mavspec = { version = "0.6.0-rc.5", default-features = false, features = ["rust_gen", "fingerprints"] }
 
 ###########################################################
 # Examples
