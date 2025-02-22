@@ -28,6 +28,7 @@ declare -a commands=(
   "cargo test --package mavio --no-default-features --features embedded-io,embedded-io-async,std,serde,unstable"
   "cargo test --package mavio --no-default-features --features embedded-io,embedded-io-async,std,dlct-minimal,serde,specta,unstable"
   "cargo test --package mavio --no-default-features --features embedded-io,embedded-io-async,std,tokio,futures,dlct-minimal,serde,specta,unstable"
+  "cargo test --package mavio --no-default-features --features msrv-utils-all"
   "cargo test --package mavio --no-default-features --features msrv-utils-all,unstable"
   "cargo test --package mavio --no-default-features --features msrv-utils-all,unstable,alloc"
   "cargo test --package mavio --all-features"

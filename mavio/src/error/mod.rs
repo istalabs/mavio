@@ -25,7 +25,7 @@ pub use io_error::{IoError, IoErrorKind};
 pub use mavspec::rust::spec::SpecError;
 
 /// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
-#[cfg(feature = "msrv-utils-mission")]
+#[cfg(all(feature = "msrv-utils-mission", feature = "unstable"))]
 #[doc(inline)]
 pub use mavspec::rust::microservices::mission::MissionError;
 
@@ -76,7 +76,7 @@ pub enum Error {
 
     /// <sup>`⍚`</sup> MAVLink mission-related errors.
     #[cfg_attr(feature = "std", error("mission error: {0:?}"))]
-    #[cfg(feature = "msrv-utils-mission")]
+    #[cfg(all(feature = "msrv-utils-mission", feature = "unstable"))]
     Mission(MissionError),
 }
 
@@ -237,7 +237,7 @@ impl From<SpecError> for Error {
     }
 }
 
-#[cfg(feature = "msrv-utils-mission")]
+#[cfg(all(feature = "msrv-utils-mission", feature = "unstable"))]
 impl From<MissionError> for Error {
     /// Converts [`MissionError`] into [`Error::Mission`] variant of [`Error`].
     #[inline(always)]
