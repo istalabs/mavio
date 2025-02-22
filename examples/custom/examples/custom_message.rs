@@ -1,6 +1,6 @@
+use mavio::derive::{Enum, Message};
 use mavio::protocol::V2;
 use mavio::Frame;
-use mavspec::rust::derive::Message;
 
 use dialect::enums::{MavRoi, MavType};
 use mavio_examples_custom::dialects::common as dialect;
@@ -20,6 +20,22 @@ struct CustomMessage {
     #[repr_type(u8)] // Base type of enum
     #[base_type(u16)] // Base type of field (can be larger than enum)
     mav_type: [MavType; FIVE],
+
+    #[base_type(u8)]
+    custom_enum: CustomEnum,
+}
+
+const ONE: u8 = 1;
+const TWO: u8 = 2;
+
+#[derive(Enum)]
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, Default)]
+enum CustomEnum {
+    #[default]
+    OptionA = 0,
+    OptionB = ONE, // Constants are supported
+    OptionC = TWO, //
 }
 
 fn play_with_custom_message() {
@@ -32,6 +48,7 @@ fn play_with_custom_message() {
 
         message.array_field_u8[5] = 7;
         message.mav_type[3] = MavType::Camera;
+        message.custom_enum = CustomEnum::OptionB;
 
         message
     };
