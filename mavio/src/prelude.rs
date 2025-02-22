@@ -9,6 +9,8 @@ pub use crate::protocol::{
 pub use crate::io::{AsyncReceiver, AsyncSender};
 pub use crate::io::{Receiver, Sender};
 
+pub use crate::mavspec;
+
 #[cfg(feature = "dlct-minimal")]
 pub use crate::{default_dialect, DefaultDialect};
 

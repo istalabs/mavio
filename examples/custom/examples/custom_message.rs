@@ -1,4 +1,13 @@
+// NOTE: we use minimum imports for educational purposes.
+//
+// In most cases you may just use:
+//
+// ```rust
+// use mavio::prelude::*;
+// use mavio::derive::*;
+// ```
 use mavio::derive::{Enum, Message};
+use mavio::mavspec;
 use mavio::protocol::V2;
 use mavio::Frame;
 
@@ -19,7 +28,7 @@ struct CustomMessage {
 
     #[repr_type(u8)] // Base type of enum
     #[base_type(u16)] // Base type of field (can be larger than enum)
-    mav_type: [MavType; FIVE],
+    mav_type: [MavType; FIVE], // Constants are supported
 
     #[base_type(u8)]
     custom_enum: CustomEnum,

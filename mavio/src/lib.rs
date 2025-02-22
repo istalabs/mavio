@@ -501,6 +501,27 @@ pub use mavspec::definitions;
 /// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
 /// MAVSpec procedural macros
 ///
+/// Since derive macros relies on entities from [`mavspec::rust::spec`], you have to import
+/// [`mavspec`] or use [`prelude`]. For example:
+///
+/// ```rust
+/// #[cfg(feature = "derive")]
+/// # {
+/// use mavio::prelude::*; // This is necessary!!!
+/// use mavio::derive::Enum;
+///
+/// #[derive(Enum)]
+/// #[repr(u8)]
+/// #[derive(Copy, Clone, Debug, Default)]
+/// enum CustomEnum {
+///     #[default]
+///     DEFAULT = 0,
+///     OptionA = 1,
+///     OptionB = 2,
+/// }
+/// # }
+/// ```
+///
 /// Requires `derive` feature flag to be enabled.
 ///
 /// Re-exported from [`mavspec::rust::derive`].
@@ -509,6 +530,19 @@ pub use mavspec::definitions;
 #[cfg(feature = "derive")]
 #[doc(inline)]
 pub use mavspec::rust::derive;
+
+/// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
+/// [MAVSpec](https://crates.io/crates/mavspec) re-exported
+///
+/// We re-export MAVSpec in order to simplify interoperability with the tools provided by this
+/// library.
+///
+/// For example, [`derive`](mod@derive) proc macros depends on [`mavspec::rust::spec`] being
+/// accessible.
+///
+/// ---
+#[doc(inline)]
+pub use mavspec;
 
 #[cfg(all(feature = "specta", not(feature = "std")))]
 compile_error!("Specta support is currently available only for `std` targets! Add `std` feature.");
