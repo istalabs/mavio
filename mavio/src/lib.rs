@@ -265,8 +265,8 @@
 //!
 //! When standard MAVLink dialects are used and at least `dlct-minimal` Cargo feature is enabled,
 //! this library exposes [`default_dialect`] and [`DefaultDialect`] entities that allow to access
-//! the most feature-rich enabled MAVLink dialect. Other features such as [microservices](msrv) or
-//! [microservice utils](msrv_utils) are based on this convention.
+//! the most feature-rich enabled MAVLink dialect. Other features such as [`microservices`] or
+//! [microservice utils](microservices::utils) are based on this convention.
 //!
 //! The sequence of default dialects is the following (in the order of the increased completeness):
 //!
@@ -284,23 +284,17 @@
 //! details.
 //!
 //! At the moment, microservices are generated only for [`default_dialect`] and can be accessed
-//! through [`msrv`].
+//! through [`microservices`].
 //!
 //! ### Microservice utils
 //!
 //! In addition, Mavio re-exports extra tools for working with microservices. These tools can be
-//! enabled by `msrv-utils-*` feature flags and available in [`msrv_utils`] module.
+//! enabled by `msrv-utils-*` feature flags and available in [`microservices::utils`] module and
+//! bundled inside the corresponding microservice.
 //!
 //! <section class="warning">
 //! `msrv-utils-*` are considered unstable for now! Use `unstable` feature flag to enable them.
 //! </section>
-//!
-//! Microservice utils feature flags:
-//!
-//! - `msrv-utils-all` — all microservice utils.
-//! - `msrv-utils-mission` — [`msrv_utils::mission`] — MAVLink
-//!   [mission protocol](https://mavlink.io/en/services/mission.html) utils including support for
-//!   unofficial [mission file format](https://mavlink.io/en/file_formats/#mission_plain_text_file).
 //!
 //! ## Message definitions
 //!
@@ -386,8 +380,8 @@
 //!
 //! This will help compiler to throw away unnecessary pieces of code.
 //!
-//! Additionally, you may use [`msrv`] as well as [`msrv_utils`] tools to reduce API surface you are
-//! interacting with.
+//! Additionally, you may use [`microservices`] as well as [`microservices::utils`] to reduce API
+//! surface you are interacting with.
 //!
 //! # Feature flags
 //!
@@ -493,30 +487,15 @@ pub use mavspec::rust::dialects;
 /// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
 /// MAVLink [microservices](https://mavlink.io/en/services/)
 ///
-/// Enabled by `msrv-*` feature flags.
+/// Enabled by `msrv-*` feature flags, additional tools are available as [`microservices::utils`]
+/// via `msrv-utils-*` feature flags (requires `unstable` feature).
 ///
-/// Re-exported from [`mavspec::rust::msrv`].
-///
-/// ---
-#[cfg(all(feature = "msrv", feature = "dlct-minimal", feature = "unstable"))]
-#[doc(inline)]
-pub use mavspec::rust::msrv;
-
-/// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
-/// Tools for MAVLink [microservices](https://mavlink.io/en/services/)
-///
-/// Enabled by `msrv-utils-*` feature flags.
-///
-/// Re-exported from [`mavspec::rust::msrv_utils`].
-///
-/// <section class="warning">
-/// These feature is considered unstable. Use `unstable` feature flag to access this functionality.
-/// </section>
+/// Re-exported from [`mavspec::rust::microservices`].
 ///
 /// ---
-#[cfg(all(feature = "msrv-utils", feature = "unstable"))]
+#[cfg(all(feature = "msrv", feature = "dlct-minimal"))]
 #[doc(inline)]
-pub use mavspec::rust::msrv_utils;
+pub use mavspec::rust::microservices;
 
 /// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
 /// MAVLink message definitions

@@ -38,7 +38,7 @@ sha2 = { version = "0.10.8", default-features = false, optional = true }
 thiserror = { version = "2.0.9", optional = true }
 
 # Mavka
-mavspec = { version = "0.6.3", default-features = false, features = ["rust", "rust-dialects"] }
+mavspec = { version = "0.6.4", default-features = false, features = ["rust", "rust-dialects"] }
 
 # Serde
 serde = { version = "1.0.197", default-features = false, features = ["derive"], optional = true }
@@ -259,7 +259,7 @@ dlct-all = [
 #==========================================================
 #! These features will control generation of MAVLink microservice-specific bindings.
 #!
-#! If enabled, microservices can be found in [`msrv`] module.
+#! If enabled, microservices can be found in [`microservices`] module.
 
 ## Support for all MavLink microservices
 msrv-all = [
@@ -292,104 +292,104 @@ msrv-all = [
 ]
 ## Heartbeat protocol support
 ##
-## This microservice can be found in [`msrv::heartbeat`] module.
-msrv-heartbeat = ["msrv", "mavspec/msrv-heartbeat"]
+## This microservice can be found in [`microservices::heartbeat`] module.
+msrv-heartbeat = ["msrv", "mavspec/msrv-heartbeat", "dlct-minimal"]
 ## Mission protocol support
 ##
-## This microservice can be found in [`msrv::mission`] module.
-msrv-mission = ["msrv", "mavspec/msrv-mission"]
+## This microservice can be found in [`microservices::mission`] module.
+msrv-mission = ["msrv", "mavspec/msrv-mission", "dlct-common"]
 ## Parameter protocol support
 ##
-## This microservice can be found in [`msrv::parameter`] module.
-msrv-parameter = ["msrv", "mavspec/msrv-parameter"]
+## This microservice can be found in [`microservices::parameter`] module.
+msrv-parameter = ["msrv", "mavspec/msrv-parameter", "dlct-common"]
 ## Extended parameter protocol support
 ##
-## This microservice can be found in [`msrv::parameter_ext`] module.
-msrv-parameter-ext = ["msrv", "mavspec/msrv-parameter-ext"]
+## This microservice can be found in [`microservices::parameter_ext`] module.
+msrv-parameter-ext = ["msrv", "mavspec/msrv-parameter-ext", "dlct-common"]
 ## Command protocol support
 ##
-## This microservice can be found in [`msrv::command`] module.
-msrv-command = ["msrv", "mavspec/msrv-command"]
+## This microservice can be found in [`microservices::command`] module.
+msrv-command = ["msrv", "mavspec/msrv-command", "dlct-common"]
 ## Manual control protocol support
 ##
-## This microservice can be found in [`msrv::manual_control`] module.
-msrv-manual-control = ["msrv", "mavspec/msrv-manual-control"]
+## This microservice can be found in [`microservices::manual_control`] module.
+msrv-manual-control = ["msrv", "mavspec/msrv-manual-control", "dlct-common"]
 ## Camera protocol v2 support
 ##
-## This microservice can be found in [`msrv::camera`] module.
-msrv-camera = ["msrv", "mavspec/msrv-camera"]
+## This microservice can be found in [`microservices::camera`] module.
+msrv-camera = ["msrv", "mavspec/msrv-camera", "dlct-common"]
 ## Gimbal protocol v1 support
 ##
-## This microservice can be found in [`msrv::gimbal_v1`] module.
-msrv-gimbal-v1 = ["msrv", "mavspec/msrv-gimbal-v1"]
+## This microservice can be found in [`microservices::gimbal_v1`] module.
+msrv-gimbal-v1 = ["msrv", "mavspec/msrv-gimbal-v1", "dlct-common"]
 ## Gimbal protocol v2 support
 ##
-## This microservice can be found in [`msrv::gimbal_v2`] module.
-msrv-gimbal-v2 = ["msrv", "mavspec/msrv-gimbal-v2"]
+## This microservice can be found in [`microservices::gimbal_v2`] module.
+msrv-gimbal-v2 = ["msrv", "mavspec/msrv-gimbal-v2", "dlct-common"]
 ## Arm authorization protocol support
 ##
-## This microservice can be found in [`msrv::arm_auth`] module.
-msrv-arm-auth = ["msrv", "mavspec/msrv-arm-auth"]
+## This microservice can be found in [`microservices::arm_auth`] module.
+msrv-arm-auth = ["msrv", "mavspec/msrv-arm-auth", "dlct-common"]
 ## Image transmission protocol support
 ##
-## This microservice can be found in [`msrv::image_transmission`] module.
-msrv-image-transmission = ["msrv", "mavspec/msrv-image-transmission"]
+## This microservice can be found in [`microservices::image_transmission`] module.
+msrv-image-transmission = ["msrv", "mavspec/msrv-image-transmission", "dlct-common"]
 ## File transfer protocol support
 ##
-## This microservice can be found in [`msrv::ftp`] module.
-msrv-ftp = ["msrv", "mavspec/msrv-ftp"]
+## This microservice can be found in [`microservices::ftp`] module.
+msrv-ftp = ["msrv", "mavspec/msrv-ftp", "dlct-common"]
 ## Landing target protocol support
 ##
-## This microservice can be found in [`msrv::landing_target`] module.
-msrv-landing-target = ["msrv", "mavspec/msrv-landing-target"]
+## This microservice can be found in [`microservices::landing_target`] module.
+msrv-landing-target = ["msrv", "mavspec/msrv-landing-target", "dlct-common"]
 ## Ping protocol support
 ##
-## This microservice can be found in [`msrv::ping`] module.
-msrv-ping = ["msrv", "mavspec/msrv-ping"]
+## This microservice can be found in [`microservices::ping`] module.
+msrv-ping = ["msrv", "mavspec/msrv-ping", "dlct-common"]
 ## Path planning protocol support
 ##
-## This microservice can be found in [`msrv::path_planning`] module.
-msrv-path-planning = ["msrv", "mavspec/msrv-path-planning"]
+## This microservice can be found in [`microservices::path_planning`] module.
+msrv-path-planning = ["msrv", "mavspec/msrv-path-planning", "dlct-common"]
 ## Battery protocol support
 ##
-## This microservice can be found in [`msrv::battery`] module.
-msrv-battery = ["msrv", "mavspec/msrv-battery"]
+## This microservice can be found in [`microservices::battery`] module.
+msrv-battery = ["msrv", "mavspec/msrv-battery", "dlct-common"]
 ## Terrain protocol support
 ##
-## This microservice can be found in [`msrv::terrain`] module.
-msrv-terrain = ["msrv", "mavspec/msrv-terrain"]
+## This microservice can be found in [`microservices::terrain`] module.
+msrv-terrain = ["msrv", "mavspec/msrv-terrain", "dlct-common"]
 ## Tunnel protocol support
 ##
-## This microservice can be found in [`msrv::tunnel`] module.
-msrv-tunnel = ["msrv", "mavspec/msrv-tunnel"]
+## This microservice can be found in [`microservices::tunnel`] module.
+msrv-tunnel = ["msrv", "mavspec/msrv-tunnel", "dlct-common"]
 ## Open Drone ID protocol support
 ##
-## This microservice can be found in [`msrv::open_drone_id`] module.
-msrv-open-drone-id = ["msrv", "mavspec/msrv-open-drone-id"]
+## This microservice can be found in [`microservices::open_drone_id`] module.
+msrv-open-drone-id = ["msrv", "mavspec/msrv-open-drone-id", "dlct-common"]
 ## High latency protocol support
 ##
-## This microservice can be found in [`msrv::high_latency`] module.
-msrv-high-latency = ["msrv", "mavspec/msrv-high-latency"]
+## This microservice can be found in [`microservices::high_latency`] module.
+msrv-high-latency = ["msrv", "mavspec/msrv-high-latency", "dlct-common"]
 ## Component metadata protocol support
 ##
-## This microservice can be found in [`msrv::component_metadata`] module.
-msrv-component-metadata = ["msrv", "mavspec/msrv-component-metadata"]
+## This microservice can be found in [`microservices::component_metadata`] module.
+msrv-component-metadata = ["msrv", "mavspec/msrv-component-metadata", "dlct-common"]
 ## Payload protocol support
 ##
-## This microservice can be found in [`msrv::payload`] module.
-msrv-payload = ["msrv", "mavspec/msrv-payload"]
+## This microservice can be found in [`microservices::payload`] module.
+msrv-payload = ["msrv", "mavspec/msrv-payload", "dlct-common"]
 ## Traffic management protocol support
 ##
-## This microservice can be found in [`msrv::traffic_management`] module.
-msrv-traffic-management = ["msrv", "mavspec/msrv-traffic-management"]
+## This microservice can be found in [`microservices::traffic_management`] module.
+msrv-traffic-management = ["msrv", "mavspec/msrv-traffic-management", "dlct-common"]
 ## Events interface protocol support
 ##
-## This microservice can be found in [`msrv::events_interface`] module.
-msrv-events-interface = ["msrv", "mavspec/msrv-events-interface"]
+## This microservice can be found in [`microservices::events_interface`] module.
+msrv-events-interface = ["msrv", "mavspec/msrv-events-interface", "dlct-common"]
 ## Time synchronization protocol support
 ##
-## This microservice can be found in [`msrv::time_sync`] module.
-msrv-time-sync = ["msrv", "mavspec/msrv-time-sync"]
+## This microservice can be found in [`microservices::time_sync`] module.
+msrv-time-sync = ["msrv", "mavspec/msrv-time-sync", "dlct-common"]
 
 #==========================================================
 #! ## Additional MAVLink tools
