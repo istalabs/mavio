@@ -27,7 +27,7 @@ pub use mavspec::rust::spec::SpecError;
 /// <sup>[`mavspec`](https://crates.io/crates/mavspec)</sup>
 #[cfg(all(feature = "msrv-utils-mission", feature = "unstable"))]
 #[doc(inline)]
-pub use mavspec::rust::microservices::mission::MissionError;
+pub use crate::msrv_utils::mission::MissionError;
 
 /// Common result type returned by `mavio` functions and methods.
 pub type Result<T> = core::result::Result<T, Error>;
