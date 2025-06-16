@@ -21,10 +21,10 @@ log = "0.4.20"
 mavio = { path = "../../mavio", features = ["std", "extras", "specta", "derive"] }
 
 # We need to import MAVSpec since generated entities depend on it
-mavspec = { version = "0.6.4", default-features = false, features = ["rust", "specta", "std"] }
+mavspec = { version = "0.6.6", default-features = false, features = ["rust", "specta", "std"] }
 
 [build-dependencies]
-mavspec = { version = "0.6.4", default-features = false, features = ["rust_gen", "fingerprints"] }
+mavspec = { version = "0.6.6", default-features = false, features = ["rust_gen", "fingerprints"] }
 
 ###########################################################
 # Examples

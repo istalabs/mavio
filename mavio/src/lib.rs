@@ -454,10 +454,10 @@ pub use mavspec::rust::default_dialect;
 /// [`standard`]((https://mavlink.io/en/messages/standard.html))
 /// [`minimal`]((https://mavlink.io/en/messages/minimal.html))
 ///
-/// That means, that if you enabled `dlct-ardupilotmega` dialect but not `all`, then the former is the
+/// That means that if you enabled `dlct-ardupilotmega` dialect but not `all`, then the former is the
 /// most general canonical dialect, and it will be chosen as a default one.
 ///
-/// Requires at least `dlct-minimal` dialect feature flag to be enabled.
+/// Requires at least a `dlct-minimal` dialect feature flag to be enabled.
 ///
 /// Re-exported from [`mavspec::rust::DefaultDialect`].
 ///
