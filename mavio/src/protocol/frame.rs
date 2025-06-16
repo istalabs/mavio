@@ -490,9 +490,10 @@ impl<V: MaybeVersioned> Frame<V> {
         let mut buf = [0u8; crate::consts::PAYLOAD_MAX_SIZE + SIGNATURE_LENGTH];
         #[cfg(feature = "alloc")]
         let mut buf = alloc::vec![0u8; self.body_length()];
+        let body_bytes = &mut buf[..self.body_length()];
 
-        self.fill_body_buffer(&mut buf);
-        writer.write_all(buf.as_slice())?;
+        self.fill_body_buffer(body_bytes);
+        writer.write_all(body_bytes)?;
 
         Ok(header_bytes_sent + self.body_length())
     }
@@ -507,9 +508,10 @@ impl<V: MaybeVersioned> Frame<V> {
         let mut buf = [0u8; crate::consts::PAYLOAD_MAX_SIZE + SIGNATURE_LENGTH];
         #[cfg(feature = "alloc")]
         let mut buf = alloc::vec![0u8; self.body_length()];
+        let body_bytes = &mut buf[..self.body_length()];
 
-        self.fill_body_buffer(&mut buf);
-        writer.write_all(buf.as_slice()).await?;
+        self.fill_body_buffer(body_bytes);
+        writer.write_all(body_bytes).await?;
 
         Ok(header_bytes_sent + self.body_length())
     }
